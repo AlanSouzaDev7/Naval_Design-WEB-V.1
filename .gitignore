@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Editor / ferramentas locais
+.claude/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

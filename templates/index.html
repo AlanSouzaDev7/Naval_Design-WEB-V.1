@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Site educativo sobre a Royal Navy: história, navios lendários em 3D, batalhas e a frota atual da Marinha Real Britânica." />
+  <meta name="theme-color" content="#2a9bdc" />
+  <title>Royal Navy — A Marinha Real Britânica</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%93%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+  <!-- Apenas os pesos realmente usados no CSS (antes: 12 pesos de fonte, agora 9) -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../static/css/style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════ NAV ═══ -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-inner">
+      <div class="nav-brand">
+        <div class="nav-anchor">⚓</div>
+        <span class="brand-text">ROYAL NAVY</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#hero"     class="nav-link active">Início</a></li>
+        <li><a href="#history"  class="nav-link">História</a></li>
+        <li><a href="#ships"    class="nav-link">Navios</a></li>
+        <li><a href="#battles"  class="nav-link">Batalhas</a></li>
+        <li><a href="#fleet"    class="nav-link">Frota Atual</a></li>
+        <li><a href="#gallery"  class="nav-link">Galeria</a></li>
+      </ul>
+      <div class="nav-badge">Since 1546</div>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════ HERO ═══ -->
+  <section class="hero" id="hero">
+    <canvas id="ocean-canvas" aria-hidden="true"></canvas>
+    <div class="hero-overlay"></div>
+
+    <div class="hero-content">
+      <div class="hero-subtitle-top">
+        <span class="line"></span>
+        ROYAL NAVY — DESDE 1546
+        <span class="line"></span>
+      </div>
+      <h1 class="hero-title">
+        <span class="title-line-1">SENHORES</span>
+        <span class="title-line-2">DOS MARES</span>
+      </h1>
+      <p class="hero-desc">
+        A história da mais poderosa força naval que o mundo já conheceu —<br>
+        navios, batalhas e heróis que moldaram o destino das nações.
+      </p>
+      <div class="hero-cta">
+        <a href="#ships" class="btn-primary">Explorar Navios</a>
+        <a href="#history" class="btn-outline">Ver História</a>
+      </div>
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat-item">
+        <span class="stat-number" data-target="700">0</span>
+        <span class="stat-label">Anos de História</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-number" data-target="85">0</span>
+        <span class="stat-label">Navios Ativos</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-number" data-target="33000">0</span>
+        <span class="stat-label">Militares</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-number" data-target="2">0</span>
+        <span class="stat-label">Porta-aviões</span>
+      </div>
+    </div>
+
+    <div class="scroll-indicator">
+      <div class="scroll-mouse">
+        <div class="scroll-wheel"></div>
+      </div>
+      <span>SCROLL</span>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ TIMELINE ═══ -->
+  <section class="history-section" id="history">
+    <div class="section-header">
+      <div class="section-tag">Cronologia</div>
+      <h2 class="section-title">Séculos de <span class="accent">Poder Naval</span></h2>
+      <p class="section-sub">Da fundação por Henrique VIII às operações modernas</p>
+    </div>
+
+    <div class="timeline">
+      <div class="timeline-item left">
+        <div class="timeline-dot"></div>
+        <div class="timeline-card">
+          <div class="timeline-year">1546</div>
+          <h3>Fundação da Royal Navy</h3>
+          <p>O Rei Henrique VIII estabelece o Conselho da Marinha e cria a primeira força naval permanente da Inglaterra. O <em>Henri Grace à Dieu</em> torna-se o maior navio de guerra da época.</p>
+        </div>
+      </div>
+
+      <div class="timeline-item right">
+        <div class="timeline-dot"></div>
+        <div class="timeline-card">
+          <div class="timeline-year">1588</div>
+          <h3>Derrota da Armada Espanhola</h3>
+          <p>A grande vitória inglesa sobre a Invencível Armada espanhola consolida a supremacia naval britânica e muda o equilíbrio de poder na Europa.</p>
+        </div>
+      </div>
+
+      <div class="timeline-item left">
+        <div class="timeline-dot"></div>
+        <div class="timeline-card">
+          <div class="timeline-year">1805</div>
+          <h3>Batalha de Trafalgar</h3>
+          <p>O Almirante Lord Nelson lidera a Royal Navy a uma vitória decisiva sobre as frotas combinadas de França e Espanha. Nelson perece no combate, tornando-se o maior herói naval da história britânica.</p>
+        </div>
+      </div>
+
+      <div class="timeline-item right">
+        <div class="timeline-dot"></div>
+        <div class="timeline-card">
+          <div class="timeline-year">1906</div>
+          <h3>HMS Dreadnought</h3>
+          <p>Lançamento do revolucionário HMS Dreadnought, que torna obsoletos todos os navios de guerra anteriores e inicia uma nova era da guerra naval com sua propulsão a turbina e artilharia pesada.</p>
+        </div>
+      </div>
+
+      <div class="timeline-item left">
+        <div class="timeline-dot"></div>
+        <div class="timeline-card">
+          <div class="timeline-year">1941</div>
+          <h3>Afundamento do Bismarck</h3>
+          <p>A Royal Navy rastreia e destrói o poderoso couraçado alemão Bismarck no Atlântico Norte, numa das maiores caçadas navais da Segunda Guerra Mundial.</p>
+        </div>
+      </div>
+
+      <div class="timeline-item right">
+        <div class="timeline-dot"></div>
+        <div class="timeline-card">
+          <div class="timeline-year">1982</div>
+          <h3>Guerra das Malvinas</h3>
+          <p>A Royal Navy lidera uma força-tarefa de 127 navios ao Atlântico Sul para retomar as Ilhas Falkland, numa das maiores operações anfíbias desde a Segunda Guerra.</p>
+        </div>
+      </div>
+
+      <div class="timeline-item left">
+        <div class="timeline-dot"></div>
+        <div class="timeline-card">
+          <div class="timeline-year">2017</div>
+          <h3>HMS Queen Elizabeth</h3>
+          <p>Comissionamento do HMS Queen Elizabeth, o maior navio de guerra já construído no Reino Unido, com 65.000 toneladas e capacidade para 36 aeronaves F-35B.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ SHIPS ═══ -->
+  <section class="ships-section" id="ships">
+    <div class="section-header">
+      <div class="section-tag">Arsenal Naval</div>
+      <h2 class="section-title">Navios <span class="accent">Lendários</span></h2>
+      <p class="section-sub">Clique em cada navio para explorar em 3D e ver especificações completas</p>
+    </div>
+
+    <div class="ships-filter">
+      <button class="filter-btn active" data-filter="all">Todos</button>
+      <button class="filter-btn" data-filter="carrier">Porta-Aviões</button>
+      <button class="filter-btn" data-filter="destroyer">Destróier</button>
+      <button class="filter-btn" data-filter="submarine">Submarino</button>
+      <button class="filter-btn" data-filter="historic">Histórico</button>
+    </div>
+
+    <div class="ships-grid" id="ships-grid">
+
+      <div class="ship-card" data-category="carrier" data-ship="queen-elizabeth" tabindex="0">
+        <div class="ship-3d-wrapper">
+          <canvas class="ship-canvas" id="canvas-qe" role="img" aria-label="Modelo 3D interativo do HMS Queen Elizabeth" data-type="carrier"></canvas>
+          <div class="ship-3d-label">3D INTERATIVO</div>
+        </div>
+        <div class="ship-card-body">
+          <div class="ship-class">Porta-Aviões · Classe Queen Elizabeth</div>
+          <h3 class="ship-name">HMS Queen Elizabeth</h3>
+          <div class="ship-stats-mini">
+            <div><span>65.000</span> ton</div>
+            <div><span>280m</span> compr.</div>
+            <div><span>2017</span></div>
+          </div>
+          <button class="btn-view-ship" type="button" data-open-ship="queen-elizabeth">
+            Ver Detalhes →
+          </button>
+        </div>
+      </div>
+
+      <div class="ship-card" data-category="destroyer" data-ship="type45" tabindex="0">
+        <div class="ship-3d-wrapper">
+          <canvas class="ship-canvas" id="canvas-t45" role="img" aria-label="Modelo 3D interativo do HMS Daring" data-type="destroyer"></canvas>
+          <div class="ship-3d-label">3D INTERATIVO</div>
+        </div>
+        <div class="ship-card-body">
+          <div class="ship-class">Destróier · Classe Type 45</div>
+          <h3 class="ship-name">HMS Daring</h3>
+          <div class="ship-stats-mini">
+            <div><span>7.350</span> ton</div>
+            <div><span>152m</span> compr.</div>
+            <div><span>2009</span></div>
+          </div>
+          <button class="btn-view-ship" type="button" data-open-ship="type45">
+            Ver Detalhes →
+          </button>
+        </div>
+      </div>
+
+      <div class="ship-card" data-category="submarine" data-ship="astute" tabindex="0">
+        <div class="ship-3d-wrapper">
+          <canvas class="ship-canvas" id="canvas-astute" role="img" aria-label="Modelo 3D interativo do HMS Astute" data-type="submarine"></canvas>
+          <div class="ship-3d-label">3D INTERATIVO</div>
+        </div>
+        <div class="ship-card-body">
+          <div class="ship-class">Submarino Nuclear · Classe Astute</div>
+          <h3 class="ship-name">HMS Astute</h3>
+          <div class="ship-stats-mini">
+            <div><span>7.800</span> ton</div>
+            <div><span>97m</span> compr.</div>
+            <div><span>2010</span></div>
+          </div>
+          <button class="btn-view-ship" type="button" data-open-ship="astute">
+            Ver Detalhes →
+          </button>
+        </div>
+      </div>
+
+      <div class="ship-card" data-category="historic" data-ship="victory" tabindex="0">
+        <div class="ship-3d-wrapper">
+          <canvas class="ship-canvas" id="canvas-victory" role="img" aria-label="Modelo 3D interativo do HMS Victory" data-type="galleon"></canvas>
+          <div class="ship-3d-label">3D INTERATIVO</div>
+        </div>
+        <div class="ship-card-body">
+          <div class="ship-class">Navio de Linha · Séc. XVIII</div>
+          <h3 class="ship-name">HMS Victory</h3>
+          <div class="ship-stats-mini">
+            <div><span>3.556</span> ton</div>
+            <div><span>69m</span> compr.</div>
+            <div><span>1765</span></div>
+          </div>
+          <button class="btn-view-ship" type="button" data-open-ship="victory">
+            Ver Detalhes →
+          </button>
+        </div>
+      </div>
+
+      <div class="ship-card" data-category="destroyer" data-ship="type23" tabindex="0">
+        <div class="ship-3d-wrapper">
+          <canvas class="ship-canvas" id="canvas-t23" role="img" aria-label="Modelo 3D interativo do HMS Westminster" data-type="frigate"></canvas>
+          <div class="ship-3d-label">3D INTERATIVO</div>
+        </div>
+        <div class="ship-card-body">
+          <div class="ship-class">Fragata · Classe Type 23</div>
+          <h3 class="ship-name">HMS Westminster</h3>
+          <div class="ship-stats-mini">
+            <div><span>4.900</span> ton</div>
+            <div><span>133m</span> compr.</div>
+            <div><span>1993</span></div>
+          </div>
+          <button class="btn-view-ship" type="button" data-open-ship="type23">
+            Ver Detalhes →
+          </button>
+        </div>
+      </div>
+
+      <div class="ship-card" data-category="historic" data-ship="dreadnought" tabindex="0">
+        <div class="ship-3d-wrapper">
+          <canvas class="ship-canvas" id="canvas-dread" role="img" aria-label="Modelo 3D interativo do HMS Dreadnought" data-type="battleship"></canvas>
+          <div class="ship-3d-label">3D INTERATIVO</div>
+        </div>
+        <div class="ship-card-body">
+          <div class="ship-class">Couraçado · Classe Dreadnought</div>
+          <h3 class="ship-name">HMS Dreadnought</h3>
+          <div class="ship-stats-mini">
+            <div><span>18.120</span> ton</div>
+            <div><span>160m</span> compr.</div>
+            <div><span>1906</span></div>
+          </div>
+          <button class="btn-view-ship" type="button" data-open-ship="dreadnought">
+            Ver Detalhes →
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ BATTLES ═══ -->
+  <section class="battles-section" id="battles">
+    <div class="battles-bg"></div>
+    <div class="section-header light">
+      <div class="section-tag">Conflitos Navais</div>
+      <h2 class="section-title">Batalhas <span class="accent-gold">Épicas</span></h2>
+      <p class="section-sub">Os confrontos que definiram impérios e nações</p>
+    </div>
+
+    <div class="battles-grid">
+      <div class="battle-card featured">
+        <div class="battle-year">1805</div>
+        <div class="battle-icon">⚔</div>
+        <h3>Trafalgar</h3>
+        <p>21 de outubro de 1805. 27 navios britânicos contra 33 franco-espanhóis. Nelson orquestrou uma manobra ousada que destruiu a frota adversária sem perder um único navio. Uma vitória que garantiu a supremacia naval britânica por um século.</p>
+        <div class="battle-result">Vitória Decisiva · 27 vs 33 Navios</div>
+      </div>
+
+      <div class="battle-card">
+        <div class="battle-year">1588</div>
+        <div class="battle-icon">🌊</div>
+        <h3>Armada Espanhola</h3>
+        <p>A maior frota jamais reunida até então foi destruída por uma combinação de táticas britânicas superiores e tempestades devastadoras.</p>
+        <div class="battle-result">Vitória Estratégica · 55 navios capturados/destruídos</div>
+      </div>
+
+      <div class="battle-card">
+        <div class="battle-year">1916</div>
+        <div class="battle-icon">💥</div>
+        <h3>Batalha da Jutlândia</h3>
+        <p>O maior confronto de couraçados da história. A Grã-Bretanha e a Alemanha Imperial mediram forças no Mar do Norte num duelo que custou milhares de vidas.</p>
+        <div class="battle-result">Inconclusiva · 250+ navios envolvidos</div>
+      </div>
+
+      <div class="battle-card">
+        <div class="battle-year">1941</div>
+        <div class="battle-icon">🎯</div>
+        <h3>Caça ao Bismarck</h3>
+        <p>A Royal Navy mobilizou quase toda a sua frota para caçar o temido couraçado alemão Bismarck pelo Atlântico Norte, afundando-o após três dias de perseguição.</p>
+        <div class="battle-result">Vitória Operacional · 3 dias de caçada</div>
+      </div>
+
+      <div class="battle-card">
+        <div class="battle-year">1982</div>
+        <div class="battle-icon">🚁</div>
+        <h3>Malvinas / Falklands</h3>
+        <p>Uma força-tarefa de 127 navios percorreu 13.000 km para retomar as Ilhas Falkland. A operação combinada de porta-aviões, submarinos e tropas anfíbias foi um triunfo logístico e tático.</p>
+        <div class="battle-result">Vitória · 74 dias de campanha</div>
+      </div>
+
+      <div class="battle-card">
+        <div class="battle-year">1798</div>
+        <div class="battle-icon">⚓</div>
+        <h3>Batalha do Nilo</h3>
+        <p>Nelson destruiu a frota francesa ancorada na Baía de Abukir, cortando os suprimentos do exército de Napoleão no Egito e consolidando o domínio britânico no Mediterrâneo.</p>
+        <div class="battle-result">Vitória Decisiva · Frota francesa destruída</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ CURRENT FLEET ═══ -->
+  <section class="fleet-section" id="fleet">
+    <div class="section-header">
+      <div class="section-tag">Hoje</div>
+      <h2 class="section-title">Frota <span class="accent">Atual</span></h2>
+      <p class="section-sub">A Royal Navy moderna — uma força de projeção global</p>
+    </div>
+
+    <div class="fleet-overview">
+      <div class="fleet-3d-display">
+        <canvas id="fleet-canvas" role="img" aria-label="Visão geral 3D da frota atual"></canvas>
+        <div class="fleet-canvas-label">FROTA — VISÃO GERAL 3D</div>
+      </div>
+
+      <div class="fleet-categories">
+        <div class="fleet-cat" data-type="carrier">
+          <div class="fleet-cat-icon">✈</div>
+          <div class="fleet-cat-info">
+            <h4>Porta-Aviões</h4>
+            <p>2 navios — Classe Queen Elizabeth</p>
+            <div class="fleet-bar"><div class="fleet-bar-fill" style="--fill:1"></div></div>
+          </div>
+          <span class="fleet-count">2</span>
+        </div>
+
+        <div class="fleet-cat" data-type="sub">
+          <div class="fleet-cat-icon">🔱</div>
+          <div class="fleet-cat-info">
+            <h4>Submarinos Nucleares</h4>
+            <p>10 unidades — Classes Astute e Vanguard</p>
+            <div class="fleet-bar"><div class="fleet-bar-fill" style="--fill:0.8"></div></div>
+          </div>
+          <span class="fleet-count">10</span>
+        </div>
+
+        <div class="fleet-cat" data-type="destroyer">
+          <div class="fleet-cat-icon">⚡</div>
+          <div class="fleet-cat-info">
+            <h4>Destróieres</h4>
+            <p>6 navios — Classe Type 45 Daring</p>
+            <div class="fleet-bar"><div class="fleet-bar-fill" style="--fill:0.6"></div></div>
+          </div>
+          <span class="fleet-count">6</span>
+        </div>
+
+        <div class="fleet-cat" data-type="frigate">
+          <div class="fleet-cat-icon">⚓</div>
+          <div class="fleet-cat-info">
+            <h4>Fragatas</h4>
+            <p>13 navios — Classe Type 23 Duke</p>
+            <div class="fleet-bar"><div class="fleet-bar-fill" style="--fill:0.75"></div></div>
+          </div>
+          <span class="fleet-count">13</span>
+        </div>
+
+        <div class="fleet-cat" data-type="patrol">
+          <div class="fleet-cat-icon">🔭</div>
+          <div class="fleet-cat-info">
+            <h4>Navios de Patrulha</h4>
+            <p>22 embarcações — Diversas classes</p>
+            <div class="fleet-bar"><div class="fleet-bar-fill" style="--fill:0.9"></div></div>
+          </div>
+          <span class="fleet-count">22</span>
+        </div>
+
+        <div class="fleet-cat" data-type="amphibious">
+          <div class="fleet-cat-icon">🛥</div>
+          <div class="fleet-cat-info">
+            <h4>Navios Anfíbios</h4>
+            <p>3 unidades — LPH, LPD, LSL</p>
+            <div class="fleet-bar"><div class="fleet-bar-fill" style="--fill:0.4"></div></div>
+          </div>
+          <span class="fleet-count">3</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════ GALLERY ═══ -->
+  <section class="gallery-section" id="gallery">
+    <div class="section-header">
+      <div class="section-tag">Galeria</div>
+      <h2 class="section-title">Imagens <span class="accent">em 3D</span></h2>
+      <p class="section-sub">Explore os navios em renderizações tridimensionais interativas</p>
+    </div>
+
+    <div class="gallery-grid">
+      <div class="gallery-item large">
+        <canvas class="gallery-canvas" id="gal-canvas-1" role="img" aria-label="HMS Queen Elizabeth em 3D" data-type="carrier-detail"></canvas>
+        <div class="gallery-caption">HMS Queen Elizabeth — Vista Lateral</div>
+      </div>
+      <div class="gallery-item">
+        <canvas class="gallery-canvas" id="gal-canvas-2" role="img" aria-label="HMS Daring em 3D" data-type="destroyer-detail"></canvas>
+        <div class="gallery-caption">HMS Daring — Type 45</div>
+      </div>
+      <div class="gallery-item">
+        <canvas class="gallery-canvas" id="gal-canvas-3" role="img" aria-label="HMS Astute em 3D" data-type="submarine-detail"></canvas>
+        <div class="gallery-caption">HMS Astute — Vista Superior</div>
+      </div>
+      <div class="gallery-item">
+        <canvas class="gallery-canvas" id="gal-canvas-4" role="img" aria-label="HMS Victory em 3D" data-type="galleon-detail"></canvas>
+        <div class="gallery-caption">HMS Victory — 1765</div>
+      </div>
+      <div class="gallery-item">
+        <canvas class="gallery-canvas" id="gal-canvas-5" role="img" aria-label="HMS Dreadnought em 3D" data-type="battleship-detail"></canvas>
+        <div class="gallery-caption">HMS Dreadnought — 1906</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════ FOOTER ═══ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="footer-anchor">⚓</div>
+        <div>
+          <div class="footer-title">ROYAL NAVY</div>
+          <div class="footer-tagline">Si vis pacem, para bellum</div>
+        </div>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <h5>Navios</h5>
+          <a href="#ships" data-open-ship="queen-elizabeth">HMS Queen Elizabeth</a>
+          <a href="#ships" data-open-ship="type45">HMS Daring</a>
+          <a href="#ships" data-open-ship="astute">HMS Astute</a>
+          <a href="#ships" data-open-ship="victory">HMS Victory</a>
+        </div>
+        <div class="footer-col">
+          <h5>Conteúdo</h5>
+          <a href="#history">História</a>
+          <a href="#battles">Batalhas</a>
+          <a href="#fleet">Frota Atual</a>
+          <a href="#gallery">Galeria 3D</a>
+        </div>
+        <div class="footer-col">
+          <h5>Sobre</h5>
+          <p class="footer-about">Site educativo sobre a Marinha Real Britânica. Conteúdo baseado em fontes históricas públicas.</p>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Royal Navy Educational. Fins educativos.</span>
+      <span>Todos os modelos 3D renderizados com Three.js</span>
+    </div>
+  </footer>
+
+  <!-- ════════════════════════════════════ SHIP MODAL ═══ -->
+  <div class="modal-overlay" id="ship-modal" role="dialog" aria-modal="true" aria-labelledby="modal-ship-name">
+    <div class="modal-container">
+      <button class="modal-close" type="button" aria-label="Fechar">✕</button>
+
+      <div class="modal-left">
+        <div class="modal-canvas-wrap">
+          <canvas id="modal-canvas" role="img" aria-label="Modelo 3D do navio selecionado"></canvas>
+        </div>
+        <div class="modal-canvas-controls">
+          <span>← Arraste para girar →</span>
+        </div>
+      </div>
+
+      <div class="modal-right">
+        <div class="modal-class" id="modal-class"></div>
+        <h2 class="modal-name" id="modal-ship-name"></h2>
+        <p class="modal-desc" id="modal-desc"></p>
+
+        <div class="modal-specs">
+          <h4>Especificações Técnicas</h4>
+          <div class="specs-grid" id="modal-specs"></div>
+        </div>
+
+        <div class="modal-armament">
+          <h4>Armamento</h4>
+          <ul id="modal-armament"></ul>
+        </div>
+
+        <div class="modal-history">
+          <h4>História e Serviço</h4>
+          <p id="modal-history-text"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts: `defer` não bloqueia o carregamento da página; a ordem é preservada -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+          integrity="sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script defer src="../static/js/ships-data.js"></script>
+  <script defer src="../static/js/ships-3d.js"></script>
+  <script defer src="../static/js/main.js"></script>
+</body>
+</html>
