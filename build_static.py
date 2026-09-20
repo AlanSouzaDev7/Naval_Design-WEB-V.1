@@ -33,6 +33,11 @@ def main() -> None:
     shutil.copytree(ROOT / "static", DOCS / "static")
     (DOCS / ".nojekyll").write_text("", encoding="utf-8")   # desliga o processamento Jekyll do Pages
 
+    # Domínio personalizado (criado por enable_custom_domain.py, com checagem de DNS)
+    cname = ROOT / "CNAME"
+    if cname.exists():
+        shutil.copy(cname, DOCS / "CNAME")
+
     total = sum(p.stat().st_size for p in DOCS.rglob("*") if p.is_file())
     print(f"docs/ gerado: {sum(1 for p in DOCS.rglob('*') if p.is_file())} arquivos, {total / 1024:.0f} KB")
 

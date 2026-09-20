@@ -39,11 +39,47 @@ e não executa Python. Como o site não tem lógica de servidor, ele é publicad
 - three.js carregado com verificação de integridade (SRI).
 - No Flask local: cabeçalhos `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` e `Permissions-Policy`; debug só em `127.0.0.1`.
 
+## Domínio personalizado (royalnavy.com.br)
+
+> **Situação em 20/09/2026:** o site já está no ar em <https://alansouzadev7.github.io/Naval_Design-WEB-V.1/>.
+> O domínio `royalnavy.com.br` foi consultado no RDAP do Registro.br e **estava disponível (não registrado)**.
+> O registro é uma compra que só o titular pode fazer (exige CPF/CNPJ e pagamento), por isso ainda não está ativo.
+
+**Por que o domínio não foi apontado antes de existir:** o arquivo `CNAME` faz o endereço `github.io` redirecionar para o domínio.
+Se o domínio não existir (ou não for seu), o site "cai" e, pior, o tráfego iria para quem o registrasse primeiro.
+Por isso o script `enable_custom_domain.py` só grava o `CNAME` depois de conferir que o DNS já aponta para o GitHub.
+
+### Passo a passo
+1. **Registrar** `royalnavy.com.br` em <https://registro.br> (conta, CPF/CNPJ, pagamento da anuidade).
+2. **Criar os registros DNS** (no Registro.br: *Editar zona* / DNS do próprio Registro.br):
+
+   | Tipo    | Nome  | Valor                                                                                          |
+   |---------|-------|------------------------------------------------------------------------------------------------|
+   | `A`     | `@`   | `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153` (um registro por IP) |
+   | `AAAA`  | `@`   | `2606:50c0:8000::153`, `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153` (opcional) |
+   | `CNAME` | `www` | `alansouzadev7.github.io`                                                                      |
+
+   IPs conferidos na API oficial <https://api.github.com/meta> (campo `pages`).
+3. **Esperar a propagação** (minutos a algumas horas) e conferir: `nslookup royalnavy.com.br`.
+4. **Ativar no projeto** (o script recusa se o DNS ainda não estiver certo):
+   ```bash
+   python enable_custom_domain.py royalnavy.com.br
+   git add -A && git commit -m "Ativa dominio royalnavy.com.br" && git push
+   ```
+5. No GitHub, em **Settings → Pages**, o campo *Custom domain* deve mostrar `royalnavy.com.br`. Quando o certificado ficar pronto
+   (até ~1 h), marque **Enforce HTTPS**.
+6. **Recomendado:** verifique o domínio em *Settings (da conta) → Pages → Add a domain* (registro TXT). Isso impede que outra pessoa
+   use seu domínio em outro repositório do GitHub Pages.
+
+Para desfazer: `python enable_custom_domain.py --remove`, commit e push.
+
 ## Estrutura
 
 ```
 app.py                  servidor Flask (uso local)
 build_static.py         gera a versão estática em docs/ (GitHub Pages)
+enable_custom_domain.py ativa/remove domínio próprio (com checagem de DNS)
+documentacao/           PDF com a documentação técnica completa
 docs/                   site estático publicado
 templates/index.html    página única
 static/css/style.css    estilos (paleta "dia de sol no mar" em variáveis CSS)
