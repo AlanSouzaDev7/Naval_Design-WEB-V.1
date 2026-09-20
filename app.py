@@ -32,6 +32,16 @@ app = Flask(
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = None if DEBUG else 3600
 
 
+# ── Cabeçalhos de segurança (valem para todas as respostas) ────
+@app.after_request
+def security_headers(resp):
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")       # não "adivinhar" tipos de arquivo
+    resp.headers.setdefault("X-Frame-Options", "DENY")                 # impede o site de ser embutido em iframes
+    resp.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    resp.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    return resp
+
+
 # ── Main page ──────────────────────────────────────────────────
 @app.route("/")
 def index():
