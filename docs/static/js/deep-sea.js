@@ -105,7 +105,8 @@
     const el = $('depth-gauge'), val = $('depth-value'), zone = $('depth-zone'), marker = $('depth-marker');
     const track = el && el.querySelector('.depth-gauge__track');
     if (!el) return { update() {}, measure() {} };
-    const ZONES = [[0, 'Superfície'], [150, 'Zona fótica'], [900, 'Mesopelágica'], [2600, 'Batipelágica'], [3700, 'Abissal']];
+    // limites oceanográficos usuais: epipelágica 0–200 m · mesopelágica 200–1.000 m · batipelágica 1.000–4.000 m · abissal 4.000 m+
+    const ZONES = [[0, 'Superfície'], [30, 'Epipelágica'], [200, 'Mesopelágica'], [1000, 'Batipelágica'], [4000, 'Abissal']];
     let lastM = -1, lastZone = '', trackW = 170, on = false;
     return {
       measure() { trackW = track ? track.clientWidth : 170; },
