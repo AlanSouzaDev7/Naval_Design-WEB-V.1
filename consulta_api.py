@@ -124,6 +124,7 @@ def _obter_pool():
             user=usuario,
             password=senha,
             sslmode=os.environ.get("DB_SSLMODE", "prefer"),
+            sslrootcert="system",   # verify-full: usa a cadeia de confianca do proprio SO (sem isso, falta um root.crt local)
             connect_timeout=3,
             application_name="royalnavy-consulta",
         )
