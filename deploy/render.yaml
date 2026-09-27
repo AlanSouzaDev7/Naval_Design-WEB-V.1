@@ -1,0 +1,32 @@
+# Blueprint opcional do Render (New + > Blueprint, apontando para este repositorio).
+# Se o formato mudar de versao do Render, e igualmente facil criar o servico manualmente
+# no painel (New + > Web Service) usando estes mesmos comandos e variaveis.
+services:
+  - type: web
+    name: royalnavy-consulta
+    runtime: python
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt -r deploy/requirements-prod.txt
+    startCommand: gunicorn --workers 1 --threads 4 --timeout 20 -b 0.0.0.0:$PORT app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: DB_HOST
+        value: ep-blue-thunder-b643ndyv-pooler.c-2.sa-east-1.aws.neon.tech
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_NAME
+        value: neondb
+      - key: DB_USER
+        value: navios_leitura
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_SSLMODE
+        value: verify-full
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: TRUST_PROXY_HOPS
+        value: "1"
+      - key: RN_HTTPS
+        value: "1"

@@ -20,3 +20,5 @@ logs/
 backups/
 *.dump
 *.sql.bak
+deploy/neon_bloco*.sql
+deploy/dump_completo_local.sql

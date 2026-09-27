@@ -1,0 +1,3 @@
+# Dependencia adicional so para rodar na VM (servidor WSGI real; o "python app.py" local nao usa isto).
+# Instale junto com requirements.txt:  pip install -r requirements.txt -r deploy/requirements-prod.txt
+gunicorn==23.0.0
