@@ -1,1 +1,8 @@
-flask==3.0.3
+# Dependencias de EXECUCAO (versoes fixas). Instale com:  pip install -r requirements.txt
+Flask==3.1.3
+Werkzeug==3.1.8
+psycopg[binary,pool]==3.3.6
+psycopg-binary==3.3.6
+psycopg-pool==3.3.3
+Flask-Limiter==4.1.1
+python-dotenv==1.2.3

@@ -11,3 +11,12 @@ env/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Segredos e dados locais (nunca versionar)
+.env
+*.env
+!.env.example
+logs/
+backups/
+*.dump
+*.sql.bak

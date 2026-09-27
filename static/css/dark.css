@@ -406,3 +406,6 @@
   .depth-gauge__zone { font-size: 0.58rem; }
   .depth-gauge__track { min-width: 120px; }
 }
+
+/* Consulta de navios: atalho de busca da barra (celular) */
+[data-theme="dark"] .navbar.scrolled .nav-search { color: #b8cde0; border-color: rgba(120, 180, 220, 0.3); background: rgba(6, 22, 40, 0.7); }

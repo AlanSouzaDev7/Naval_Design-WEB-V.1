@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Consulta de navios de guerra de várias marinhas: pesquise pelo nome, classe ou designação do casco e veja datas, comandantes, batalhas e armamento." />
+  <meta name="theme-color" content="#2a9bdc" />
+  <!-- Segurança: só carrega recursos das origens que o site realmente usa (cdnjs e Google Fonts) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <!-- "server": a API existe (Flask). "static": versão publicada sem servidor (build_static.py troca este valor) -->
+  <meta name="rn-mode" content="static" />
+  <meta name="rn-api-base" content="" />
+  <!-- Aplica o tema salvo antes de pintar a página (evita piscar claro→escuro) -->
+  <script src="static/js/theme-init.js"></script>
+  <title>Consulta de Navios — Royal Navy</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%93%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="static/css/style.css" />
+  <link rel="stylesheet" href="static/css/dark.css" />
+  <link rel="stylesheet" href="static/css/consulta.css" />
+</head>
+<body class="page-consulta">
+
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+
+  <!-- ═══════════════════════════════════════════ NAV ═══ -->
+  <nav class="navbar scrolled" id="navbar">
+    <div class="nav-inner">
+      <a class="nav-brand" href="./" aria-label="Royal Navy — página inicial">
+        <div class="nav-anchor">⚓</div>
+        <span class="brand-text">ROYAL NAVY</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="./#hero"    class="nav-link">Início</a></li>
+        <li><a href="./#history" class="nav-link">História</a></li>
+        <li><a href="./#ships"   class="nav-link">Navios</a></li>
+        <li><a href="./#battles" class="nav-link">Batalhas</a></li>
+        <li><a href="./#fleet"   class="nav-link">Frota Atual</a></li>
+        <li><a href="./#gallery" class="nav-link">Galeria</a></li>
+        <li><a href="consulta.html"   class="nav-link active" aria-current="page">Consulta</a></li>
+      </ul>
+      <div class="nav-badge">Since 1546</div>
+      <button class="theme-toggle" id="theme-toggle" type="button" role="switch" aria-checked="false"
+              aria-label="Alternar entre modo claro e modo escuro">
+        <span class="theme-toggle__track">
+          <span class="theme-toggle__knob">
+            <svg class="theme-toggle__icon theme-toggle__icon--sun" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4.6" fill="currentColor"/>
+              <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>
+              </g>
+            </svg>
+            <svg class="theme-toggle__icon theme-toggle__icon--moon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20.2 14.6A8.4 8.4 0 0 1 9.4 3.8a8.4 8.4 0 1 0 10.8 10.8z" fill="currentColor"/>
+            </svg>
+          </span>
+        </span>
+        <span class="theme-toggle__label" id="theme-label">Claro</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════ CABEÇALHO E BUSCA ═══ -->
+  <header class="consulta-hero">
+    <div class="consulta-hero__inner">
+      <div class="section-tag">Arquivo naval</div>
+      <h1 class="consulta-title">Consulta de <span class="accent">Navios</span></h1>
+      <p class="consulta-sub">Pesquise pelo nome, pela classe ou pela designação do casco (ex.: <em>BB-39</em>). Dados de várias marinhas nas duas guerras mundiais.</p>
+
+      <form class="consulta-form" id="consulta-form" role="search" autocomplete="off" novalidate>
+        <div class="consulta-field">
+          <svg class="consulta-field__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          <label for="q" class="sr-only">Nome, classe ou designação do navio</label>
+          <input id="q" name="q" type="search" maxlength="60" placeholder="Ex.: Bismarck, USS Arizona, BB-39, Yamato"
+                 autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-describedby="q-ajuda" />
+          <button type="button" class="consulta-field__limpar" id="q-limpar" hidden aria-label="Limpar a busca">&times;</button>
+        </div>
+        <div class="consulta-filtros">
+          <label class="consulta-select"><span>Marinha</span>
+            <select id="f-marinha" name="marinha"><option value="">Todas</option></select></label>
+          <label class="consulta-select"><span>Guerra</span>
+            <select id="f-guerra" name="guerra"><option value="">Todas</option></select></label>
+          <label class="consulta-select"><span>Tipo</span>
+            <select id="f-tipo" name="tipo"><option value="">Todos</option></select></label>
+        </div>
+      </form>
+      <p class="consulta-ajuda" id="q-ajuda">Digite ao menos 2 letras. Acentos e maiúsculas não importam; pequenos erros de digitação são tolerados.</p>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════ RESULTADOS E FICHA ═══ -->
+  <main class="consulta-main" id="conteudo">
+    <div class="consulta-aviso" id="aviso" role="status" hidden></div>
+
+    <div class="consulta-grid" id="grade">
+      <section class="consulta-lista" aria-labelledby="lista-titulo">
+        <h2 class="consulta-h2" id="lista-titulo">Resultados <span class="consulta-h2__n" id="lista-total"></span></h2>
+        <div class="consulta-chips" id="chips" role="group" aria-label="Explorar por marinha"></div>
+        <ul class="resultados" id="resultados"></ul>
+        <nav class="paginacao" id="paginacao" aria-label="Paginação dos resultados" hidden>
+          <button type="button" class="btn-mini" id="pg-ant">&larr; Anterior</button>
+          <span id="pg-info" aria-live="polite"></span>
+          <button type="button" class="btn-mini" id="pg-prox">Próxima &rarr;</button>
+        </nav>
+      </section>
+
+      <article class="consulta-ficha" id="ficha" tabindex="-1" aria-label="Ficha do navio">
+        <div class="ficha-vazia" id="ficha-vazia">
+          <div class="ficha-vazia__icone" aria-hidden="true">⚓</div>
+          <h2>Escolha um navio</h2>
+          <p>Pesquise pelo nome ou explore por marinha. A ficha completa aparece aqui: classe, datas, comandantes, batalhas, armamento e situação atual.</p>
+        </div>
+      </article>
+    </div>
+    <p class="sr-only" id="status" role="status" aria-live="polite"></p>
+  </main>
+
+  <footer class="footer consulta-footer">
+    <div class="footer-bottom">
+      <span>© 2026 Royal Navy Educational. Fins educativos.</span>
+      <span>Os dados vêm de um banco PostgreSQL local, consultado somente para leitura.</span>
+    </div>
+  </footer>
+
+  <script defer src="static/js/theme.js"></script>
+  <script defer src="static/js/consulta.js"></script>
+</body>
+</html>

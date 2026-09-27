@@ -1,7 +1,9 @@
 # ⚓ Royal Navy — Site Educativo
 
 Site educativo sobre a Marinha Real Britânica: linha do tempo, navios lendários em **3D interativo** (Three.js),
-batalhas, frota atual e galeria. Servido por Flask, com visual de **dia ensolarado no mar**.
+batalhas, frota atual e galeria. Servido por Flask, com visual de **dia ensolarado no mar** (modo claro) e de
+**guerra em alto mar** (modo escuro). A partir da **v3.0** tem uma página de **Consulta de Navios** ligada a um banco
+PostgreSQL (somente leitura, com camadas de segurança).
 
 ## Como rodar
 
@@ -9,10 +11,12 @@ batalhas, frota atual e galeria. Servido por Flask, com visual de **dia ensolara
 python -m venv .venv
 .venv\Scripts\activate          # Windows  (Linux/macOS: source .venv/bin/activate)
 pip install -r requirements.txt
+python db/aplicar.py          # 1 vez: prepara o banco para a consulta (pede a senha do administrador do PostgreSQL)
 python app.py
 ```
 
-Abra <http://localhost:5000>.
+Abra <http://localhost:5000> (a consulta fica em <http://localhost:5000/consulta>).
+Sem o banco configurado o site continua funcionando; só a consulta avisa que está indisponível.
 
 | Variável      | Padrão      | Para que serve                                                                 |
 |---------------|-------------|--------------------------------------------------------------------------------|
@@ -44,6 +48,65 @@ máquinas lentas; a cena escura é pré-aquecida quando o mouse chega ao botão.
 Arquivos: `theme-init.js` (aplica o tema antes da 1ª pintura), `theme.js` (botão, transição, `RNPerf`), `dark.css`,
 `war-hero.js` (batalha do hero), `deep-sea.js` (mergulho, guerra submarina, naufrágios, medidor).
 
+## Consulta de navios (v3.0)
+
+Página `/consulta`: o visitante digita o nome (ou a classe, ou a designação do casco, ex. `BB-39`) e recebe a **ficha
+completa**: marinha, tipo, classe, guerra, batismo/comissionamento/baixa, comandantes, batalhas, armamento, situação atual
+e observações. Também dá para explorar por marinha e filtrar por guerra e tipo. Funciona nos modos claro e escuro e no celular.
+
+```
+navegador ──GET──> Flask (/api/navios/...) ──papel navios_leitura──> PostgreSQL: VIEW v_navios ──> tabela navios_historicos
+ (só JSON,           validação · limite · erros genéricos            (só SELECT na view; timeout 3 s;
+  sem HTML)                                                          nem a tabela original ele enxerga)
+```
+
+| Rota | Função |
+|---|---|
+| `GET /api/navios/busca?q=&marinha=&guerra=&tipo=&pagina=` | busca (sem acento, tolera erro de digitação), 10 por página |
+| `GET /api/navios/<id>` | ficha completa + outros navios da mesma classe |
+| `GET /api/navios/filtros` | marinhas, guerras e tipos com contagem |
+| `GET /api/saude` | verificação de funcionamento |
+
+### Como o banco fica protegido
+
+| Camada | O que foi feito |
+|---|---|
+| **Banco isolado** | A API usa o papel `navios_leitura` (sem superusuário, sem criar nada, no máximo 10 conexões, sessão somente-leitura, `statement_timeout` 3 s). Ele só enxerga a **view** `v_navios` — não a tabela original nem colunas internas (`criado_em`). O administrador `postgres` nunca é usado pelo site (a API se recusa a iniciar com ele). |
+| **SQL injection** | Consultas **sempre parametrizadas**; o texto do usuário nunca é concatenado ao SQL. Além disso a entrada é validada por lista de caracteres permitidos (letras, números, espaço e `. ' ( ) / -`), tamanho (2–60) e parâmetros conhecidos. |
+| **Abuso** | Limite por IP (30 buscas/min, 60 fichas/min, 120 req/min na API), `LIMIT` em toda consulta, no máximo 20 páginas, pool de 5 conexões. |
+| **Vazamento de informação** | Erros genéricos para o cliente (o detalhe fica só no log); sem versão de servidor; `Cache-Control: no-store` na API. |
+| **Navegador** | Tudo que vem da API entra na página por `textContent` (nunca `innerHTML`) — testado com resposta hostil; CSP sem `unsafe-eval` e sem scripts inline; `frame-ancestors 'none'`. |
+| **Rede** | Cabeçalho `Host` validado (`ALLOWED_HOSTS`, contra DNS rebinding), só `GET`, CORS por lista exata (nunca `*`), HSTS opcional (`RN_HTTPS=1`), proxy só é confiável se configurado (`TRUST_PROXY_HOPS`). |
+| **Segredos** | Senha do papel gerada ao acaso (43 caracteres) e guardada **fora do Git e fora do OneDrive**: `%LOCALAPPDATA%\RoyalNavy\consulta.env`, com permissão só para o seu usuário (`config_env.py`). Um teste garante que nenhum arquivo versionado contém a senha. |
+| **Dependências** | Versões fixas (`requirements-lock.txt`), auditadas com `pip-audit` (0 vulnerabilidades conhecidas; o Flask foi atualizado para 3.1.3 por isso) e `bandit` (0 achados). |
+
+Detalhes, passo a passo do banco e instruções do administrador: [`db/README.md`](db/README.md).
+
+### Testes
+
+```bash
+pip install -r requirements-dev.txt
+pytest tests                      # 85 testes: funcionamento, injeção de SQL, XSS, limite, privilégios do banco, segredos
+bandit -r app.py consulta_api.py db build_static.py
+pip-audit -r requirements-lock.txt
+```
+
+### Antes de publicar de verdade (checklist)
+
+O GitHub Pages **não executa Python nem acessa banco**: a versão em `docs/` mostra a página de consulta em modo
+estático, com um aviso. Para a consulta funcionar na internet é preciso hospedar o servidor:
+
+1. **Hospedagem com Python** (Render, Fly.io, Railway ou VPS) atrás de um servidor real (`gunicorn`/`waitress`) e de
+   HTTPS (nginx/Caddy/Cloudflare). Nunca use `app.run` nem `FLASK_DEBUG=1` em produção.
+2. **Banco**: um PostgreSQL dedicado (idealmente um banco só para o site), com `db/01_busca.sql` e `db/02_papel_leitura.sql`
+   aplicados; conexão com `DB_SSLMODE=verify-full`; porta liberada **somente** para o servidor do site; senha forte; backups.
+3. **Variáveis**: `ALLOWED_HOSTS=seudominio.com`, `TRUST_PROXY_HOPS=1`, `RN_HTTPS=1`, `FLASK_DEBUG=0`; limite de requisições
+   em Redis (`RATELIMIT_STORAGE_URI`) se houver mais de um processo.
+4. **Site estático em outro endereço** (ex.: Pages chamando a API): gere com `RN_API_ORIGIN=https://api.seudominio.com python build_static.py`
+   e autorize a origem em `CORS_ORIGINS` no servidor da API.
+5. **Privacidade/LGPD**: o texto pesquisado aparece na URL e, portanto, nos logs de acesso — defina o prazo de retenção.
+6. Rodar `pytest`, `bandit` e `pip-audit` a cada atualização.
+
 ## Publicar na internet (GitHub Pages)
 
 `http://localhost:5000` só existe **no computador de quem está rodando o `python app.py`**; o GitHub apenas guarda o código
@@ -61,7 +124,7 @@ e não executa Python. Como o site não tem lógica de servidor, ele é publicad
 - HTTPS fornecido pelo GitHub Pages; sem servidor, banco de dados, formulários ou credenciais para atacar.
 - `Content-Security-Policy` (no `<meta>` da página) limita scripts, estilos, fontes e imagens às origens usadas (o próprio site, cdnjs e Google Fonts).
 - three.js carregado com verificação de integridade (SRI).
-- No Flask local: cabeçalhos `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` e `Permissions-Policy`; debug só em `127.0.0.1`.
+- No Flask local: cabeçalhos `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, CSP (com `frame-ancestors`) e isolamento de origem; debug só em `127.0.0.1`. Segurança da consulta ao banco: ver a seção "Consulta de navios (v3.0)".
 
 ## Domínio personalizado (royalnavy.com.br)
 
@@ -106,8 +169,10 @@ enable_custom_domain.py ativa/remove domínio próprio (com checagem de DNS)
 documentacao/           PDF com a documentação técnica completa
 docs/                   site estático publicado
 templates/index.html    página única
+templates/consulta.html página de consulta de navios (v3.0)
 static/css/style.css    estilos do modo claro (paleta "dia de sol no mar" em variáveis CSS)
 static/css/dark.css     estilos do modo escuro (guerra em alto mar)
+static/css/consulta.css estilos da página de consulta (claro e escuro)
 static/js/main.js       navegação, hero animado, contadores, modal
 static/js/ships-3d.js   motor 3D (cenas sob demanda, loop único, modelos procedurais)
 static/js/ships-data.js dados dos navios
@@ -115,6 +180,11 @@ static/js/theme-init.js aplica o tema salvo antes da primeira pintura
 static/js/theme.js      botão de tema, transição e desempenho adaptativo
 static/js/war-hero.js   batalha naval do hero (modo escuro)
 static/js/deep-sea.js   mergulho, guerra submarina e naufrágios (modo escuro)
+static/js/consulta.js   página de consulta (busca, filtros, ficha; só textContent)
+consulta_api.py         API de consulta (validação, limite, consultas parametrizadas)
+config_env.py           onde ficam os segredos (fora do Git e do OneDrive)
+db/                     SQL da busca e do papel de leitura, aplicar.py e README do banco
+tests/                  85 testes de funcionamento e segurança
 ```
 
 ## Notas de desempenho
