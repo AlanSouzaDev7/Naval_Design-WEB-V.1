@@ -1708,5 +1708,6 @@ button { font: inherit; }
   }
   .navbar.scrolled .nav-search { color: var(--navy-800); border-color: rgba(26, 125, 187, 0.3); background: var(--sky-100); }
   .nav-search svg { width: 20px; height: 20px; }
-  .nav-search + .theme-toggle { margin-left: 0.7rem; }
+  .nav-inner { gap: 0.8rem; }                               /* o espaçamento de 3rem estouraria a barra estreita */
+  .nav-search + .theme-toggle { margin-left: 0; }
 }
