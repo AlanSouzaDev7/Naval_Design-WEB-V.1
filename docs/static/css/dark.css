@@ -1,0 +1,406 @@
+/* ═══════════════════════════════════════════════════════════════
+   ROYAL NAVY — MODO ESCURO: "GUERRA EM ALTO MAR"
+   Ativado por <html data-theme="dark">. Nada aqui afeta o modo claro.
+
+   Narrativa da página: hero = batalha naval na superfície; conforme a
+   página desce, o visitante mergulha (fundo em canvas + medidor de
+   profundidade), passa por combates submarinos e chega aos naufrágios.
+
+   Paleta: noite #050b14 · aço #0a1a2e · brasa #ff8a3d/#ff6a1f · ciano #54d1e4
+   ═══════════════════════════════════════════════════════════════ */
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --scene-bg: linear-gradient(180deg, #03060d 0%, #0b1c33 26%, #5a2a14 38%, #0a2a3a 42%, #05161f 100%);
+  --grad-fire: linear-gradient(135deg, #ffe2a8 0%, #ff9a3c 45%, #e8431b 100%);
+
+  --d-ink:    #04101c;
+  --d-ember:  #ff8a3d;
+  --d-ember-l:#ffb86b;
+  --d-cyan:   #54d1e4;
+  --d-cyan-l: #7fdcec;
+  --d-panel:  rgba(6, 22, 40, 0.8);
+  --d-panel-2:rgba(8, 26, 46, 0.9);
+  --d-line:   rgba(120, 180, 220, 0.2);
+  --d-tx:     #eef5fb;
+  --d-tx2:    #a9c1d6;
+  --d-tx3:    #8fa9c0;
+  --d-shadow: 0 14px 34px -14px rgba(0, 0, 0, 0.75), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --d-shadow-h: 0 24px 46px -16px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 138, 61, 0.25);
+}
+
+/* ── Base ─────────────────────────────────────────────────── */
+[data-theme="dark"] body { background: #04101c; color: var(--d-tx); }
+[data-theme="dark"] ::selection { background: var(--d-ember); color: var(--d-ink); }
+[data-theme="dark"] :focus-visible { outline-color: var(--d-ember); }
+
+[data-theme="dark"] ::-webkit-scrollbar-track { background: #06121f; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #1d6f86, #0e3a55);
+  border-color: #06121f;
+}
+
+/* Canvas do mar profundo (fixo, atrás de tudo) */
+[data-theme="dark"] .deep-canvas {
+  display: block;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ── Tipografia e botões ──────────────────────────────────── */
+[data-theme="dark"] .section-tag {
+  color: var(--d-ember-l);
+  border-color: rgba(255, 138, 61, 0.5);
+  background: rgba(255, 138, 61, 0.12);
+}
+[data-theme="dark"] .section-title { color: #f2f7fc; text-shadow: 0 2px 22px rgba(0, 0, 0, 0.55); }
+[data-theme="dark"] .section-title .accent      { color: var(--d-cyan); }
+[data-theme="dark"] .section-title .accent-gold { color: var(--d-ember-l); }
+[data-theme="dark"] .section-sub { color: var(--d-tx2); text-shadow: 0 1px 14px rgba(0, 0, 0, 0.6); }
+[data-theme="dark"] .section-header.light .section-sub { color: var(--d-tx2); }
+[data-theme="dark"] .section-header.light .section-tag {
+  color: var(--d-ember-l);
+  border-color: rgba(255, 138, 61, 0.5);
+  background: rgba(255, 138, 61, 0.12);
+}
+
+[data-theme="dark"] .btn-primary {
+  color: #1a0d05;
+  background: linear-gradient(135deg, #ffd9a0 0%, #ff9a3c 48%, #f0561b 100%);
+  border-color: rgba(255, 220, 170, 0.6);
+  box-shadow: 0 8px 30px -6px rgba(255, 90, 30, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+[data-theme="dark"] .btn-primary:hover {
+  box-shadow: 0 14px 38px -8px rgba(255, 100, 30, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+[data-theme="dark"] .btn-outline { background: rgba(0, 0, 0, 0.25); border-color: rgba(255, 255, 255, 0.55); }
+[data-theme="dark"] .btn-outline:hover { background: #fff; color: var(--d-ink); }
+
+[data-theme="dark"] .btn-view-ship {
+  color: var(--d-cyan-l);
+  background: rgba(84, 209, 228, 0.1);
+  border-color: rgba(84, 209, 228, 0.32);
+}
+[data-theme="dark"] .btn-view-ship:hover { background: #12839b; border-color: #12839b; color: #fff; }
+
+/* ── Navbar ───────────────────────────────────────────────── */
+[data-theme="dark"] .navbar.scrolled {
+  background: rgba(4, 12, 22, 0.94);
+  border-bottom-color: rgba(255, 138, 61, 0.22);
+  box-shadow: 0 8px 28px -10px rgba(0, 0, 0, 0.8);
+}
+[data-theme="dark"] .navbar.scrolled .brand-text { color: #f2f7fc; }
+[data-theme="dark"] .navbar.scrolled .nav-link { color: #b8cde0; }
+[data-theme="dark"] .navbar.scrolled .nav-link:hover,
+[data-theme="dark"] .navbar.scrolled .nav-link.active { color: #fff; background: rgba(255, 255, 255, 0.09); }
+[data-theme="dark"] .nav-link::after { background: var(--grad-fire); }
+[data-theme="dark"] .nav-badge {
+  color: #1a0d05;
+  background: linear-gradient(135deg, #ffd9a0, #ff8a3d);
+  border-color: rgba(255, 220, 170, 0.6);
+  box-shadow: 0 4px 16px -4px rgba(255, 90, 30, 0.7);
+}
+[data-theme="dark"] .navbar.scrolled .theme-toggle { color: #b8cde0; }
+
+/* ── Hero: batalha naval ──────────────────────────────────── */
+[data-theme="dark"] .hero { background: linear-gradient(180deg, #02050b 0%, #0b1c33 50%, #04101a 100%); }
+
+[data-theme="dark"] .hero-overlay {
+  background:
+    radial-gradient(ellipse 50% 42% at 50% 40%, rgba(0, 4, 10, 0.34) 0%, transparent 72%),
+    linear-gradient(180deg, rgba(0, 4, 10, 0.5) 0%, transparent 24%),
+    linear-gradient(0deg, rgba(0, 4, 10, 0.55) 0%, transparent 22%);
+}
+
+/* Brilho dos incêndios no horizonte (só opacidade animada = barato) */
+[data-theme="dark"] .hero::before {
+  background: radial-gradient(ellipse 85% 20% at 50% 60%, rgba(255, 100, 30, 0.3), transparent 72%);
+  -webkit-mask-image: none;
+          mask-image: none;
+  animation: fireGlow 2.4s ease-in-out infinite alternate;
+}
+@keyframes fireGlow { from { opacity: 0.45; } to { opacity: 1; } }
+
+[data-theme="dark"] .hero-subtitle-top { color: var(--d-ember-l); text-shadow: 0 1px 12px rgba(0, 0, 0, 0.8); }
+[data-theme="dark"] .hero-subtitle-top .line { background: linear-gradient(90deg, transparent, var(--d-ember)); }
+[data-theme="dark"] .hero-subtitle-top .line:last-child { background: linear-gradient(90deg, var(--d-ember), transparent); }
+[data-theme="dark"] .title-line-1 { text-shadow: 0 4px 34px rgba(0, 0, 0, 0.85), 0 0 46px rgba(255, 90, 30, 0.25); }
+[data-theme="dark"] .title-line-2 {
+  background: var(--grad-fire);
+  -webkit-background-clip: text;
+          background-clip: text;
+  filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.7));
+}
+[data-theme="dark"] .hero-desc { text-shadow: 0 1px 16px rgba(0, 0, 0, 0.9); }
+
+[data-theme="dark"] .hero-stats {
+  background: rgba(5, 12, 22, 0.88);
+  border-top-color: rgba(255, 138, 61, 0.4);
+  box-shadow: 0 -12px 40px -16px rgba(0, 0, 0, 0.8);
+}
+[data-theme="dark"] .stat-number { color: #f4f8fc; }
+[data-theme="dark"] .stat-label { color: #ffa25a; }
+[data-theme="dark"] .stat-divider { background: linear-gradient(180deg, transparent, rgba(255, 138, 61, 0.4), transparent); }
+[data-theme="dark"] .counting { animation-name: numberPopDark; }
+@keyframes numberPopDark {
+  0%   { transform: scale(1.25); color: var(--d-ember); }
+  100% { transform: scale(1);    color: #f4f8fc; }
+}
+
+/* ── Seções sobre o mar profundo (fundo vem do canvas fixo) ── */
+[data-theme="dark"] .history-section,
+[data-theme="dark"] .ships-section,
+[data-theme="dark"] .fleet-section,
+[data-theme="dark"] .gallery-section { background: transparent; }
+
+/* Linha do tempo */
+[data-theme="dark"] .timeline::before {
+  background: linear-gradient(180deg, transparent, #1d8aa3 10%, var(--d-ember) 50%, #1d8aa3 90%, transparent);
+}
+[data-theme="dark"] .timeline-dot {
+  background: var(--d-ember);
+  border-color: #04101c;
+  box-shadow: 0 0 0 4px rgba(255, 138, 61, 0.3), 0 0 14px rgba(255, 106, 31, 0.6);
+}
+[data-theme="dark"] .timeline-item:hover .timeline-dot { background: #ffd08a; }
+[data-theme="dark"] .timeline-card {
+  background: var(--d-panel);
+  border-color: var(--d-line);
+  box-shadow: var(--d-shadow);
+}
+[data-theme="dark"] .timeline-card:hover { border-color: rgba(255, 138, 61, 0.5); box-shadow: var(--d-shadow-h); }
+[data-theme="dark"] .timeline-card::before { background: linear-gradient(90deg, var(--d-cyan), var(--d-ember)); }
+[data-theme="dark"] .timeline-year { color: var(--d-ember-l); }
+[data-theme="dark"] .timeline-card h3 { color: var(--d-tx); }
+[data-theme="dark"] .timeline-card p { color: var(--d-tx2); }
+
+/* Navios */
+[data-theme="dark"] .filter-btn {
+  color: #b8cde0;
+  background: rgba(6, 22, 40, 0.72);
+  border-color: rgba(120, 180, 220, 0.3);
+}
+[data-theme="dark"] .filter-btn:hover { background: rgba(20, 60, 90, 0.85); border-color: var(--d-cyan); }
+[data-theme="dark"] .filter-btn.active {
+  color: #fff;
+  background: linear-gradient(135deg, #14859d, #1a5fa0);
+  box-shadow: 0 8px 22px -8px rgba(20, 133, 157, 0.8);
+}
+
+[data-theme="dark"] .ship-card {
+  background: var(--d-panel-2);
+  border-color: var(--d-line);
+  box-shadow: var(--d-shadow);
+}
+[data-theme="dark"] .ship-card:hover { border-color: rgba(255, 138, 61, 0.5); box-shadow: var(--d-shadow-h); }
+[data-theme="dark"] .ship-3d-wrapper { background: var(--scene-bg); }
+[data-theme="dark"] .ship-3d-wrapper::after { background: linear-gradient(180deg, transparent, rgba(8, 26, 46, 0.95)); }
+[data-theme="dark"] .ship-3d-label {
+  color: var(--d-cyan-l);
+  background: rgba(4, 12, 22, 0.85);
+  border-color: rgba(84, 209, 228, 0.3);
+}
+[data-theme="dark"] .ship-class { color: var(--d-cyan-l); }
+[data-theme="dark"] .ship-name { color: #f2f7fc; }
+[data-theme="dark"] .ship-stats-mini { color: var(--d-tx2); }
+[data-theme="dark"] .ship-stats-mini span { color: var(--d-ember-l); }
+
+/* Batalhas */
+[data-theme="dark"] .battles-section { background: linear-gradient(180deg, transparent 0, rgba(2, 8, 16, 0.42) 220px, rgba(2, 8, 16, 0.62) 100%); }
+[data-theme="dark"] .battles-section::before,
+[data-theme="dark"] .battles-section::after,
+[data-theme="dark"] .footer::before { display: none; }          /* ondas divisórias claras */
+[data-theme="dark"] .battles-bg {
+  background:
+    radial-gradient(circle at 88% 8%, rgba(255, 90, 30, 0.12), transparent 42%),
+    radial-gradient(ellipse at 8% 92%, rgba(0, 170, 210, 0.13), transparent 55%);
+}
+[data-theme="dark"] .battle-card {
+  background: rgba(6, 18, 32, 0.72);
+  border-color: rgba(255, 255, 255, 0.13);
+  color: var(--d-ember-l);
+}
+[data-theme="dark"] .battle-card:hover {
+  background: rgba(12, 28, 46, 0.86);
+  border-color: rgba(255, 138, 61, 0.6);
+  box-shadow: 0 24px 46px -18px rgba(0, 0, 0, 0.85);
+}
+[data-theme="dark"] .battle-card::before { background: linear-gradient(90deg, transparent, #1d8aa3, transparent); }
+[data-theme="dark"] .battle-card::after  { background: linear-gradient(90deg, transparent, var(--d-ember), transparent); }
+[data-theme="dark"] .battle-card.featured {
+  background: linear-gradient(135deg, rgba(255, 106, 31, 0.2) 0%, rgba(6, 18, 32, 0.78) 100%);
+  border-color: rgba(255, 138, 61, 0.55);
+}
+[data-theme="dark"] .battle-card.featured::before { background: var(--grad-fire); }
+[data-theme="dark"] .battle-year { color: var(--d-ember-l); }
+[data-theme="dark"] .battle-card p { color: var(--d-tx2); }
+[data-theme="dark"] .battle-result { color: #1a0d05; background: linear-gradient(135deg, #ffd9a0, #ff9a3c); }
+
+/* Frota */
+[data-theme="dark"] .fleet-3d-display {
+  background: var(--scene-bg);
+  border-color: rgba(120, 180, 220, 0.28);
+  box-shadow: var(--d-shadow);
+}
+[data-theme="dark"] .fleet-canvas-label {
+  color: var(--d-cyan-l);
+  background: rgba(4, 12, 22, 0.88);
+  border-color: rgba(84, 209, 228, 0.3);
+}
+[data-theme="dark"] .fleet-cat {
+  background: var(--d-panel);
+  border-color: var(--d-line);
+  box-shadow: var(--d-shadow);
+}
+[data-theme="dark"] .fleet-cat:hover { border-color: rgba(255, 138, 61, 0.5); box-shadow: var(--d-shadow-h); }
+[data-theme="dark"] .fleet-cat-icon { background: rgba(84, 209, 228, 0.1); border-color: var(--d-line); }
+[data-theme="dark"] .fleet-cat-info h4 { color: var(--d-tx); }
+[data-theme="dark"] .fleet-cat-info p { color: var(--d-tx2); }
+[data-theme="dark"] .fleet-bar { background: rgba(120, 180, 220, 0.16); }
+[data-theme="dark"] .fleet-bar-fill { background: linear-gradient(90deg, var(--d-cyan), var(--d-ember)); }
+[data-theme="dark"] .fleet-count { color: var(--d-ember-l); }
+
+/* Galeria */
+[data-theme="dark"] .gallery-item {
+  background: var(--scene-bg);
+  border-color: rgba(120, 180, 220, 0.28);
+  box-shadow: var(--d-shadow);
+}
+[data-theme="dark"] .gallery-item:hover { box-shadow: var(--d-shadow-h); }
+[data-theme="dark"] .gallery-caption { background: linear-gradient(180deg, transparent, rgba(0, 4, 10, 0.85)); }
+
+/* Rodapé (leito do mar) */
+[data-theme="dark"] .footer { background: #030b13; border-top: 1px solid rgba(255, 138, 61, 0.18); }
+[data-theme="dark"] .footer-tagline { color: var(--d-ember-l); }
+[data-theme="dark"] .footer-col h5 { color: var(--d-ember-l); }
+
+/* Brilho que segue o cursor: vira clarão de incêndio */
+[data-theme="dark"] .sun-glow { background: radial-gradient(circle, rgba(255, 110, 40, 0.17) 0%, transparent 68%); }
+
+/* ── Modal ────────────────────────────────────────────────── */
+[data-theme="dark"] .modal-overlay { background: rgba(0, 4, 10, 0.82); }
+[data-theme="dark"] .modal-container { background: #081b2e; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 138, 61, 0.2); }
+[data-theme="dark"] .modal-close {
+  background: #0d2740;
+  border-color: rgba(120, 180, 220, 0.35);
+  color: var(--d-tx);
+}
+[data-theme="dark"] .modal-close:hover { background: #d8431c; border-color: #d8431c; color: #fff; }
+[data-theme="dark"] .modal-left { background: var(--scene-bg); }
+[data-theme="dark"] .modal-canvas-controls { color: #b8cde0; background: rgba(4, 12, 22, 0.8); }
+[data-theme="dark"] .modal-right::-webkit-scrollbar-thumb { background: #1d5f78; }
+[data-theme="dark"] .modal-class { color: var(--d-cyan-l); }
+[data-theme="dark"] .modal-name { color: #f2f7fc; }
+[data-theme="dark"] .modal-desc,
+[data-theme="dark"] .modal-armament li,
+[data-theme="dark"] .modal-history p { color: var(--d-tx2); }
+[data-theme="dark"] .modal-specs h4,
+[data-theme="dark"] .modal-armament h4,
+[data-theme="dark"] .modal-history h4 { color: var(--d-ember-l); border-bottom-color: rgba(255, 138, 61, 0.35); }
+[data-theme="dark"] .spec-item { background: rgba(20, 50, 80, 0.5); border-color: var(--d-line); }
+[data-theme="dark"] .spec-label { color: var(--d-tx3); }
+[data-theme="dark"] .spec-value { color: var(--d-tx); }
+[data-theme="dark"] .modal-armament li::before { color: var(--d-ember); }
+
+/* ═══════════════════════════════════════════════════════════════
+   FAIXAS SUBMARINAS (guerra submarina e naufrágios)
+   Os canvases são transparentes: a água vem do canvas fixo.
+   ═══════════════════════════════════════════════════════════════ */
+[data-theme="dark"] .abyss-band {
+  display: block;
+  position: relative;
+  height: clamp(440px, 84vh, 780px);
+  overflow: hidden;
+}
+[data-theme="dark"] .abyss-band canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+[data-theme="dark"] .abyss-caption {
+  position: absolute;
+  left: 0; right: 0;
+  top: 7%;
+  z-index: 2;
+  padding: 0 1.2rem;
+  text-align: center;
+  pointer-events: none;
+}
+[data-theme="dark"] .abyss-caption .section-title { margin-bottom: 0.5rem; }
+[data-theme="dark"] .abyss-caption .section-sub { max-width: 600px; }
+
+/* Naufrágios: o fundo encosta no rodapé */
+[data-theme="dark"] .wrecks { height: clamp(520px, 92vh, 860px); }
+[data-theme="dark"] .wrecks::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 90px;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, #030b13);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MEDIDOR DE PROFUNDIDADE (HUD fixo logo abaixo da navbar, à direita)
+   ═══════════════════════════════════════════════════════════════ */
+[data-theme="dark"] .depth-gauge {
+  position: fixed;
+  top: 82px;
+  right: 16px;
+  z-index: 900;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  column-gap: 10px;
+  padding: 7px 14px 10px;
+  border: 1px solid rgba(84, 209, 228, 0.28);
+  border-radius: 14px;
+  background: rgba(4, 14, 26, 0.78);
+  color: var(--d-cyan-l);
+  font-family: 'Rajdhani', sans-serif;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(0, -14px, 0);
+  transition: opacity 0.5s var(--ease), transform 0.6s var(--ease-out);
+}
+[data-theme="dark"] .depth-gauge.is-on { opacity: 1; transform: none; }
+
+.depth-gauge__label { display: none; }
+.depth-gauge__value { grid-column: 1; font-size: 1.35rem; font-weight: 700; line-height: 1.05; color: #f2f7fc; font-variant-numeric: tabular-nums; }
+.depth-gauge__zone  { grid-column: 2; justify-self: end; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #ffb86b; }
+.depth-gauge__track {
+  grid-column: 1 / -1;
+  position: relative;
+  width: 100%;
+  min-width: 170px;
+  height: 3px;
+  margin-top: 7px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #54d1e4, #1a5fa0 55%, #ff6a1f);
+  opacity: 0.9;
+}
+.depth-gauge__marker {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 11px;
+  height: 11px;
+  margin: -5.5px 0 0 -5.5px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.7);
+  will-change: transform;
+}
+
+@media (max-width: 768px) {
+  [data-theme="dark"] .depth-gauge { top: 74px; right: 10px; padding: 5px 10px 8px; }
+  .depth-gauge__value { font-size: 1.1rem; }
+  .depth-gauge__zone { font-size: 0.58rem; }
+  .depth-gauge__track { min-width: 120px; }
+}

@@ -20,6 +20,30 @@ Abra <http://localhost:5000>.
 | `HOST`        | `127.0.0.1` | Use `0.0.0.0` para expor na rede local (o modo debug é desligado sozinho)      |
 | `FLASK_DEBUG` | `1`         | `0` desliga o recarregamento automático                                        |
 
+## Modos claro e escuro ("Guerra em alto mar")
+
+Botão no **canto superior direito** (o tema fica salvo no navegador). O **modo claro** é o visual original do site;
+o **modo escuro** transforma a página numa viagem da superfície ao leito do oceano:
+
+| Trecho da página | O que acontece no modo escuro |
+|---|---|
+| **Hero** | Batalha naval noturna: duas frotas trocam disparos (projéteis com rastro, clarões, explosões, incêndios, fumaça, colunas d'água), com relâmpagos, holofotes, sinalizadores e navios que afundam e voltam ao combate. |
+| **Ao descer** | O visitante mergulha: a cor da água escurece com a profundidade, com raios de luz, neve marinha, bolhas, cardumes, submarinos e clarões distantes. Um **medidor de profundidade** (m e zona oceânica) acompanha a rolagem. |
+| **Guerra Submarina** | Submarinos trocam torpedos, emitem sonares, sofrem avarias, afundam e reaparecem; navios na superfície lançam cargas de profundidade. |
+| **Navios Naufragados** | No leito: destroieres partidos, um galeão, um submarino e um porta-aviões afundados, algas, corais, cardumes, bolhas e uma baliza de socorro piscando. |
+| **Modelos 3D e modal** | Cenário noturno (luar, reflexos dos incêndios) e painéis escuros. |
+
+**Transição:** revelação circular a partir do botão (View Transitions API); navegadores sem suporte usam uma cortina circular;
+`prefers-reduced-motion` troca o tema sem animação.
+
+**Desempenho (mesmas regras do resto do site):** o modo escuro só existe quando ativo; cada canvas só anima enquanto está
+visível (IntersectionObserver) e com a aba em primeiro plano; o fundo do mar profundo roda em meia resolução; partículas em
+*pools* de tamanho fixo e brilhos como sprites; um monitor de FPS (`RNPerf`) reduz partículas e efeitos automaticamente em
+máquinas lentas; a cena escura é pré-aquecida quando o mouse chega ao botão.
+
+Arquivos: `theme-init.js` (aplica o tema antes da 1ª pintura), `theme.js` (botão, transição, `RNPerf`), `dark.css`,
+`war-hero.js` (batalha do hero), `deep-sea.js` (mergulho, guerra submarina, naufrágios, medidor).
+
 ## Publicar na internet (GitHub Pages)
 
 `http://localhost:5000` só existe **no computador de quem está rodando o `python app.py`**; o GitHub apenas guarda o código
@@ -82,10 +106,15 @@ enable_custom_domain.py ativa/remove domínio próprio (com checagem de DNS)
 documentacao/           PDF com a documentação técnica completa
 docs/                   site estático publicado
 templates/index.html    página única
-static/css/style.css    estilos (paleta "dia de sol no mar" em variáveis CSS)
+static/css/style.css    estilos do modo claro (paleta "dia de sol no mar" em variáveis CSS)
+static/css/dark.css     estilos do modo escuro (guerra em alto mar)
 static/js/main.js       navegação, hero animado, contadores, modal
 static/js/ships-3d.js   motor 3D (cenas sob demanda, loop único, modelos procedurais)
 static/js/ships-data.js dados dos navios
+static/js/theme-init.js aplica o tema salvo antes da primeira pintura
+static/js/theme.js      botão de tema, transição e desempenho adaptativo
+static/js/war-hero.js   batalha naval do hero (modo escuro)
+static/js/deep-sea.js   mergulho, guerra submarina e naufrágios (modo escuro)
 ```
 
 ## Notas de desempenho

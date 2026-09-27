@@ -17,7 +17,7 @@
 
   if (!window.THREE) {
     console.warn('[3D] three.js indisponível — modelos 3D desativados.');
-    window.ShipEngine = { init() {}, openModal() {}, closeModal() {} };
+    window.ShipEngine = { init() {}, openModal() {}, closeModal() {}, setTheme() {} };
     return;
   }
 
@@ -42,8 +42,24 @@
     flag:           0xd9392b,
   };
 
-  const SKY_TOP = '#3d9fe4', SKY_MID = '#86cdf3', SKY_HORIZON = '#cdeefb';
-  const FOG_COLOR = 0xcdeefb;
+  /* Cenários: claro (dia de sol) e escuro (noite de guerra: luar, incêndios no horizonte). */
+  const THEMES = {
+    light: {
+      sky: ['#3d9fe4', '#86cdf3', '#cdeefb', '#cdeefb'],
+      fog: 0xcdeefb, fogK: 1,
+      water: 0x0e8aa8, waterR: 0.28, waterM: 0.05,
+      hemiSky: 0xeaf6ff, hemiGround: 0xb4d2d6, hemiI: 0.66,
+      sun: 0xfff0c2, sunI: 1.0,
+    },
+    dark: {
+      sky: ['#02050b', '#0b1c33', '#5a2a14', '#1a0d08'],
+      fog: 0x140c10, fogK: 1.25,
+      water: 0x082733, waterR: 0.22, waterM: 0.25,
+      hemiSky: 0x5f80b0, hemiGround: 0x8a3a14, hemiI: 0.95,      // o "chão" alaranjado imita o reflexo dos incêndios
+      sun: 0xb4ceff, sunI: 1.15,                                  // luar
+    },
+  };
+  let currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
   const WATER_Y = -0.32;
   const FIT_ASPECT = 1.6;            // proporção (largura/altura) em que o navio cabe sem afastar a câmera
   const DEFAULT_CAM = [0, 3.0, 9.5];
@@ -91,21 +107,21 @@
   }
 
   /* ── Céu (gradiente) e oceano compartilhados ────────────────── */
-  let _sky = null;
-  function skyTexture() {
-    if (_sky) return _sky;
+  const _skies = {};
+  function skyTexture(mode) {
+    if (_skies[mode]) return _skies[mode];
+    const stops = THEMES[mode].sky;
     const c = document.createElement('canvas');
     c.width = 2; c.height = 256;
     const g = c.getContext('2d');
     const grad = g.createLinearGradient(0, 0, 0, 256);
-    grad.addColorStop(0, SKY_TOP);
-    grad.addColorStop(0.5, SKY_MID);
-    grad.addColorStop(0.72, SKY_HORIZON);
-    grad.addColorStop(1, SKY_HORIZON);
+    grad.addColorStop(0, stops[0]);
+    grad.addColorStop(0.5, stops[1]);
+    grad.addColorStop(0.72, stops[2]);
+    grad.addColorStop(1, stops[3]);
     g.fillStyle = grad;
     g.fillRect(0, 0, 2, 256);
-    _sky = new THREE.CanvasTexture(c);
-    return _sky;
+    return (_skies[mode] = new THREE.CanvasTexture(c));
   }
 
   let _oceanGeo = null;
@@ -122,7 +138,8 @@
   }
 
   function buildOcean() {
-    const mesh = new THREE.Mesh(oceanGeometry(), mat(C.water, { r: 0.28, m: 0.05 }));
+    const T = THEMES[currentTheme];
+    const mesh = new THREE.Mesh(oceanGeometry(), mat(T.water, { r: T.waterR, m: T.waterM }));
     mesh.rotation.x = -Math.PI / 2;
     mesh.position.y = WATER_Y;
     mesh.receiveShadow = true;
@@ -140,17 +157,19 @@
     }
 
     const scene = new THREE.Scene();
-    scene.background = skyTexture();
-    scene.fog = new THREE.FogExp2(FOG_COLOR, FOG_DENSITY);
+    scene.background = skyTexture(currentTheme);
+    scene.fog = new THREE.FogExp2(THEMES[currentTheme].fog, FOG_DENSITY);
 
     const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
     camera.position.set(camPos[0], camPos[1], camPos[2]);
     camera.lookAt(0, 0, 0);
 
-    // Luz do céu + reflexo do mar, e um sol quente
-    scene.add(new THREE.HemisphereLight(0xeaf6ff, 0xb4d2d6, 0.66));
+    // Luz do céu + reflexo do mar, e o sol (no modo escuro: luar)
+    const T = THEMES[currentTheme];
+    const hemi = new THREE.HemisphereLight(T.hemiSky, T.hemiGround, T.hemiI);
+    scene.add(hemi);
 
-    const sun = new THREE.DirectionalLight(0xfff0c2, 1.0);
+    const sun = new THREE.DirectionalLight(T.sun, T.sunI);
     sun.position.set(10, 20, 14);
     if (shadows) {
       sun.castShadow = true;
@@ -162,8 +181,24 @@
     }
     scene.add(sun);
 
-    scene.add(buildOcean());
-    return { scene, camera, renderer };
+    const ocean = buildOcean();
+    scene.add(ocean);
+    return { scene, camera, renderer, hemi, sun, ocean };
+  }
+
+  /** Troca céu, névoa, luzes e água de uma cena já criada (modo claro <-> escuro). */
+  function applyTheme(e, mode) {
+    const T = THEMES[mode];
+    e.scene.background = skyTexture(mode);
+    e.scene.fog.color.setHex(T.fog);
+    e.hemi.color.setHex(T.hemiSky);
+    e.hemi.groundColor.setHex(T.hemiGround);
+    e.hemi.intensity = T.hemiI;
+    e.sun.color.setHex(T.sun);
+    e.sun.intensity = T.sunI;
+    e.ocean.material = mat(T.water, { r: T.waterR, m: T.waterM });
+    e.fogBase = FOG_DENSITY * T.fogK;
+    e.scene.fog.density = e.fogBase / (e.fogScale || 1);
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -666,7 +701,8 @@
     const k = Math.max(1, Math.sqrt(FIT_ASPECT / e.camera.aspect));
     e.camera.position.set(e.baseCam[0] * k, e.baseCam[1] * k, e.baseCam[2] * k);
     e.camera.lookAt(0, 0, 0);
-    e.scene.fog.density = FOG_DENSITY / k;      // névoa proporcional à distância
+    e.fogScale = k;
+    e.scene.fog.density = (e.fogBase || FOG_DENSITY) / k;      // névoa proporcional à distância
     e.camera.updateProjectionMatrix();
     e.resizePending = false;
     return true;
@@ -792,6 +828,10 @@
       e.scene = env.scene;
       e.camera = env.camera;
       e.renderer = env.renderer;
+      e.hemi = env.hemi;
+      e.sun = env.sun;
+      e.ocean = env.ocean;
+      e.fogBase = FOG_DENSITY * THEMES[currentTheme].fogK;
       e.baseCam = (e.sceneOpts.camera || DEFAULT_CAM).slice();
       if (e.kind === 'fleet') setupFleetView(e); else setupShipView(e);
       e.ready = true;
@@ -863,5 +903,13 @@
     start();
   }
 
-  window.ShipEngine = { init, openModal, closeModal };
+  /** Troca o tema de TODAS as cenas (as que ainda não existem já nascem no tema certo). */
+  function setTheme(mode) {
+    if (!THEMES[mode] || mode === currentTheme) return;
+    currentTheme = mode;
+    entries.forEach(e => { if (e.ready) applyTheme(e, mode); });
+    start();                                          // redesenha as cenas visíveis com o novo visual
+  }
+
+  window.ShipEngine = { init, openModal, closeModal, setTheme };
 })();

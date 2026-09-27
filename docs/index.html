@@ -8,6 +8,8 @@
   <!-- Segurança: só carrega recursos das origens que o site realmente usa (cdnjs e Google Fonts) -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <!-- Aplica o tema salvo antes de pintar a página (evita piscar claro→escuro) -->
+  <script src="static/js/theme-init.js"></script>
   <title>Royal Navy — A Marinha Real Britânica</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%93%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -16,8 +18,18 @@
   <!-- Apenas os pesos realmente usados no CSS (antes: 12 pesos de fonte, agora 9) -->
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="static/css/style.css" />
+  <link rel="stylesheet" href="static/css/dark.css" />
 </head>
 <body>
+
+  <!-- Modo escuro: fundo do mar profundo (fixo) e medidor de profundidade -->
+  <canvas id="deep-canvas" class="deep-canvas" aria-hidden="true"></canvas>
+  <div class="depth-gauge" id="depth-gauge" aria-hidden="true">
+    <span class="depth-gauge__label">Profundidade</span>
+    <span class="depth-gauge__value" id="depth-value">0 m</span>
+    <span class="depth-gauge__zone" id="depth-zone">Superfície</span>
+    <div class="depth-gauge__track"><i class="depth-gauge__marker" id="depth-marker"></i></div>
+  </div>
 
   <!-- ═══════════════════════════════════════════ NAV ═══ -->
   <nav class="navbar" id="navbar">
@@ -35,6 +47,23 @@
         <li><a href="#gallery"  class="nav-link">Galeria</a></li>
       </ul>
       <div class="nav-badge">Since 1546</div>
+      <button class="theme-toggle" id="theme-toggle" type="button" role="switch" aria-checked="false"
+              aria-label="Alternar entre modo claro e modo escuro">
+        <span class="theme-toggle__track">
+          <span class="theme-toggle__knob">
+            <svg class="theme-toggle__icon theme-toggle__icon--sun" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4.6" fill="currentColor"/>
+              <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>
+              </g>
+            </svg>
+            <svg class="theme-toggle__icon theme-toggle__icon--moon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20.2 14.6A8.4 8.4 0 0 1 9.4 3.8a8.4 8.4 0 1 0 10.8 10.8z" fill="currentColor"/>
+            </svg>
+          </span>
+        </span>
+        <span class="theme-toggle__label" id="theme-label">Claro</span>
+      </button>
     </div>
   </nav>
 
@@ -302,6 +331,16 @@
     </div>
   </section>
 
+  <!-- ══════════════════════ GUERRA SUBMARINA (só no modo escuro) ═══ -->
+  <div class="abyss-band sub-war" role="region" aria-label="Guerra submarina">
+    <canvas id="sub-canvas" role="img" aria-label="Submarinos trocando torpedos e cargas de profundidade explodindo"></canvas>
+    <div class="abyss-caption">
+      <div class="section-tag">Zona de combate</div>
+      <h2 class="section-title">Guerra <span class="accent">Submarina</span></h2>
+      <p class="section-sub">Sob as ondas, submarinos caçam em silêncio: sonares, torpedos e cargas de profundidade decidem quem volta à superfície.</p>
+    </div>
+  </div>
+
   <!-- ═══════════════════════════════════════ BATTLES ═══ -->
   <section class="battles-section" id="battles">
     <div class="battles-bg"></div>
@@ -472,6 +511,16 @@
     </div>
   </section>
 
+  <!-- ══════════════════════ NAUFRÁGIOS (só no modo escuro) ═══ -->
+  <div class="abyss-band wrecks" role="region" aria-label="Navios naufragados">
+    <div class="abyss-caption">
+      <div class="section-tag">Memorial</div>
+      <h2 class="section-title">Navios <span class="accent-gold">Naufragados</span></h2>
+      <p class="section-sub">No leito do oceano repousam os navios que a guerra levou. O mar guarda a história de cada um.</p>
+    </div>
+    <canvas id="wreck-canvas" role="img" aria-label="Destroieres, um galeão e um submarino afundados no leito do mar"></canvas>
+  </div>
+
   <!-- ════════════════════════════════════════ FOOTER ═══ -->
   <footer class="footer">
     <div class="footer-inner">
@@ -547,11 +596,14 @@
   </div>
 
   <!-- Scripts: `defer` não bloqueia o carregamento da página; a ordem é preservada -->
+  <script defer src="static/js/theme.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
           integrity="sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ=="
           crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script defer src="static/js/ships-data.js"></script>
   <script defer src="static/js/ships-3d.js"></script>
   <script defer src="static/js/main.js"></script>
+  <script defer src="static/js/war-hero.js"></script>
+  <script defer src="static/js/deep-sea.js"></script>
 </body>
 </html>

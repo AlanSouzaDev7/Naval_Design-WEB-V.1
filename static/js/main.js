@@ -72,19 +72,99 @@ const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').mat
 })();
 
 
-/* ════════════════════════════ HERO — DIA ENSOLARADO NO MAR (canvas 2D) ═══ */
-(function initHeroSea() {
+/* ═══════════════════ HERO (canvas 2D) — controlador + CENAS por tema ═══
+   RNHero cuida do ciclo de vida: pausa fora da tela e com a aba oculta,
+   resize e DPR. Cada tema registra uma cena { resize(ctx, W, H, dpr), render(ctx, dt) }:
+     • claro  → dia ensolarado no mar (definida logo abaixo)
+     • escuro → batalha naval (war-hero.js)                                       */
+window.RNHero = (function initHero() {
   const canvas = document.getElementById('ocean-canvas');
   const hero   = document.getElementById('hero');
-  if (!canvas || !hero) return;
+  const api = { register() {}, setMode() {}, reduced: REDUCED_MOTION };
+  if (!canvas || !hero) return api;
 
   const ctx = canvas.getContext('2d', { alpha: false });
+  const scenes = {};
+  const dirty = { light: true, dark: true };          // cena precisa recalcular sprites/gradientes
+  let mode = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  let W = 0, H = 0, dpr = 1, last = 0, raf = 0, inView = true;
+
+  /** Recalcula a cena ativa se o tamanho mudou (as outras esperam a vez). */
+  function ensure(name) {
+    const s = scenes[name];
+    if (s && dirty[name] && W) { s.resize(ctx, W, H, dpr); dirty[name] = false; }
+    return s;
+  }
+
+  function tick(now) {
+    raf = requestAnimationFrame(tick);
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    const s = ensure(mode);
+    if (s) s.render(ctx, dt);
+  }
+
+  function sync() {
+    const shouldRun = inView && !document.hidden && !REDUCED_MOTION;
+    if (shouldRun && !raf) {
+      last = performance.now();
+      raf = requestAnimationFrame(tick);
+    } else if (!shouldRun && raf) {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    }
+  }
+
+  function paintOnce() {                               // quadro estático (pausado / reduced-motion)
+    const s = ensure(mode);
+    if (s && !raf) s.render(ctx, 0);
+  }
+
+  function resize() {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    const newDpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    if (w === W && h === H && newDpr === dpr) return;
+    W = w; H = h; dpr = newDpr;
+    canvas.width  = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    dirty.light = dirty.dark = true;
+    paintOnce();
+  }
+
+  api.register = (name, scene) => {
+    scenes[name] = scene;
+    dirty[name] = true;
+    if (name === mode) paintOnce();
+  };
+  api.setMode = m => {
+    mode = m === 'dark' ? 'dark' : 'light';
+    paintOnce();                                        // troca visível na hora, mesmo pausado
+    sync();
+  };
+
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; sync(); }).observe(hero);
+  document.addEventListener('visibilitychange', sync);
+  document.addEventListener('rn:themechange', e => api.setMode(e.detail.theme));
+  // o mouse chegou perto do botão de tema: prepara a cena do outro tema para a troca ser instantânea
+  document.addEventListener('rn:prewarm', () => ensure(mode === 'dark' ? 'light' : 'dark'));
+  resize();
+  sync();
+  return api;
+})();
+
+
+/* ─────────────── Cena CLARA: dia ensolarado no mar ─────────────── */
+(function registerSunnyScene() {
+  if (!window.RNHero) return;
 
   const HORIZON = 0.5;                 // fração da altura onde o mar começa
   const SUN     = { x: 0.78, y: 0.24 };
 
-  let W = 0, H = 0, dpr = 1;
-  let t = 0, last = 0, raf = 0, inView = true;
+  let ctx = null, cvs = null;
+  let W = 0, H = 0, dpr = 1, t = 0;
   let bg = null, sunSprite = null;
 
   /* Ondas (de trás para frente). Cada uma vira um gradiente pré-calculado. */
@@ -150,7 +230,7 @@ const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').mat
   /* ── Pré-renderização (só quando redimensiona) ─────────────── */
   function buildBackground() {
     bg = document.createElement('canvas');
-    bg.width = canvas.width; bg.height = canvas.height;
+    bg.width = cvs.width; bg.height = cvs.height;
     const g = bg.getContext('2d');
     g.scale(dpr, dpr);
 
@@ -307,66 +387,35 @@ const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').mat
     });
   }
 
-  function render(dt) {
-    t += dt;
-    ctx.drawImage(bg, 0, 0, W, H);
+  window.RNHero.register('light', {
+    resize(c, w, h, d) {
+      ctx = c; cvs = c.canvas; W = w; H = h; dpr = d;
+      buildBackground();
+      buildSun();
+      buildWaveGradients();
+    },
+    render(c, dt) {
+      ctx = c;
+      t += dt;
+      ctx.drawImage(bg, 0, 0, W, H);
 
-    // Sol (com leve pulsar)
-    const size = Math.min(W, H * 1.1) * 0.75 * (1 + 0.025 * Math.sin(t * 0.7));
-    ctx.drawImage(sunSprite, W * SUN.x - size / 2, H * SUN.y - size / 2, size, size);
+      // Sol (com leve pulsar)
+      const size = Math.min(W, H * 1.1) * 0.75 * (1 + 0.025 * Math.sin(t * 0.7));
+      ctx.drawImage(sunSprite, W * SUN.x - size / 2, H * SUN.y - size / 2, size, size);
 
-    drawClouds(dt);
-    drawGulls(dt);
-    drawWarship();
+      drawClouds(dt);
+      drawGulls(dt);
+      drawWarship();
 
-    drawWave(waves[0]);
-    drawWave(waves[1]);
-    drawSailboat();
-    drawWave(waves[2]);
-    drawWave(waves[3]);
-    drawWave(waves[4]);
-    drawSparkles();
-  }
-
-  /* ── Ciclo de vida ──────────────────────────────────────────── */
-  function tick(now) {
-    raf = requestAnimationFrame(tick);
-    const dt = Math.min((now - last) / 1000, 0.05);
-    last = now;
-    render(dt);
-  }
-
-  function sync() {
-    const shouldRun = inView && !document.hidden && !REDUCED_MOTION;
-    if (shouldRun && !raf) {
-      last = performance.now();
-      raf = requestAnimationFrame(tick);
-    } else if (!shouldRun && raf) {
-      cancelAnimationFrame(raf);
-      raf = 0;
-    }
-  }
-
-  function resize() {
-    const w = canvas.clientWidth, h = canvas.clientHeight;
-    if (!w || !h) return;
-    const newDpr = Math.min(window.devicePixelRatio || 1, 1.5);
-    if (w === W && h === H && newDpr === dpr) return;
-    W = w; H = h; dpr = newDpr;
-    canvas.width  = Math.round(W * dpr);
-    canvas.height = Math.round(H * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    buildBackground();
-    buildSun();
-    buildWaveGradients();
-    if (!raf) render(0);                               // quadro estático (pausado / reduced-motion)
-  }
-
-  new ResizeObserver(resize).observe(canvas);
-  new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; sync(); }).observe(hero);
-  document.addEventListener('visibilitychange', sync);
-  resize();
-  sync();
+      drawWave(waves[0]);
+      drawWave(waves[1]);
+      drawSailboat();
+      drawWave(waves[2]);
+      drawWave(waves[3]);
+      drawWave(waves[4]);
+      drawSparkles();
+    },
+  });
 })();
 
 
@@ -615,3 +664,5 @@ document.querySelectorAll('.ship-card[tabindex]').forEach(card => {
 /* ═════════════════════════════════════════════════ MODELOS 3D ═══
    Nada é criado aqui: o motor cria cada cena só quando ela chega perto da tela. */
 window.ShipEngine.init();
+document.addEventListener('rn:themechange', e => window.ShipEngine.setTheme(e.detail.theme));
+window.ShipEngine.setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');

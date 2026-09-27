@@ -1577,3 +1577,119 @@ button { font: inherit; }
     scroll-behavior: auto !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   BOTÃO DE TEMA (claro / escuro) — canto superior direito
+   ═══════════════════════════════════════════════════════════════ */
+.theme-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-left: -1.4rem;              /* aproxima do selo "Since 1546" */
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.95);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 8px rgba(10, 42, 74, 0.35);
+  transition: color 0.35s var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.navbar.scrolled .theme-toggle { color: var(--text-secondary); text-shadow: none; }
+
+.theme-toggle__track {
+  position: relative;
+  width: 64px;
+  height: 32px;
+  border-radius: 100px;
+  background: linear-gradient(135deg, #57b8ea 0%, #2a9bdc 100%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4px 14px -4px rgba(10, 42, 74, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  overflow: hidden;
+  transition: background 0.6s var(--ease), border-color 0.6s var(--ease), box-shadow 0.6s var(--ease);
+}
+
+/* "Estrelas" que surgem no trilho no modo escuro */
+.theme-toggle__track::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 22% 30%, #fff 0 1px, transparent 1.6px),
+    radial-gradient(circle at 40% 72%, #cfe3ff 0 1px, transparent 1.6px),
+    radial-gradient(circle at 58% 24%, #fff 0 0.8px, transparent 1.4px),
+    radial-gradient(circle at 30% 55%, #ffd9a8 0 0.8px, transparent 1.4px);
+  transition: opacity 0.6s var(--ease);
+}
+
+.theme-toggle__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fffbe0, #ffd85e);
+  color: #c56a00;
+  box-shadow: 0 2px 8px rgba(10, 42, 74, 0.45);
+  transition: transform 0.6s var(--ease-out), background 0.6s var(--ease), color 0.6s var(--ease);
+}
+
+.theme-toggle__icon {
+  position: absolute;
+  inset: 4px;
+  width: 16px;
+  height: 16px;
+  transition: opacity 0.4s var(--ease), transform 0.6s var(--ease-out);
+}
+
+.theme-toggle__icon--moon { opacity: 0; transform: rotate(-60deg) scale(0.6); }
+
+.theme-toggle[aria-checked="true"] .theme-toggle__knob {
+  transform: translateX(32px);
+  background: linear-gradient(135deg, #e9f1ff, #b9cdee);
+  color: #22406b;
+}
+.theme-toggle[aria-checked="true"] .theme-toggle__icon--sun  { opacity: 0; transform: rotate(60deg) scale(0.6); }
+.theme-toggle[aria-checked="true"] .theme-toggle__icon--moon { opacity: 1; transform: none; }
+
+.theme-toggle[aria-checked="true"] .theme-toggle__track {
+  background: linear-gradient(135deg, #0b1c33 0%, #050b14 100%);
+  border-color: rgba(255, 138, 61, 0.7);
+  box-shadow: 0 0 16px -2px rgba(255, 106, 31, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.theme-toggle[aria-checked="true"] .theme-toggle__track::before { opacity: 1; }
+
+.theme-toggle:focus-visible { outline: 3px solid var(--sun-500); outline-offset: 4px; border-radius: 100px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   TRANSIÇÃO ENTRE TEMAS (View Transitions API + cortina de reserva)
+   ═══════════════════════════════════════════════════════════════ */
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2; }
+
+.theme-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ELEMENTOS EXCLUSIVOS DO MODO ESCURO — ocultos no modo claro
+   (o visual deles fica em dark.css)
+   ═══════════════════════════════════════════════════════════════ */
+.deep-canvas, .depth-gauge, .abyss-band { display: none; }
+
+@media (max-width: 1100px) { .theme-toggle__label { display: none; } .theme-toggle { margin-left: -1.6rem; } }
+@media (max-width: 768px)  { .theme-toggle { margin-left: auto; } }
