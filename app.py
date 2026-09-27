@@ -70,7 +70,7 @@ def _host_sem_porta(valor):
 def confere_host():
     """Barra requisicoes com Host inesperado (protege contra DNS rebinding e Host forjado)."""
     if _host_sem_porta(request.host) not in ALLOWED_HOSTS:
-        return jsonify(erro="host_nao_permitido", mensagem="Host nao permitido."), 400
+        return jsonify(erro="host_nao_permitido", mensagem="Host não permitido."), 400
 
 
 # ── Cabecalhos de seguranca (valem para todas as respostas) ────
@@ -103,15 +103,21 @@ def consulta():
 
 # ── API de consulta ao banco (somente leitura) ─────────────────
 # Se faltar dependencia ou configuracao, o restante do site continua no ar.
+CONSULTA_ATIVA, _motivo = True, ""
 try:
     import consulta_api
     consulta_api.init_app(app)
 except Exception as exc:                                # noqa: BLE001
     app.logger.warning("API de consulta desativada: %s", exc)
+    CONSULTA_ATIVA, _motivo = False, str(exc)[:120]
 
     @app.route("/api/<path:_>")
     def api_indisponivel(_):
-        return jsonify(erro="servico_indisponivel", mensagem="O servico de consulta esta indisponivel."), 503
+        msg = "O serviço de consulta está indisponível no momento."
+        if DEBUG:                                       # o debug so liga em localhost: a dica nao vaza nada
+            msg += (" (Desenvolvimento: instale as dependências com o MESMO Python que executa o site — "
+                    "python -m pip install -r requirements.txt — e reinicie o servidor. Motivo: " + _motivo + ")")
+        return jsonify(erro="servico_indisponivel", mensagem=msg), 503
 
 
 # ── Erros ──────────────────────────────────────────────────────
@@ -120,7 +126,7 @@ except Exception as exc:                                # noqa: BLE001
 @app.errorhandler(404)
 def not_found(e):
     if request.path.startswith("/api/"):
-        return jsonify(erro="nao_encontrado", mensagem="Recurso nao encontrado."), 404
+        return jsonify(erro="nao_encontrado", mensagem="Recurso não encontrado."), 404
     last_segment = request.path.rsplit("/", 1)[-1]
     if request.path.startswith("/static/") or "." in last_segment:
         return "Not found", 404
@@ -130,20 +136,20 @@ def not_found(e):
 @app.errorhandler(405)
 def method_not_allowed(e):
     if request.path.startswith("/api/"):
-        return jsonify(erro="metodo_nao_permitido", mensagem="Metodo nao permitido."), 405
+        return jsonify(erro="metodo_nao_permitido", mensagem="Método não permitido."), 405
     return "Method not allowed", 405
 
 
 @app.errorhandler(429)
 def too_many(e):
-    r = jsonify(erro="muitas_requisicoes", mensagem="Muitas requisicoes. Aguarde um instante e tente de novo.")
+    r = jsonify(erro="muitas_requisicoes", mensagem="Muitas requisições. Aguarde um instante e tente de novo.")
     r.status_code = 429
     return r
 
 
 @app.errorhandler(413)
 def too_large(e):
-    return jsonify(erro="requisicao_grande", mensagem="Requisicao grande demais."), 413
+    return jsonify(erro="requisicao_grande", mensagem="Requisição grande demais."), 413
 
 
 if __name__ == "__main__":
@@ -151,6 +157,8 @@ if __name__ == "__main__":
     print("\n" + "=" * 55)
     print("  ROYAL NAVY - Educational Site v3.0")
     print(f"  http://localhost:{PORT}")
+    print("  Consulta de navios: " + ("ativa (segredos: " + str(config_env.localizar() or "NAO ENCONTRADOS - rode db/aplicar.py") + ")"
+                                     if CONSULTA_ATIVA else "DESATIVADA - " + _motivo))
     print("=" * 55 + "\n")
 
     app.run(debug=DEBUG, host=HOST, port=PORT)

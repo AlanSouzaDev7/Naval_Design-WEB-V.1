@@ -2,6 +2,7 @@
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 from urllib.parse import quote
 
@@ -248,3 +249,38 @@ def test_senha_do_banco_nao_esta_em_nenhum_arquivo_versionado():
         dados = arq.read_bytes()
         assert senha.encode() not in dados, f"senha encontrada em {arq.name}"
         assert not re.search(rb"postgres(ql)?://[^:\s/]+:[^@\s]+@", dados), f"URI com senha em {arq.name}"
+
+
+# ── Robustez da configuracao (bugs reais encontrados em uso) ─────────────────
+def test_segredos_ficam_na_pasta_do_usuario_e_nao_no_appdata():
+    """O AppData pode ser redirecionado (ex.: apps empacotados do Windows): o padrao e ~/.royalnavy."""
+    import config_env
+    padrao = config_env.caminho_padrao()
+    if not os.environ.get("RN_ENV_FILE"):
+        assert padrao.parent.name == ".royalnavy" and padrao.parent.parent == Path.home()
+        assert "AppData" not in str(padrao)
+    assert config_env.candidatos()[0] == padrao
+    assert (RAIZ / ".env") in config_env.candidatos()
+
+
+def test_site_continua_no_ar_sem_as_dependencias_da_consulta():
+    """Sem o psycopg (Python sem 'pip install -r requirements.txt') so a consulta cai; o site nao."""
+    codigo = (
+        "import sys; sys.modules['psycopg'] = None\n"
+        "import app\n"
+        "c = app.app.test_client()\n"
+        "r = c.get('/api/saude'); j = r.get_json()\n"
+        "print(r.status_code, j['erro'], 'pip install' in j['mensagem'])\n"
+        "print(c.get('/').status_code, c.get('/consulta').status_code)\n"
+    )
+    r = subprocess.run([sys.executable, "-c", codigo], cwd=RAIZ, capture_output=True, text=True, timeout=90,
+                       env={**os.environ, "FLASK_DEBUG": "1", "HOST": "127.0.0.1"})
+    assert "503 servico_indisponivel True" in r.stdout, r.stdout + r.stderr    # a dica aparece so em modo local
+    assert "200 200" in r.stdout
+
+
+def test_diagnostico_de_segredos_nao_vaza_o_conteudo():
+    import config_env
+    texto = config_env.resumo()
+    senha = os.environ.get("DB_PASSWORD", "")
+    assert senha and senha not in texto

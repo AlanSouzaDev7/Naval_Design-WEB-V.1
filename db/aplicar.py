@@ -5,7 +5,7 @@ O que faz (nada aqui apaga ou altera os dados existentes):
   1. executa 01_busca.sql   -> extensoes, funcoes de busca, indices e a VIEW v_navios
   2. executa 02_papel_leitura.sql -> papel 'navios_leitura' com privilegios minimos
   3. define a senha desse papel (gerada ao acaso) e a grava no arquivo de segredos (ver config_env.py;
-     por padrao %LOCALAPPDATA%\RoyalNavy\consulta.env, fora do Git e fora do OneDrive)
+     por padrao ~/.royalnavy/consulta.env, fora do Git e fora do OneDrive)
   4. VERIFICA de dentro do papel que ele so consegue LER a view
   5. opcional: --fechar-rede  => listen_addresses = 'localhost' (vale apos reiniciar o servico)
 
@@ -35,7 +35,7 @@ sys.path.insert(0, str(RAIZ))
 import config_env  # noqa: E402
 
 ENV_ARQ = config_env.caminho_padrao()      # fora do projeto e da nuvem, por padrao
-ENV_LEGADO = RAIZ / ".env"                # local antigo (dentro do projeto): e removido se existir
+ENV_LEGADOS = [p for p in (config_env.caminho_appdata(), RAIZ / ".env") if p and p != ENV_ARQ]   # locais antigos: migrados e removidos
 
 PAPEL = "navios_leitura"
 
@@ -53,8 +53,8 @@ def admin_conn():
 
 def ler_env():
     dados = {}
-    fonte = ENV_ARQ if ENV_ARQ.exists() else ENV_LEGADO
-    if fonte.exists():
+    fonte = next((p for p in [ENV_ARQ, *ENV_LEGADOS] if p.is_file()), None)
+    if fonte:
         for linha in fonte.read_text(encoding="utf-8").splitlines():
             m = re.match(r"^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*?)\s*$", linha)
             if m and not linha.lstrip().startswith("#"):
@@ -77,8 +77,8 @@ def gravar_env(alvo, senha):
         "DB_HOST": alvo["host"], "DB_PORT": str(alvo["port"]), "DB_NAME": alvo["dbname"],
         "DB_USER": PAPEL, "DB_PASSWORD": senha, "DB_SSLMODE": "prefer",
     }
-    fonte = ENV_ARQ if ENV_ARQ.exists() else ENV_LEGADO          # migra o conteudo do arquivo antigo, se houver
-    linhas = fonte.read_text(encoding="utf-8").splitlines() if fonte.exists() else [
+    fonte = next((p for p in [ENV_ARQ, *ENV_LEGADOS] if p.is_file()), None)   # migra o conteudo de um arquivo antigo
+    linhas = fonte.read_text(encoding="utf-8").splitlines() if fonte else [
         "# Configuracao LOCAL do site (NAO vai para o Git). Gerado por db/aplicar.py.",
         "# Modelo sem segredos: .env.example",
     ]
@@ -97,9 +97,10 @@ def gravar_env(alvo, senha):
     ENV_ARQ.parent.mkdir(parents=True, exist_ok=True)
     ENV_ARQ.write_text("\n".join(saida) + "\n", encoding="utf-8")
     print(f"Segredos gravados em {ENV_ARQ} - {config_env.proteger(ENV_ARQ)}.")
-    if ENV_LEGADO.exists():
-        ENV_LEGADO.unlink()
-        print(f"Removido o arquivo antigo {ENV_LEGADO} (ficava dentro da pasta sincronizada do projeto).")
+    for antigo in ENV_LEGADOS:
+        if antigo.is_file():
+            antigo.unlink()
+            print(f"Removido o arquivo antigo {antigo} (migrado para o local atual).")
 
 
 def verificar(alvo, senha, total_esperado):

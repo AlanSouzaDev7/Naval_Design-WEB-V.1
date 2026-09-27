@@ -17,8 +17,8 @@ python db/aplicar.py                 # pede a senha do administrador (postgres);
 python app.py
 ```
 
-O `aplicar.py` cria o arquivo de segredos em `%LOCALAPPDATA%\RoyalNavy\consulta.env` (Linux/macOS:
-`~/.config/royalnavy/consulta.env`) com permissão só para o seu usuário. Esse local **não é sincronizado** pelo OneDrive e
+O `aplicar.py` cria o arquivo de segredos em `~/.royalnavy/consulta.env` (Windows:
+`C:\Users\<você>\.royalnavy\consulta.env`) com permissão só para o seu usuário. Esse local **não é sincronizado** pelo OneDrive e
 não está no repositório. Para usar outro caminho: variável `RN_ENV_FILE`. Modelo: [`../.env.example`](../.env.example).
 
 Opções: `--rotacionar-senha` (gera nova senha para o papel de leitura) e `--fechar-rede` (veja abaixo).

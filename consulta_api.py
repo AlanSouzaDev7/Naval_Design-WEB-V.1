@@ -23,7 +23,7 @@ import unicodedata
 from datetime import date
 
 import psycopg
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, current_app, g, jsonify, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from psycopg.conninfo import make_conninfo
@@ -52,7 +52,7 @@ MAX_QUERY_STRING = 400                            # bytes
 class ValorInvalido(Exception):
     """Entrada fora do permitido (vira HTTP 400 com mensagem segura)."""
 
-    def __init__(self, mensagem="Consulta invalida."):
+    def __init__(self, mensagem="Consulta inválida."):
         super().__init__(mensagem)
         self.mensagem = mensagem
 
@@ -73,7 +73,7 @@ def limpar_texto(bruto, minimo, maximo, rotulo):
         raise ValorInvalido(f"{rotulo}: use de {minimo} a {maximo} caracteres.")
     for ch in texto:
         if not (ch.isalnum() or ch in EXTRAS_PERMITIDOS):
-            raise ValorInvalido(f"{rotulo}: caracteres nao permitidos.")
+            raise ValorInvalido(f"{rotulo}: caracteres não permitidos.")
     return texto
 
 
@@ -82,7 +82,7 @@ def validar_busca(args):
         raise ValorInvalido("Consulta longa demais.")
     desconhecidas = set(args.keys()) - CHAVES_BUSCA
     if desconhecidas or any(len(args.getlist(k)) > 1 for k in args.keys()):
-        raise ValorInvalido("Parametros invalidos.")
+        raise ValorInvalido("Parâmetros inválidos.")
 
     q = limpar_texto(args.get("q"), 2, 60, "Busca")
     marinha = limpar_texto(args.get("marinha"), 2, 40, "Marinha")
@@ -93,7 +93,7 @@ def validar_busca(args):
 
     bruta = args.get("pagina", "1")
     if not re.fullmatch(r"\d{1,2}", bruta) or not (1 <= int(bruta) <= MAX_PAGINA):
-        raise ValorInvalido(f"Pagina deve ser de 1 a {MAX_PAGINA}.")
+        raise ValorInvalido(f"A página deve ser de 1 a {MAX_PAGINA}.")
     return q, marinha, guerra, tipo, int(bruta)
 
 
@@ -113,7 +113,8 @@ def _obter_pool():
         senha = os.environ.get("DB_PASSWORD")
         usuario = os.environ.get("DB_USER")
         if not senha or not usuario:
-            raise BancoIndisponivel("DB_USER/DB_PASSWORD nao configurados")
+            import config_env
+            raise BancoIndisponivel("DB_USER/DB_PASSWORD nao configurados (" + config_env.resumo() + ")")
         if usuario in ("postgres", "root", "admin"):
             raise BancoIndisponivel("a API nao deve usar um usuario administrador")
         conninfo = make_conninfo(
@@ -230,22 +231,25 @@ def _invalido(e):
 @bp.errorhandler(BancoIndisponivel)
 def _indisponivel(e):
     log.error("Banco indisponivel: %s", e)              # detalhe so no log do servidor
-    return erro("servico_indisponivel", "O servico de consulta esta indisponivel no momento.", 503)
+    msg = "O serviço de consulta está indisponível no momento."
+    if current_app.debug:                               # debug so liga em localhost: aqui a dica nao vaza nada
+        msg += f" (Desenvolvimento: verifique se o PostgreSQL está rodando e se o arquivo de segredos existe — motivo: {e})"
+    return erro("servico_indisponivel", msg, 503)
 
 
 @bp.errorhandler(404)
 def _nao_encontrado(_e):
-    return erro("nao_encontrado", "Recurso nao encontrado.", 404)
+    return erro("nao_encontrado", "Recurso não encontrado.", 404)
 
 
 @bp.errorhandler(405)
 def _metodo(_e):
-    return erro("metodo_nao_permitido", "Metodo nao permitido.", 405)
+    return erro("metodo_nao_permitido", "Método não permitido.", 405)
 
 
 @bp.errorhandler(429)
 def _limite(_e):
-    return erro("muitas_requisicoes", "Muitas requisicoes. Aguarde um instante e tente de novo.", 429)
+    return erro("muitas_requisicoes", "Muitas requisições. Aguarde um instante e tente de novo.", 429)
 
 
 @bp.errorhandler(Exception)
@@ -316,12 +320,12 @@ def filtros():
 @limiter.limit("60 per minute")
 def ficha(navio_id):
     if request.args:
-        raise ValorInvalido("Parametros invalidos.")
+        raise ValorInvalido("Parâmetros inválidos.")
     if not (1 <= navio_id <= 2_147_483_647):
-        return erro("nao_encontrado", "Navio nao encontrado.", 404)
+        return erro("nao_encontrado", "Navio não encontrado.", 404)
     linhas = consultar(SQL_FICHA, {"id": navio_id})
     if not linhas:
-        return erro("nao_encontrado", "Navio nao encontrado.", 404)
+        return erro("nao_encontrado", "Navio não encontrado.", 404)
     navio = linhas[0]
     for campo in ("data_batismo", "data_comissionamento", "data_baixa"):
         navio[campo] = _iso(navio[campo])

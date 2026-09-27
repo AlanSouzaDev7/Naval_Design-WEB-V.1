@@ -78,7 +78,7 @@
   }
 
   const mensagemErro = e => e.status === 429 ? 'Muitas consultas seguidas. Aguarde alguns segundos e tente de novo.'
-    : e.status === 503 ? 'O serviço de consulta está indisponível no momento.'
+    : e.status === 503 ? (e.message || 'O serviço de consulta está indisponível no momento.')
     : e.status === 400 ? e.message : (e.message || 'Erro na consulta.');
 
   /* ── URL (permite compartilhar uma consulta) ────────────── */

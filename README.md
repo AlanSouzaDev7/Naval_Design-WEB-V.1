@@ -77,10 +77,20 @@ navegador ──GET──> Flask (/api/navios/...) ──papel navios_leitura─
 | **Vazamento de informação** | Erros genéricos para o cliente (o detalhe fica só no log); sem versão de servidor; `Cache-Control: no-store` na API. |
 | **Navegador** | Tudo que vem da API entra na página por `textContent` (nunca `innerHTML`) — testado com resposta hostil; CSP sem `unsafe-eval` e sem scripts inline; `frame-ancestors 'none'`. |
 | **Rede** | Cabeçalho `Host` validado (`ALLOWED_HOSTS`, contra DNS rebinding), só `GET`, CORS por lista exata (nunca `*`), HSTS opcional (`RN_HTTPS=1`), proxy só é confiável se configurado (`TRUST_PROXY_HOPS`). |
-| **Segredos** | Senha do papel gerada ao acaso (43 caracteres) e guardada **fora do Git e fora do OneDrive**: `%LOCALAPPDATA%\RoyalNavy\consulta.env`, com permissão só para o seu usuário (`config_env.py`). Um teste garante que nenhum arquivo versionado contém a senha. |
+| **Segredos** | Senha do papel gerada ao acaso (43 caracteres) e guardada **fora do Git e fora do OneDrive**: `~/.royalnavy/consulta.env` (Windows: `C:\Users\<você>\.royalnavy\consulta.env`), com permissão só para o seu usuário (`config_env.py`). Um teste garante que nenhum arquivo versionado contém a senha. |
 | **Dependências** | Versões fixas (`requirements-lock.txt`), auditadas com `pip-audit` (0 vulnerabilidades conhecidas; o Flask foi atualizado para 3.1.3 por isso) e `bandit` (0 achados). |
 
 Detalhes, passo a passo do banco e instruções do administrador: [`db/README.md`](db/README.md).
+
+### Solução de problemas: "O serviço de consulta está indisponível"
+
+Em modo local (`python app.py`) a própria mensagem da página mostra o motivo entre parênteses. Causas mais comuns:
+
+| Motivo | O que fazer |
+|---|---|
+| `No module named 'psycopg'` (ou Flask-Limiter) | As dependências não estão instaladas **no mesmo Python que roda o site**. Rode `python -m pip install -r requirements.txt` com esse Python (o do terminal do VS Code, por exemplo) e reinicie o servidor. |
+| `DB_USER/DB_PASSWORD nao configurados` | O arquivo de segredos não foi encontrado. Rode `python db/aplicar.py` (ele lista os locais procurados). Não crie esse arquivo dentro de `AppData`: alguns aplicativos do Windows (os empacotados, como o app do Claude) **redirecionam** o `AppData` e o seu servidor não enxerga o arquivo. |
+| Erro de conexão / autenticação | O PostgreSQL está parado (`Get-Service postgresql-x64-18`) ou a senha do papel foi trocada; rode `python db/aplicar.py` de novo. |
 
 ### Testes
 
