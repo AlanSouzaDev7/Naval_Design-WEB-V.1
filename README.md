@@ -3,7 +3,8 @@
 Site educativo sobre a Marinha Real Britânica: linha do tempo, navios lendários em **3D interativo** (Three.js),
 batalhas, frota atual e galeria. Servido por Flask, com visual de **dia ensolarado no mar** (modo claro) e de
 **guerra em alto mar** (modo escuro). A partir da **v3.0** tem uma página de **Consulta de Navios** ligada a um banco
-PostgreSQL (somente leitura, com camadas de segurança).
+PostgreSQL (somente leitura, com camadas de segurança) — e desde a **v4.0** essa consulta está publicada na internet,
+acessível de qualquer aparelho, em **<https://royalnavy-consulta.onrender.com>**.
 
 ## Como rodar
 
@@ -82,6 +83,23 @@ navegador ──GET──> Flask (/api/navios/...) ──papel navios_leitura─
 
 Detalhes, passo a passo do banco e instruções do administrador: [`db/README.md`](db/README.md).
 
+### Disponível online (v4.0)
+
+A consulta está publicada em **<https://royalnavy-consulta.onrender.com>** — mesma segurança do modo local (papel
+`navios_leitura`, view `v_navios`, TLS agora com verificação completa do certificado, `verify-full`). Arquitetura:
+**[Render](https://render.com)** (aplicação, plano gratuito) + **[Neon](https://neon.tech)** (PostgreSQL gerenciado,
+plano gratuito). Arquivos de implantação em [`deploy/`](deploy/).
+
+> **Plano gratuito:** o Render "hiberna" depois de ≈ 15 min sem acessos e o Neon suspende o banco de forma parecida;
+> o primeiro pedido depois disso demora alguns segundos a mais enquanto os dois acordam sozinhos — não é defeito.
+
+Duas pegadinhas reais encontradas ao publicar (documentadas em detalhe na seção 14 do PDF):
+
+| Sintoma | Causa | Correção |
+|---|---|---|
+| O SQL Editor do Neon trava no meio de um script com `COPY ... FROM stdin` | `COPY` interativo é um recurso do **protocolo** do psql, não SQL padrão — o editor web não o suporta | Usar `INSERT INTO ... VALUES (...), (...);` (SQL padrão) |
+| `certificate verify failed` / `root certificate file ... does not exist` com `DB_SSLMODE=verify-full` | O OpenSSL empacotado dentro do `psycopg[binary]` não localiza de forma confiável os certificados do sistema operacional do host | Raiz `ISRG Root X1` (Let's Encrypt, pública, válida até 2035) incluída no projeto em [`deploy/isrg-root-x1.pem`](deploy/isrg-root-x1.pem), referenciada direto em `sslrootcert` (ver `consulta_api.py`) |
+
 ### Solução de problemas: "O serviço de consulta está indisponível"
 
 Em modo local (`python app.py`) a própria mensagem da página mostra o motivo entre parênteses. Causas mais comuns:
@@ -96,15 +114,16 @@ Em modo local (`python app.py`) a própria mensagem da página mostra o motivo e
 
 ```bash
 pip install -r requirements-dev.txt
-pytest tests                      # 85 testes: funcionamento, injeção de SQL, XSS, limite, privilégios do banco, segredos
+pytest tests                      # 88 testes: funcionamento, injeção de SQL, XSS, limite, privilégios do banco, segredos
 bandit -r app.py consulta_api.py db build_static.py
 pip-audit -r requirements-lock.txt
 ```
 
-### Antes de publicar de verdade (checklist)
+### Checklist para publicar (referência geral)
 
 O GitHub Pages **não executa Python nem acessa banco**: a versão em `docs/` mostra a página de consulta em modo
-estático, com um aviso. Para a consulta funcionar na internet é preciso hospedar o servidor:
+estático, com um aviso. Isso já foi resolvido publicando em Render + Neon (seção acima); o checklist a seguir continua
+útil como referência caso a hospedagem mude no futuro:
 
 1. **Hospedagem com Python** (Render, Fly.io, Railway ou VPS) atrás de um servidor real (`gunicorn`/`waitress`) e de
    HTTPS (nginx/Caddy/Cloudflare). Nunca use `app.run` nem `FLASK_DEBUG=1` em produção.
@@ -194,7 +213,8 @@ static/js/consulta.js   página de consulta (busca, filtros, ficha; só textCont
 consulta_api.py         API de consulta (validação, limite, consultas parametrizadas)
 config_env.py           onde ficam os segredos (fora do Git e do OneDrive)
 db/                     SQL da busca e do papel de leitura, aplicar.py e README do banco
-tests/                  85 testes de funcionamento e segurança
+deploy/                 publicação online (v4.0): render.yaml, raiz TLS, dependências extras
+tests/                  88 testes de funcionamento e segurança
 ```
 
 ## Notas de desempenho
