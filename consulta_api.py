@@ -21,6 +21,7 @@ import threading
 import time
 import unicodedata
 from datetime import date
+from pathlib import Path
 
 import psycopg
 from flask import Blueprint, current_app, g, jsonify, request
@@ -31,6 +32,10 @@ from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool, PoolTimeout
 
 log = logging.getLogger("royalnavy.consulta")
+
+# Raiz confiavel para "verify-full" em banco remoto (ISRG Root X1, Let's Encrypt - publica e estavel ate 2035).
+# Um arquivo proprio evita depender de qual pacote de certificados do SO o libpq empacotado consegue achar.
+_RAIZ_TLS = Path(__file__).resolve().parent / "deploy" / "isrg-root-x1.pem"
 
 bp = Blueprint("consulta", __name__, url_prefix="/api")
 
@@ -124,7 +129,7 @@ def _obter_pool():
             user=usuario,
             password=senha,
             sslmode=os.environ.get("DB_SSLMODE", "prefer"),
-            sslrootcert="system",   # verify-full: usa a cadeia de confianca do proprio SO (sem isso, falta um root.crt local)
+            sslrootcert=str(_RAIZ_TLS),   # verify-full: raiz fixa do projeto (ver comentario acima)
             connect_timeout=3,
             application_name="royalnavy-consulta",
         )
