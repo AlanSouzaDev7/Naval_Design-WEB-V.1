@@ -1686,10 +1686,11 @@ button { font: inherit; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ELEMENTOS EXCLUSIVOS DO MODO ESCURO — ocultos no modo claro
-   (o visual deles fica em dark.css)
+   ELEMENTOS EXCLUSIVOS DE UM TEMA — ocultos por padrão
+   (o visual deles fica em dark.css e light.css)
    ═══════════════════════════════════════════════════════════════ */
 .deep-canvas, .depth-gauge, .abyss-band { display: none; }
+.calm-canvas, .calm-gauge, .calm-band { display: none; }
 
 @media (max-width: 1100px) { .theme-toggle__label { display: none; } .theme-toggle { margin-left: -1.6rem; } }
 @media (max-width: 768px)  { .theme-toggle { margin-left: auto; } }

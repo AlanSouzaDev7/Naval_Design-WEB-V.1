@@ -1,0 +1,194 @@
+/* ═══════════════════════════════════════════════════════════════
+   ROYAL NAVY — MODO CLARO: "MAR EM PAZ"
+   Ativado por <html data-theme="light">. Nada aqui afeta o modo escuro.
+
+   Contraponto ao modo escuro: o hero é um comboio rumo ao horizonte num
+   dia de sol; conforme a página desce, o visitante mergulha num mar claro
+   (fundo em canvas + medidor de profundidade), passa pela patrulha tranquila
+   de submarinos e caça-minas e chega aos naufrágios que viraram jardins de
+   coral, sobre um leito de areia (o rodapé).
+
+   Paleta: água #beeef7 → #46a8d6 · sol #ffd23f · coral #ef7f55 · areia #dcc28c
+   ═══════════════════════════════════════════════════════════════ */
+
+:root[data-theme="light"] {
+  --l-sub:    #123a5c;
+  --l-accent: #08607a;
+  --l-glass:  rgba(255, 255, 255, 0.9);
+  --l-halo:   0 1px 14px rgba(255, 255, 255, 0.7);
+  --l-sand:   #dcc28c;
+}
+
+/* ── Base: a água vem do canvas fixo ──────────────────────── */
+[data-theme="light"] body { background: #beeef7; }
+
+[data-theme="light"] .calm-canvas {
+  display: block;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Seções transparentes sobre o mar */
+[data-theme="light"] .history-section,
+[data-theme="light"] .ships-section,
+[data-theme="light"] .battles-section,
+[data-theme="light"] .fleet-section,
+[data-theme="light"] .gallery-section { background: transparent; }
+
+/* ── Tipografia sobre a água ──────────────────────────────── */
+[data-theme="light"] .section-title { text-shadow: var(--l-halo); }
+[data-theme="light"] .section-title .accent      { color: var(--l-accent); }
+[data-theme="light"] .section-title .accent-gold { color: var(--sun-800); }
+[data-theme="light"] .section-sub { color: var(--l-sub); text-shadow: var(--l-halo); }
+[data-theme="light"] .section-tag { background: rgba(255, 255, 255, 0.75); }
+
+/* Linha do tempo: um fio de luz descendo */
+[data-theme="light"] .timeline::before {
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.95) 10%, var(--sun-300) 50%, rgba(255, 255, 255, 0.95) 90%, transparent);
+}
+
+/* ── Batalhas: cartões claros sobre a água (sem o bloco azul) ── */
+[data-theme="light"] .battles-section::before,
+[data-theme="light"] .battles-section::after,
+[data-theme="light"] .footer::before { display: none; }          /* ondas divisórias */
+[data-theme="light"] .battles-bg { display: none; }              /* a água segue contínua do canvas fixo */
+[data-theme="light"] .section-header.light .section-title { color: var(--navy-900); }
+[data-theme="light"] .section-header.light .section-sub   { color: var(--l-sub); }
+[data-theme="light"] .section-header.light .section-tag {
+  color: var(--sun-800);
+  border-color: rgba(229, 138, 11, 0.42);
+  background: rgba(255, 255, 255, 0.75);
+}
+[data-theme="light"] .battle-card {
+  background: var(--l-glass);
+  border-color: rgba(255, 255, 255, 0.95);
+  color: var(--sun-700);
+  box-shadow: var(--shadow-card);
+}
+[data-theme="light"] .battle-card:hover {
+  background: var(--white);
+  border-color: rgba(229, 138, 11, 0.5);
+  box-shadow: var(--shadow-hover);
+}
+[data-theme="light"] .battle-card::before { background: linear-gradient(90deg, transparent, var(--sea-400), transparent); }
+[data-theme="light"] .battle-card.featured {
+  background: linear-gradient(135deg, #fff4cc 0%, rgba(255, 255, 255, 0.94) 62%);
+  border-color: rgba(229, 138, 11, 0.45);
+}
+[data-theme="light"] .battle-year { color: var(--sun-700); text-shadow: none; }
+[data-theme="light"] .battle-card h3 { color: var(--navy-900); }
+[data-theme="light"] .battle-card p  { color: var(--text-secondary); }
+
+/* ═══════════════════════════════════════════════════════════════
+   FAIXAS DO MERGULHO (mar em paz e jardins de coral)
+   Os canvases são transparentes: a água vem do canvas fixo.
+   ═══════════════════════════════════════════════════════════════ */
+[data-theme="light"] .calm-band {
+  display: block;
+  position: relative;
+  height: clamp(440px, 84vh, 780px);
+  overflow: hidden;
+}
+[data-theme="light"] .calm-band canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+[data-theme="light"] .calm-caption {
+  position: absolute;
+  left: 0; right: 0;
+  top: 7%;
+  z-index: 2;
+  padding: 0 1.2rem;
+  text-align: center;
+  pointer-events: none;
+}
+/* halo claro atrás da legenda, para o texto não disputar com os peixes */
+[data-theme="light"] .calm-caption::before {
+  content: '';
+  position: absolute;
+  left: 50%; top: -35%;
+  z-index: -1;
+  width: min(820px, 100%);
+  height: 170%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 70%);
+}
+[data-theme="light"] .calm-caption .section-title { margin-bottom: 0.5rem; }
+[data-theme="light"] .calm-caption .section-sub { max-width: 620px; }
+
+/* Jardins de coral: a areia encosta no rodapé */
+[data-theme="light"] .reef { height: clamp(520px, 92vh, 860px); }
+
+/* ── Rodapé: o leito de areia ─────────────────────────────── */
+[data-theme="light"] .footer { background: linear-gradient(180deg, var(--l-sand) 0%, #d0b27a 100%); }
+[data-theme="light"] .footer-title { color: var(--navy-900); }
+[data-theme="light"] .footer-tagline,
+[data-theme="light"] .footer-col h5 { color: #8a4300; }
+[data-theme="light"] .footer-col a { color: #34495c; }
+[data-theme="light"] .footer-col a:hover { color: var(--navy-900); }
+[data-theme="light"] .footer-about { color: #3e4f5f; }
+[data-theme="light"] .footer-inner { border-bottom-color: rgba(10, 42, 74, 0.16); }
+[data-theme="light"] .footer-bottom { color: #4a5663; }
+
+/* ═══════════════════════════════════════════════════════════════
+   MEDIDOR DE PROFUNDIDADE (HUD fixo logo abaixo da navbar, à direita)
+   ═══════════════════════════════════════════════════════════════ */
+[data-theme="light"] .calm-gauge {
+  position: fixed;
+  top: 82px;
+  right: 16px;
+  z-index: 900;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  column-gap: 10px;
+  padding: 7px 14px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 10px 24px -12px rgba(15, 74, 120, 0.5);
+  font-family: 'Rajdhani', sans-serif;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(0, -14px, 0);
+  transition: opacity 0.5s var(--ease), transform 0.6s var(--ease-out);
+}
+[data-theme="light"] .calm-gauge.is-on { opacity: 1; transform: none; }
+
+.calm-gauge__value { grid-column: 1; font-size: 1.35rem; font-weight: 700; line-height: 1.05; color: var(--navy-900); font-variant-numeric: tabular-nums; }
+.calm-gauge__zone  { grid-column: 2; justify-self: end; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--sun-800); }
+.calm-gauge__track {
+  grid-column: 1 / -1;
+  position: relative;
+  width: 100%;
+  min-width: 170px;
+  height: 3px;
+  margin-top: 7px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #9fe3f2, #2ea0cd 60%, #e2c486);
+}
+.calm-gauge__marker {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 11px;
+  height: 11px;
+  margin: -5.5px 0 0 -5.5px;
+  border-radius: 50%;
+  background: var(--sun-300);
+  box-shadow: 0 0 0 2px #fff, 0 2px 6px rgba(10, 42, 74, 0.35);
+  will-change: transform;
+}
+
+@media (max-width: 768px) {
+  [data-theme="light"] .calm-gauge { top: 74px; right: 10px; padding: 5px 10px 8px; }
+  .calm-gauge__value { font-size: 1.1rem; }
+  .calm-gauge__zone { font-size: 0.58rem; }
+  .calm-gauge__track { min-width: 120px; }
+}

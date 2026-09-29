@@ -19,6 +19,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../static/css/style.css" />
   <link rel="stylesheet" href="../static/css/dark.css" />
+  <link rel="stylesheet" href="../static/css/light.css" />
 </head>
 <body>
 
@@ -29,6 +30,14 @@
     <span class="depth-gauge__value" id="depth-value">0 m</span>
     <span class="depth-gauge__zone" id="depth-zone">Superfície</span>
     <div class="depth-gauge__track"><i class="depth-gauge__marker" id="depth-marker"></i></div>
+  </div>
+
+  <!-- Modo claro: mar calmo e ensolarado (fixo) e medidor de profundidade do mergulho -->
+  <canvas id="calm-canvas" class="calm-canvas" aria-hidden="true"></canvas>
+  <div class="calm-gauge" id="calm-gauge" aria-hidden="true">
+    <span class="calm-gauge__value" id="calm-value">0 m</span>
+    <span class="calm-gauge__zone" id="calm-zone">Superfície</span>
+    <div class="calm-gauge__track"><i class="calm-gauge__marker" id="calm-marker"></i></div>
   </div>
 
   <!-- ═══════════════════════════════════════════ NAV ═══ -->
@@ -345,6 +354,16 @@
     </div>
   </div>
 
+  <!-- ══════════════════════ MAR EM PAZ (só no modo claro) ═══ -->
+  <div class="calm-band patrol" role="region" aria-label="Mar em paz">
+    <canvas id="patrol-canvas" role="img" aria-label="Submarino em patrulha silenciosa, minas antigas cobertas de vida, um robô caça-minas, tubarões, tartaruga e cardumes"></canvas>
+    <div class="calm-caption">
+      <div class="section-tag">Zona de patrulha</div>
+      <h2 class="section-title">Mar em <span class="accent">Paz</span></h2>
+      <p class="section-sub">Sob as ondas, submarinos patrulham em silêncio e robôs caça-minas removem minas antigas para manter as rotas seguras, enquanto a vida marinha segue o seu curso.</p>
+    </div>
+  </div>
+
   <!-- ═══════════════════════════════════════ BATTLES ═══ -->
   <section class="battles-section" id="battles">
     <div class="battles-bg"></div>
@@ -525,6 +544,16 @@
     <canvas id="wreck-canvas" role="img" aria-label="Destroieres, um galeão e um submarino afundados no leito do mar"></canvas>
   </div>
 
+  <!-- ══════════════════════ JARDINS DE CORAL (só no modo claro) ═══ -->
+  <div class="calm-band reef" role="region" aria-label="Naufrágios que viraram recifes de coral">
+    <div class="calm-caption">
+      <div class="section-tag">Memorial vivo</div>
+      <h2 class="section-title">Jardins de <span class="accent">Coral</span></h2>
+      <p class="section-sub">Os navios que a guerra afundou viraram recifes: corais, peixes e tartarugas fizeram de cada casco o seu lar.</p>
+    </div>
+    <canvas id="reef-canvas" role="img" aria-label="Destroieres, um galeão e um submarino naufragados e cobertos de corais, com anêmonas, peixes de recife, tartaruga e raia"></canvas>
+  </div>
+
   <!-- ════════════════════════════════════════ FOOTER ═══ -->
   <footer class="footer">
     <div class="footer-inner">
@@ -608,7 +637,9 @@
   <script defer src="../static/js/ships-data.js"></script>
   <script defer src="../static/js/ships-3d.js"></script>
   <script defer src="../static/js/main.js"></script>
+  <script defer src="../static/js/convoy-hero.js"></script>
   <script defer src="../static/js/war-hero.js"></script>
   <script defer src="../static/js/deep-sea.js"></script>
+  <script defer src="../static/js/calm-sea.js"></script>
 </body>
 </html>

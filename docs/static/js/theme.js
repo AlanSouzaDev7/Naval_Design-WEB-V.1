@@ -100,7 +100,7 @@
   window.RNTheme = { get, set, toggle };
 
 
-  /* ═════════════ DESEMPENHO ADAPTATIVO (só enquanto o modo escuro está ativo) ═══
+  /* ═════════════ DESEMPENHO ADAPTATIVO (nos dois temas: ambos têm cenas animadas) ═══
      Mede o tempo médio de frame. Se ficar lento, reduz a quantidade de partículas
      e efeitos das cenas; se ficar folgado por bastante tempo, sobe de novo. */
   const Perf = window.RNPerf = { level: 2 };
@@ -129,7 +129,7 @@
   }
 
   function syncPerf() {
-    const on = get() === 'dark' && !document.hidden;
+    const on = !document.hidden;
     if (on && !raf) { last = performance.now(); acc = n = 0; raf = requestAnimationFrame(sample); }
     else if (!on && raf) { cancelAnimationFrame(raf); raf = 0; }
   }
