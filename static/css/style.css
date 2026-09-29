@@ -318,6 +318,7 @@ button { font: inherit; }
   color: rgba(255, 255, 255, 0.92);
   text-shadow: 0 1px 8px rgba(10, 42, 74, 0.35);
   border-radius: var(--radius-sm);
+  white-space: nowrap;           /* "Frota Atual" nunca quebra em duas linhas */
   transition: color 0.3s var(--ease), background-color 0.3s var(--ease);
   position: relative;
 }
@@ -1692,7 +1693,24 @@ button { font: inherit; }
 .deep-canvas, .depth-gauge, .abyss-band { display: none; }
 .calm-canvas, .calm-gauge, .calm-band { display: none; }
 
-@media (max-width: 1100px) { .theme-toggle__label { display: none; } .theme-toggle { margin-left: -1.6rem; } }
+/* Barra em telas médias (769–1280 px): os 7 links, a marca e o botão de tema precisam caber
+   numa linha só; antes o selo "Since 1546" e o botão de tema eram empurrados para fora da tela
+   (a barra completa, com selo e rótulo do botão, só cabe a partir de ~1260 px). */
+@media (max-width: 1280px) {
+  .theme-toggle__label { display: none; }
+  .navbar      { padding: 0 1.25rem; }
+  .nav-inner   { gap: 1rem; }
+  .nav-badge   { display: none; }
+  .nav-links   { gap: 0; min-width: 0; justify-content: center; }
+  .nav-link    { padding: 0.4rem 0.55rem; letter-spacing: 0.05em; }
+  .nav-link::after { left: 0.55rem; right: 0.55rem; }
+  .theme-toggle { margin-left: 0; }
+}
+@media (max-width: 960px) {
+  .brand-text  { font-size: 0.95rem; letter-spacing: 0.1em; }
+  .nav-link    { padding: 0.4rem 0.4rem; font-size: 0.84rem; letter-spacing: 0.03em; }
+  .nav-link::after { left: 0.4rem; right: 0.4rem; }
+}
 @media (max-width: 768px)  { .theme-toggle { margin-left: auto; } }
 
 /* ═══════════════════════════════════════════════════════════════
