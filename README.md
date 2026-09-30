@@ -1,8 +1,8 @@
 # ⚓ Royal Navy — Site Educativo
 
 Site educativo sobre a Marinha Real Britânica: linha do tempo, navios lendários em **3D interativo** (Three.js),
-batalhas, frota atual e galeria. Servido por Flask, com visual de **dia ensolarado no mar** (modo claro) e de
-**guerra em alto mar** (modo escuro). A partir da **v3.0** tem uma página de **Consulta de Navios** ligada a um banco
+batalhas, frota atual e galeria. Servido por Flask, com dois temas que são o **contraponto** um do outro: **“Mar em Paz”** (modo claro: comboio de navios
+rumo ao horizonte, águas claras e recifes de coral) e **“Guerra em alto mar”** (modo escuro). A partir da **v3.0** tem uma página de **Consulta de Navios** ligada a um banco
 PostgreSQL (somente leitura, com camadas de segurança) — e desde a **v4.0** essa consulta está publicada na internet,
 acessível de qualquer aparelho, em **<https://royalnavy-consulta.onrender.com>**.
 
@@ -25,10 +25,27 @@ Sem o banco configurado o site continua funcionando; só a consulta avisa que es
 | `HOST`        | `127.0.0.1` | Use `0.0.0.0` para expor na rede local (o modo debug é desligado sozinho)      |
 | `FLASK_DEBUG` | `1`         | `0` desliga o recarregamento automático                                        |
 
-## Modos claro e escuro ("Guerra em alto mar")
+## Modo claro: "Mar em Paz" (v4.1)
 
-Botão no **canto superior direito** (o tema fica salvo no navegador). O **modo claro** é o visual original do site;
-o **modo escuro** transforma a página numa viagem da superfície ao leito do oceano:
+Contraponto direto do modo escuro: **o mesmo estilo de profundidade, só que pacífico**. Botão de tema no **canto superior direito** (o tema fica salvo no navegador).
+
+| Trecho da página | O que acontece no modo claro |
+|---|---|
+| **Hero** | Um **comboio de navios de carga e de guerra** (porta-contêineres, petroleiro, graneleiro, transportador de carros, destróier Type 45, fragata Type 23, porta-aviões classe Queen Elizabeth) navega em direção ao horizonte, com **perspectiva real** (projeção 3D→2D com ponto de fuga, ordem do pintor, névoa atmosférica, nível de detalhe por distância e esteiras de Kelvin), costa com falésias e farol, sol, helicóptero e gaivotas. |
+| **Ao descer** | Mergulho em águas claras, com raios de luz, bolhas, cardumes e golfinho. O **medidor de profundidade** vai de 0 a 40 m (Superfície · Águas rasas · Mar aberto · Recife de coral). |
+| **Zona de patrulha** | Paz com elementos navais: **minas submarinas** inspecionadas por um **ROV** (cone de luz e cordão umbilical), **submarino** com pings de sonar, **tubarões**, cardumes, tartaruga e águas-vivas. |
+| **Jardins de Coral** | **Naufrágios cobertos de recifes de coral**: galeão e cascos de navios de guerra, corais, anêmonas com peixe-palhaço, arraia e cardumes; piso de areia com cáusticas. |
+| **Rodapé** | Areia clara, continuação do leito do recife. |
+
+Arquivos: `light.css`, `convoy-hero.js` (hero), `calm-sea.js` (mergulho, patrulha, recife, medidor).
+
+**Desempenho medido (v4.1):** Edge com GPU, 1366×768, monitor de 120 Hz, 3 rodadas de 6 s por ponto, após 15 s de aquecimento. O modo claro ficou entre **104 e 120 fps** em todos os sete pontos da página (hero, mergulho, navios 3D, patrulha, batalhas, recife e rodapé), com no máximo 1 quadro acima de 20 ms por ponto e o monitor adaptativo `RNPerf` sempre no nível máximo. Limites honestos: um único computador com GPU dedicada; o celular foi apenas emulado; uma rodada **sem** aquecimento mostrou travadas de 100–200 ms logo após carregar a página, nos dois temas (ainda não investigado). Detalhes e método na seção 15 do PDF de documentação.
+
+**Barra de navegação corrigida (v4.1):** entre ≈ 770 e ≈ 1260 px a barra do topo não cabia e o botão de tema saía da tela; agora os links não quebram de linha, o texto do botão de tema e a etiqueta “Since 1546” somem abaixo de 1280 px e o espaçamento se ajusta em 1280, 960 e 768 px (conferido a 800, 900 e 1024 px).
+
+## Modo escuro ("Guerra em alto mar")
+
+O **modo escuro** transforma a página numa viagem da superfície ao leito do oceano:
 
 | Trecho da página | O que acontece no modo escuro |
 |---|---|
@@ -41,10 +58,10 @@ o **modo escuro** transforma a página numa viagem da superfície ao leito do oc
 **Transição:** revelação circular a partir do botão (View Transitions API); navegadores sem suporte usam uma cortina circular;
 `prefers-reduced-motion` troca o tema sem animação.
 
-**Desempenho (mesmas regras do resto do site):** o modo escuro só existe quando ativo; cada canvas só anima enquanto está
+**Desempenho (mesmas regras do resto do site):** cada tema só existe quando ativo; cada canvas só anima enquanto está
 visível (IntersectionObserver) e com a aba em primeiro plano; o fundo do mar profundo roda em meia resolução; partículas em
-*pools* de tamanho fixo e brilhos como sprites; um monitor de FPS (`RNPerf`) reduz partículas e efeitos automaticamente em
-máquinas lentas; a cena escura é pré-aquecida quando o mouse chega ao botão.
+*pools* de tamanho fixo e brilhos como sprites; um monitor de FPS (`RNPerf`, nos **dois** temas desde a v4.1) reduz partículas e efeitos automaticamente em
+máquinas lentas; a cena do outro tema é pré-aquecida quando o mouse chega ao botão.
 
 Arquivos: `theme-init.js` (aplica o tema antes da 1ª pintura), `theme.js` (botão, transição, `RNPerf`), `dark.css`,
 `war-hero.js` (batalha do hero), `deep-sea.js` (mergulho, guerra submarina, naufrágios, medidor).
@@ -199,14 +216,17 @@ documentacao/           PDF com a documentação técnica completa
 docs/                   site estático publicado
 templates/index.html    página única
 templates/consulta.html página de consulta de navios (v3.0)
-static/css/style.css    estilos do modo claro (paleta "dia de sol no mar" em variáveis CSS)
+static/css/style.css    estilos gerais do site (paleta "dia de sol no mar" em variáveis CSS) e regras da barra de navegação
+static/css/light.css    estilos do modo claro "Mar em Paz" (v4.1)
 static/css/dark.css     estilos do modo escuro (guerra em alto mar)
 static/css/consulta.css estilos da página de consulta (claro e escuro)
-static/js/main.js       navegação, hero animado, contadores, modal
+static/js/main.js       navegação, controlador do hero (RNHero), contadores, modal
 static/js/ships-3d.js   motor 3D (cenas sob demanda, loop único, modelos procedurais)
 static/js/ships-data.js dados dos navios
 static/js/theme-init.js aplica o tema salvo antes da primeira pintura
 static/js/theme.js      botão de tema, transição e desempenho adaptativo
+static/js/convoy-hero.js comboio em perspectiva do hero (modo claro, v4.1)
+static/js/calm-sea.js   mergulho, patrulha, recife de coral e medidor (modo claro, v4.1)
 static/js/war-hero.js   batalha naval do hero (modo escuro)
 static/js/deep-sea.js   mergulho, guerra submarina e naufrágios (modo escuro)
 static/js/consulta.js   página de consulta (busca, filtros, ficha; só textContent)
@@ -224,4 +244,5 @@ tests/                  88 testes de funcionamento e segurança
 - Um único loop `requestAnimationFrame` para todo o 3D; animações baseadas em tempo (independem do monitor de 60/144 Hz).
 - Geometrias e materiais em cache; peças repetidas em `InstancedMesh`.
 - O hero (canvas 2D) pausa fora da tela e com a aba oculta; só `transform`/`opacity` são animados.
+- Tema claro (v4.1): sprites, fundos, níveis de névoa e cáusticas são pré-renderizados; o mergulho usa um canvas fixo em meia resolução; as faixas de patrulha e de recife ligam e desligam por visibilidade; nos navios do comboio, o nível de detalhe cai com a distância.
 - Respeita `prefers-reduced-motion`.
