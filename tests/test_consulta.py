@@ -284,3 +284,72 @@ def test_diagnostico_de_segredos_nao_vaza_o_conteudo():
     texto = config_env.resumo()
     senha = os.environ.get("DB_PASSWORD", "")
     assert senha and senha not in texto
+
+
+# ── Resiliencia ao "cold start" do banco (Neon suspende por inatividade) ─────
+@pytest.mark.parametrize("valor, esperado", [(None, 8.0), ("3", 3.0), ("0", 1.0), ("-5", 1.0), ("999", 15.0), ("abc", 8.0)])
+def test_tempo_limite_do_banco_e_configuravel_mas_limitado(monkeypatch, valor, esperado):
+    if valor is None:
+        monkeypatch.delenv("DB_CONNECT_TIMEOUT", raising=False)
+    else:
+        monkeypatch.setenv("DB_CONNECT_TIMEOUT", valor)
+    assert consulta_api._segundos("DB_CONNECT_TIMEOUT", 8) == esperado
+
+
+def test_pool_testa_a_conexao_antes_de_entrega_la(monkeypatch):
+    """Conexoes ociosas derrubadas pelo Neon/pgbouncer nao podem chegar ao cliente como erro 503."""
+    capturado = {}
+
+    class PoolFalso:
+        check_connection = staticmethod(lambda conn: None)
+
+        def __init__(self, conninfo, **kw):
+            capturado.update(kw, conninfo=conninfo)
+
+        def open(self, wait=False, timeout=0):
+            capturado["open_timeout"] = timeout
+
+        def close(self):
+            pass
+
+    antigo = consulta_api._pool
+    consulta_api._pool = None
+    monkeypatch.setattr(consulta_api, "ConnectionPool", PoolFalso)
+    monkeypatch.delenv("DB_CONNECT_TIMEOUT", raising=False)
+    monkeypatch.delenv("DB_POOL_TIMEOUT", raising=False)
+    try:
+        consulta_api._obter_pool()
+    finally:
+        consulta_api._pool = antigo
+    assert capturado["check"] is not None
+    assert "connect_timeout=8" in capturado["conninfo"]
+    assert capturado["timeout"] == 5 and capturado["open_timeout"] == 10
+    assert capturado["kwargs"]["options"] == "-c default_transaction_read_only=on"
+
+
+# ── Front-end: CSP estrita e nenhum ponto de injecao no DOM ──────────────────
+def test_csp_nao_permite_estilo_nem_script_inline(client):
+    for rota in ("/", "/consulta"):
+        csp = client.get(rota).headers["Content-Security-Policy"]
+        assert "unsafe-inline" not in csp and "unsafe-eval" not in csp
+
+
+@pytest.mark.parametrize("arq", ["index.html", "consulta.html"])
+def test_templates_sem_estilo_script_ou_evento_inline(arq):
+    """A CSP barra tudo isto; o teste garante que ninguem reintroduza (e depois precise afrouxar a CSP)."""
+    html = (RAIZ / "templates" / arq).read_text(encoding="utf-8")
+    assert not re.search(r"<style\b", html, re.I)
+    assert not re.search(r"\sstyle\s*=", html, re.I)
+    assert not re.search(r"\son[a-z]+\s*=", html, re.I)                    # onclick=, onerror=, ...
+    assert not re.search(r"<script(?![^>]*\bsrc=)[^>]*>", html, re.I)      # <script> sem src
+    assert not re.search(r"javascript:", html, re.I)
+    for tag in re.findall(r"<script[^>]*src=\"https?://[^\"]+\"[^>]*>", html, re.I | re.S):
+        assert "integrity=" in tag                                          # script externo sempre com SRI
+
+
+def test_javascript_sem_sinks_de_xss():
+    """Texto vindo da API/dados entra so por textContent; nada de innerHTML, eval ou document.write."""
+    perigosos = re.compile(r"\.(innerHTML|outerHTML)\s*=|insertAdjacentHTML\s*\(|document\.write(ln)?\s*\(|\beval\s*\(|new\s+Function\s*\(")
+    for arq in (RAIZ / "static" / "js").glob("*.js"):
+        achados = [m.group(0) for m in perigosos.finditer(arq.read_text(encoding="utf-8"))]
+        assert not achados, f"{arq.name}: {achados}"

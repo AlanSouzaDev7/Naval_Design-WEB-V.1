@@ -290,8 +290,12 @@ window.RNHero = (function initHero() {
 const modal = document.getElementById('ship-modal');
 let modalReturnFocus = null;
 
-function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+// Sem innerHTML: todo texto entra por textContent (a CSP ja barra scripts inline; isto fecha tambem o vetor de XSS por DOM).
+function criaTexto(tag, classe, texto) {
+  const e = document.createElement(tag);
+  if (classe) e.className = classe;
+  e.textContent = texto;
+  return e;
 }
 
 function openShipModal(shipId) {
@@ -305,15 +309,14 @@ function openShipModal(shipId) {
   document.getElementById('modal-desc').textContent         = data.desc;
   document.getElementById('modal-history-text').textContent = data.history;
 
-  document.getElementById('modal-specs').innerHTML = data.specs.map(s => `
-    <div class="spec-item">
-      <div class="spec-label">${escapeHtml(s.label)}</div>
-      <div class="spec-value">${escapeHtml(s.value)}</div>
-    </div>
-  `).join('');
+  document.getElementById('modal-specs').replaceChildren(...data.specs.map(sp => {
+    const item = document.createElement('div');
+    item.className = 'spec-item';
+    item.append(criaTexto('div', 'spec-label', sp.label), criaTexto('div', 'spec-value', sp.value));
+    return item;
+  }));
 
-  document.getElementById('modal-armament').innerHTML =
-    data.armament.map(a => `<li>${escapeHtml(a)}</li>`).join('');
+  document.getElementById('modal-armament').replaceChildren(...data.armament.map(a => criaTexto('li', '', a)));
 
   modal.classList.add('open');
   document.body.classList.add('modal-open');

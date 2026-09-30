@@ -107,6 +107,19 @@ _pool = None
 _pool_lock = threading.Lock()
 
 
+def _segundos(nome, padrao):
+    """Le um tempo limite em segundos do ambiente, limitado a 1-15 s (o gunicorn mata a requisicao em 20 s).
+
+    O padrao de 8 s da conexao cobre o 'cold start' do Neon (banco suspenso por inatividade); o teto evita
+    que um banco fora do ar prenda as threads do servidor.
+    """
+    try:
+        valor = float(os.environ.get(nome, padrao))
+    except ValueError:
+        valor = padrao
+    return max(1.0, min(15.0, valor))
+
+
 def _obter_pool():
     """Cria o pool na primeira chamada. Se o banco cair, tenta de novo na proxima."""
     global _pool
@@ -130,21 +143,22 @@ def _obter_pool():
             password=senha,
             sslmode=os.environ.get("DB_SSLMODE", "prefer"),
             sslrootcert=str(_RAIZ_TLS),   # verify-full: raiz fixa do projeto (ver comentario acima)
-            connect_timeout=3,
+            connect_timeout=_segundos("DB_CONNECT_TIMEOUT", 8),
             application_name="royalnavy-consulta",
         )
         pool = ConnectionPool(
             conninfo,
             min_size=1,
             max_size=int(os.environ.get("DB_POOL_MAX", "5")),
-            timeout=3,
+            timeout=_segundos("DB_POOL_TIMEOUT", 5),
             max_lifetime=1800,
             open=False,
+            check=ConnectionPool.check_connection,     # testa a conexao antes de entrega-la: o Neon/pgbouncer derruba as ociosas
             kwargs={"autocommit": True, "row_factory": dict_row,
                     "options": "-c default_transaction_read_only=on"},
         )
         try:
-            pool.open(wait=True, timeout=4)
+            pool.open(wait=True, timeout=_segundos("DB_CONNECT_TIMEOUT", 8) + 2)
         except Exception as exc:
             pool.close()
             raise BancoIndisponivel(str(exc).splitlines()[0][:120]) from exc

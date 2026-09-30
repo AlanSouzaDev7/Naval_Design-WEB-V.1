@@ -12,8 +12,9 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.7"
+      # O hostname do Neon identifica a instancia do banco: fica so no painel do Render (Environment), nao no Git.
       - key: DB_HOST
-        value: ep-blue-thunder-b643ndyv-pooler.c-2.sa-east-1.aws.neon.tech
+        sync: false
       - key: DB_PORT
         value: "5432"
       - key: DB_NAME

@@ -6,7 +6,7 @@
   <meta name="description" content="Site educativo sobre a Royal Navy: história, navios lendários em 3D, batalhas e a frota atual da Marinha Real Britânica." />
   <meta name="theme-color" content="#2a9bdc" />
   <!-- Segurança: só carrega recursos das origens que o site realmente usa (cdnjs e Google Fonts) -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <!-- Aplica o tema salvo antes de pintar a página (evita piscar claro→escuro) -->
   <script src="static/js/theme-init.js"></script>
@@ -444,7 +444,7 @@
           <div class="fleet-cat-info">
             <h4>Porta-Aviões</h4>
             <p>2 navios — Classe Queen Elizabeth</p>
-            <div class="fleet-bar"><div class="fleet-bar-fill" style="--fill:1"></div></div>
+            <div class="fleet-bar"><div class="fleet-bar-fill" data-fill="1"></div></div>
           </div>
           <span class="fleet-count">2</span>
         </div>
@@ -454,7 +454,7 @@
           <div class="fleet-cat-info">
             <h4>Submarinos Nucleares</h4>
             <p>10 unidades — Classes Astute e Vanguard</p>
-            <div class="fleet-bar"><div class="fleet-bar-fill" style="--fill:0.8"></div></div>
+            <div class="fleet-bar"><div class="fleet-bar-fill" data-fill="0.8"></div></div>
           </div>
           <span class="fleet-count">10</span>
         </div>
@@ -464,7 +464,7 @@
           <div class="fleet-cat-info">
             <h4>Destróieres</h4>
             <p>6 navios — Classe Type 45 Daring</p>
-            <div class="fleet-bar"><div class="fleet-bar-fill" style="--fill:0.6"></div></div>
+            <div class="fleet-bar"><div class="fleet-bar-fill" data-fill="0.6"></div></div>
           </div>
           <span class="fleet-count">6</span>
         </div>
@@ -474,7 +474,7 @@
           <div class="fleet-cat-info">
             <h4>Fragatas</h4>
             <p>13 navios — Classe Type 23 Duke</p>
-            <div class="fleet-bar"><div class="fleet-bar-fill" style="--fill:0.75"></div></div>
+            <div class="fleet-bar"><div class="fleet-bar-fill" data-fill="0.75"></div></div>
           </div>
           <span class="fleet-count">13</span>
         </div>
@@ -484,7 +484,7 @@
           <div class="fleet-cat-info">
             <h4>Navios de Patrulha</h4>
             <p>22 embarcações — Diversas classes</p>
-            <div class="fleet-bar"><div class="fleet-bar-fill" style="--fill:0.9"></div></div>
+            <div class="fleet-bar"><div class="fleet-bar-fill" data-fill="0.9"></div></div>
           </div>
           <span class="fleet-count">22</span>
         </div>
@@ -494,7 +494,7 @@
           <div class="fleet-cat-info">
             <h4>Navios Anfíbios</h4>
             <p>3 unidades — LPH, LPD, LSL</p>
-            <div class="fleet-bar"><div class="fleet-bar-fill" style="--fill:0.4"></div></div>
+            <div class="fleet-bar"><div class="fleet-bar-fill" data-fill="0.4"></div></div>
           </div>
           <span class="fleet-count">3</span>
         </div>

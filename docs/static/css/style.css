@@ -1118,6 +1118,13 @@ button { font: inherit; }
   transition: transform 1.3s var(--ease-out);
 }
 
+/* Largura de cada barra: atributo data-fill no HTML (a CSP nao permite style="" inline) */
+.fleet-bar-fill[data-fill="1"] { --fill: 1; }
+.fleet-bar-fill[data-fill="0.9"] { --fill: 0.9; }
+.fleet-bar-fill[data-fill="0.8"] { --fill: 0.8; }
+.fleet-bar-fill[data-fill="0.75"] { --fill: 0.75; }
+.fleet-bar-fill[data-fill="0.6"] { --fill: 0.6; }
+.fleet-bar-fill[data-fill="0.4"] { --fill: 0.4; }
 .fleet-categories.is-visible .fleet-bar-fill { transform: scaleX(var(--fill, 1)); }
 .fleet-categories.is-visible .fleet-cat:nth-child(2) .fleet-bar-fill { transition-delay: 0.08s; }
 .fleet-categories.is-visible .fleet-cat:nth-child(3) .fleet-bar-fill { transition-delay: 0.16s; }

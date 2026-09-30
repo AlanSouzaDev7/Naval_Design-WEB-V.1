@@ -8,6 +8,7 @@ para uma consulta **segura**. Nenhum script apaga ou altera dados: só **acresce
 |---|---|
 | `01_busca.sql` | extensões `unaccent` e `pg_trgm`; funções `rn_norm`/`rn_busca` (busca sem acento); índices; **view `v_navios`** (única coisa que a API lê) |
 | `02_papel_leitura.sql` | papel `navios_leitura` (sem superusuário, 10 conexões, somente-leitura, `statement_timeout` 3 s) e as permissões mínimas |
+| `seed_teste.py` | **só para testes:** cria a tabela `navios_historicos` (17 colunas) com 84 navios sintéticos num banco descartável/local; recusa qualquer host que não seja localhost e nunca altera uma tabela que já tenha dados |
 | `aplicar.py` | executa os dois SQL, define a senha do papel (aleatória), grava os segredos e **verifica por dentro** que o papel não consegue escrever |
 
 ## Primeira vez

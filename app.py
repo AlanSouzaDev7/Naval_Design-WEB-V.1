@@ -39,7 +39,7 @@ ALLOWED_HOSTS = {h.strip().lower() for h in
 # Mesma politica da <meta> das paginas (o GitHub Pages so aceita meta); aqui, como cabecalho,
 # ela ganha tambem frame-ancestors (anti-clickjacking), que a meta nao suporta.
 CSP = ("default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; "
-       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; "
+       "style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; "
        "img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'")
 
 app = Flask(
