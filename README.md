@@ -93,7 +93,7 @@ navegador ──GET──> Flask (/api/navios/...) ──papel navios_leitura─
 | **SQL injection** | Consultas **sempre parametrizadas**; o texto do usuário nunca é concatenado ao SQL. Além disso a entrada é validada por lista de caracteres permitidos (letras, números, espaço e `. ' ( ) / -`), tamanho (2–60) e parâmetros conhecidos. |
 | **Abuso** | Limite por IP (30 buscas/min, 60 fichas/min, 120 req/min na API), `LIMIT` em toda consulta, no máximo 20 páginas, pool de 5 conexões. |
 | **Vazamento de informação** | Erros genéricos para o cliente (o detalhe fica só no log); sem versão de servidor; `Cache-Control: no-store` na API. |
-| **Navegador** | Tudo que vem da API entra na página por `textContent` (nunca `innerHTML`) — testado com resposta hostil; CSP sem `unsafe-eval` e sem scripts inline; `frame-ancestors 'none'`. |
+| **Navegador** | Tudo que vem da API ou dos dados entra na página por `textContent` — desde a v4.2 **nenhum** arquivo JS usa `innerHTML`, `eval` ou `document.write` (um teste garante); CSP **sem `unsafe-inline` e sem `unsafe-eval`** (nem scripts nem estilos inline), scripts externos com SRI e `frame-ancestors 'none'`. |
 | **Rede** | Cabeçalho `Host` validado (`ALLOWED_HOSTS`, contra DNS rebinding), só `GET`, CORS por lista exata (nunca `*`), HSTS opcional (`RN_HTTPS=1`), proxy só é confiável se configurado (`TRUST_PROXY_HOPS`). |
 | **Segredos** | Senha do papel gerada ao acaso (43 caracteres) e guardada **fora do Git e fora do OneDrive**: `~/.royalnavy/consulta.env` (Windows: `C:\Users\<você>\.royalnavy\consulta.env`), com permissão só para o seu usuário (`config_env.py`). Um teste garante que nenhum arquivo versionado contém a senha. |
 | **Dependências** | Versões fixas (`requirements-lock.txt`), auditadas com `pip-audit` (0 vulnerabilidades conhecidas; o Flask foi atualizado para 3.1.3 por isso) e `bandit` (0 achados). |
@@ -108,7 +108,8 @@ A consulta está publicada em **<https://royalnavy-consulta.onrender.com>** — 
 plano gratuito). Arquivos de implantação em [`deploy/`](deploy/).
 
 > **Plano gratuito:** o Render "hiberna" depois de ≈ 15 min sem acessos e o Neon suspende o banco de forma parecida;
-> o primeiro pedido depois disso demora alguns segundos a mais enquanto os dois acordam sozinhos — não é defeito.
+> o primeiro pedido depois disso demora alguns segundos a mais enquanto os dois acordam sozinhos — não é defeito. Desde a v4.2 o pool
+> testa a conexão antes de usá-la e espera até 8 s pelo banco (`DB_CONNECT_TIMEOUT`), então esse primeiro pedido deixou de falhar com 503.
 
 Duas pegadinhas reais encontradas ao publicar (documentadas em detalhe na seção 14 do PDF):
 
@@ -131,10 +132,39 @@ Em modo local (`python app.py`) a própria mensagem da página mostra o motivo e
 
 ```bash
 pip install -r requirements-dev.txt
-pytest tests                      # 88 testes: funcionamento, injeção de SQL, XSS, limite, privilégios do banco, segredos
+pytest tests                      # 99 testes: funcionamento, injeção de SQL, XSS, CSP, limite, privilégios do banco, segredos
 bandit -r app.py consulta_api.py db build_static.py
 pip-audit -r requirements-lock.txt
 ```
+
+Os testes precisam de um PostgreSQL com a tabela de navios; **sem banco, todos são ignorados (`skipped`)** — o que parece verde mas
+não prova nada. Para rodá-los sem mexer no banco real, use um banco descartável (Docker) com dados **sintéticos** de teste
+(PowerShell, na pasta do projeto):
+
+```powershell
+docker run -d --name rn-pg-teste -e POSTGRES_PASSWORD=<senha-aleatoria> `
+    -p 127.0.0.1:55432:5432 postgres:16-alpine
+$env:PGHOST="127.0.0.1"; $env:PGPORT="55432"; $env:PGPASSWORD="<senha-aleatoria>"
+$env:RN_ENV_FILE="$env:TEMP\rn-teste.env"   # segredos de teste fora do ~/.royalnavy
+python db/seed_teste.py                     # cria a tabela e 84 navios sintéticos (só roda em localhost)
+python db/aplicar.py                        # extensões, view v_navios, papel navios_leitura e verificação
+pytest tests                                # 99 passed
+docker rm -f rn-pg-teste                    # descarta o banco
+```
+
+### Revisão de segurança e robustez (v4.2)
+
+Revisão de 30/09/2026 (detalhes na **seção 17 do PDF**). Dependências (OSV), `bandit` e o histórico do Git (17 commits) não tinham
+problemas; as quatro melhorias foram:
+
+| | Achado | Correção |
+|---|---|---|
+| **A** | Os 88 testes estavam todos ignorados sem banco local | Banco descartável em Docker + `db/seed_teste.py` (84 navios sintéticos); suíte roda de ponta a ponta |
+| **B** | `/api/saude` dava **503** depois de o banco ficar ocioso (Neon/pooler derruba conexões; tempo de 3 s era curto) | `check=ConnectionPool.check_connection`, `DB_CONNECT_TIMEOUT` (8 s) e `DB_POOL_TIMEOUT` (5 s); reproduzido: antes 503, depois 200 |
+| **C** | CSP ainda aceitava estilos inline (`'unsafe-inline'`); restavam 2 `innerHTML` e 6 `style=""` | CSP sem `unsafe-inline`; `data-fill` + CSS nas barras; DOM com `textContent` no modal; 4 testes impedem a regressão; 0 violações de CSP no navegador |
+| **D** | O hostname do Neon estava no `deploy/render.yaml` público | `DB_HOST` agora é `sync: false` (valor só no painel do Render) |
+
+> **Ação sua:** antes do próximo *Sync* do blueprint no Render, confirme no painel que `DB_HOST` continua preenchido.
 
 ### Checklist para publicar (referência geral)
 
@@ -168,7 +198,7 @@ e não executa Python. Como o site não tem lógica de servidor, ele é publicad
 
 ### Segurança
 - HTTPS fornecido pelo GitHub Pages; sem servidor, banco de dados, formulários ou credenciais para atacar.
-- `Content-Security-Policy` (no `<meta>` da página) limita scripts, estilos, fontes e imagens às origens usadas (o próprio site, cdnjs e Google Fonts).
+- `Content-Security-Policy` (no `<meta>` da página) limita scripts, estilos, fontes e imagens às origens usadas (o próprio site, cdnjs e Google Fonts), sem `unsafe-inline` (v4.2).
 - three.js carregado com verificação de integridade (SRI).
 - No Flask local: cabeçalhos `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, CSP (com `frame-ancestors`) e isolamento de origem; debug só em `127.0.0.1`. Segurança da consulta ao banco: ver a seção "Consulta de navios (v3.0)".
 
@@ -232,9 +262,9 @@ static/js/deep-sea.js   mergulho, guerra submarina e naufrágios (modo escuro)
 static/js/consulta.js   página de consulta (busca, filtros, ficha; só textContent)
 consulta_api.py         API de consulta (validação, limite, consultas parametrizadas)
 config_env.py           onde ficam os segredos (fora do Git e do OneDrive)
-db/                     SQL da busca e do papel de leitura, aplicar.py e README do banco
+db/                     SQL da busca e do papel de leitura, aplicar.py, seed_teste.py (dados sintéticos de teste) e README do banco
 deploy/                 publicação online (v4.0): render.yaml, raiz TLS, dependências extras
-tests/                  88 testes de funcionamento e segurança
+tests/                  99 testes de funcionamento e segurança
 ```
 
 ## Notas de desempenho
