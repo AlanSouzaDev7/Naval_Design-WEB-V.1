@@ -66,7 +66,9 @@ def main() -> None:
     contato = Environment(autoescape=True).from_string(
         (ROOT / "templates" / "contato.html").read_text(encoding="utf-8")).render(estatico=True)
     contato = contato.replace("../static/", "static/").replace('href="consulta"', 'href="consulta.html"')
-    index = index.replace('href="contato"', 'href="contato.html"')
+    aviso = ('<div class="contact-form contact-form--aviso"><p>O envio de mensagens precisa do servidor (Flask), que o GitHub Pages não executa. '
+             'Use a versão publicada em <a href="https://royalnavy-consulta.onrender.com/#contact">royalnavy-consulta.onrender.com</a>.</p></div>')
+    index = re.sub(r"<!--contact-form-->.*?<!--/contact-form-->", aviso, index, flags=re.S)
     consulta = consulta.replace('href="contato"', 'href="contato.html"')
     contato = contato.replace('href="contato"', 'href="contato.html"')
 
