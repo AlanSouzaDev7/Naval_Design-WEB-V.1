@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Fale com a equipe do site educativo Royal Navy: envie uma mensagem." />
+  <meta name="theme-color" content="#2a9bdc" />
+  <!-- Segurança: só carrega recursos das origens que o site realmente usa (cdnjs e Google Fonts) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <!-- Aplica o tema salvo antes de pintar a página (evita piscar claro→escuro) -->
+  <script src="../static/js/theme-init.js"></script>
+  <title>Contato — Royal Navy</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%93%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../static/css/style.css" />
+  <link rel="stylesheet" href="../static/css/dark.css" />
+  <link rel="stylesheet" href="../static/css/contato.css" />
+</head>
+<body class="page-contato">
+
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+
+  <!-- ═══════════════════════════════════════════ NAV ═══ -->
+  <nav class="navbar scrolled" id="navbar">
+    <div class="nav-inner">
+      <a class="nav-brand" href="./" aria-label="Royal Navy — página inicial">
+        <div class="nav-anchor">⚓</div>
+        <span class="brand-text">ROYAL NAVY</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="./#hero"    class="nav-link">Início</a></li>
+        <li><a href="./#history" class="nav-link">História</a></li>
+        <li><a href="./#ships"   class="nav-link">Navios</a></li>
+        <li><a href="./#battles" class="nav-link">Batalhas</a></li>
+        <li><a href="./#fleet"   class="nav-link">Frota Atual</a></li>
+        <li><a href="./#gallery" class="nav-link">Galeria</a></li>
+        <li><a href="consulta"   class="nav-link">Consulta</a></li>
+        <li><a href="contato"    class="nav-link active" aria-current="page">Contato</a></li>
+      </ul>
+      <div class="nav-badge">Since 1546</div>
+      <button class="theme-toggle" id="theme-toggle" type="button" role="switch" aria-checked="false"
+              aria-label="Alternar entre modo claro e modo escuro">
+        <span class="theme-toggle__track">
+          <span class="theme-toggle__knob">
+            <svg class="theme-toggle__icon theme-toggle__icon--sun" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4.6" fill="currentColor"/>
+              <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>
+              </g>
+            </svg>
+            <svg class="theme-toggle__icon theme-toggle__icon--moon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20.2 14.6A8.4 8.4 0 0 1 9.4 3.8a8.4 8.4 0 1 0 10.8 10.8z" fill="currentColor"/>
+            </svg>
+          </span>
+        </span>
+        <span class="theme-toggle__label" id="theme-label">Claro</span>
+      </button>
+    </div>
+  </nav>
+
+  
+  <!-- ═══════════════════════════════════════════ CONTATO ═══ -->
+  <header class="contato-hero">
+    <div class="contato-hero__inner">
+      <div class="section-tag">Fale conosco</div>
+      <h1 class="contato-title">Entre em <span class="accent">contato</span>!</h1>
+      <p class="contato-sub">Dúvidas, sugestões ou correções sobre o conteúdo? Escreva abaixo.</p>
+    </div>
+  </header>
+
+  <main class="contato-main" id="conteudo">
+    {% if estatico %}
+    <section class="contato-ok" role="status">
+      <div class="contato-ok__icone" aria-hidden="true">⚓</div>
+      <h2>Formulário indisponível nesta versão</h2>
+      <p>O envio de mensagens precisa do servidor (Flask), que o GitHub Pages não executa. Use a versão publicada em <a href="https://royalnavy-consulta.onrender.com/contato">royalnavy-consulta.onrender.com/contato</a>.</p>
+    </section>
+    {% elif enviado %}
+    <section class="contato-ok" role="status">
+      <div class="contato-ok__icone" aria-hidden="true">⚓</div>
+      <h2>Mensagem recebida!</h2>
+      <p>Obrigado pelo contato. (Versão de teste: a mensagem não foi armazenada nem enviada a ninguém.)</p>
+      <a class="btn btn-primary" href="contato">Enviar outra</a>
+    </section>
+    {% else %}
+    <form class="contact-form" action="contato" method="POST" novalidate>
+      {% if erro %}<p class="contato-erro" role="alert">{{ erro }}</p>{% endif %}
+      <div class="contato-campo">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" name="email" maxlength="120" autocomplete="email" required value="{{ email or '' }}">
+      </div>
+      <div class="contato-campo">
+        <label for="message">Mensagem</label>
+        <textarea id="message" name="message" rows="6" maxlength="2000" required>{{ message or '' }}</textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Enviar</button>
+    </form>
+    {% endif %}
+  </main>
+
+  <footer class="footer contato-footer">
+    <div class="footer-bottom">
+      <span>© 2026 Royal Navy Educational. Fins educativos.</span>
+    </div>
+  </footer>
+
+  <script defer src="../static/js/theme.js"></script>
+</body>
+</html>

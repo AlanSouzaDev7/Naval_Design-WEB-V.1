@@ -246,10 +246,12 @@ documentacao/           PDF com a documentação técnica completa
 docs/                   site estático publicado
 templates/index.html    página única
 templates/consulta.html página de consulta de navios (v3.0)
+templates/contato.html  página de contato (formulário só com o servidor; na versão estática apenas avisa)
 static/css/style.css    estilos gerais do site (paleta "dia de sol no mar" em variáveis CSS) e regras da barra de navegação
 static/css/light.css    estilos do modo claro "Mar em Paz" (v4.1)
 static/css/dark.css     estilos do modo escuro (guerra em alto mar)
 static/css/consulta.css estilos da página de consulta (claro e escuro)
+static/css/contato.css  estilos da página de contato (claro e escuro)
 static/js/main.js       navegação, controlador do hero (RNHero), contadores, modal
 static/js/ships-3d.js   motor 3D (cenas sob demanda, loop único, modelos procedurais)
 static/js/ships-data.js dados dos navios

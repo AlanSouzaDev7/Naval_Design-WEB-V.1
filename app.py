@@ -101,6 +101,19 @@ def consulta():
     return render_template("consulta.html")
 
 
+@app.route("/contato", methods=["GET", "POST"])
+def contato():
+    """Pagina de contato (TESTE): valida a mensagem, mas nao a armazena nem a envia a ninguem."""
+    if request.method == "GET":
+        return render_template("contato.html")
+    email = (request.form.get("email") or "").strip()[:120]
+    message = (request.form.get("message") or "").strip()[:2000]
+    if "@" not in email or "." not in email.rsplit("@", 1)[-1] or not message:
+        return render_template("contato.html", erro="Informe um e-mail válido e escreva uma mensagem.",
+                               email=email, message=message), 400
+    return render_template("contato.html", enviado=True)
+
+
 # ── API de consulta ao banco (somente leitura) ─────────────────
 # Se faltar dependencia ou configuracao, o restante do site continua no ar.
 CONSULTA_ATIVA, _motivo = True, ""

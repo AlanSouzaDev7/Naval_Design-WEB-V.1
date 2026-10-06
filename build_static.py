@@ -61,12 +61,22 @@ def main() -> None:
     else:
         consulta = consulta.replace('<meta name="rn-mode" content="server" />', '<meta name="rn-mode" content="static" />')
 
+    # contato: o template usa Jinja; o formulario precisa do servidor, entao a versao estatica so avisa
+    from jinja2 import Environment
+    contato = Environment(autoescape=True).from_string(
+        (ROOT / "templates" / "contato.html").read_text(encoding="utf-8")).render(estatico=True)
+    contato = contato.replace("../static/", "static/").replace('href="consulta"', 'href="consulta.html"')
+    index = index.replace('href="contato"', 'href="contato.html"')
+    consulta = consulta.replace('href="contato"', 'href="contato.html"')
+    contato = contato.replace('href="contato"', 'href="contato.html"')
+
     if DOCS.exists():
         shutil.rmtree(DOCS)
     DOCS.mkdir()
 
     (DOCS / "index.html").write_text(index, encoding="utf-8", newline="\n")
     (DOCS / "consulta.html").write_text(consulta, encoding="utf-8", newline="\n")
+    (DOCS / "contato.html").write_text(contato, encoding="utf-8", newline="\n")
     shutil.copytree(ROOT / "static", DOCS / "static")
     (DOCS / ".nojekyll").write_text("", encoding="utf-8")   # desliga o processamento Jekyll do Pages
 
