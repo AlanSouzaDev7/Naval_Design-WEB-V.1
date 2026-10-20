@@ -69,6 +69,8 @@ Arquivos: `theme-init.js` (aplica o tema antes da 1ª pintura), `theme.js` (bot�
 
 ## Sugestões de navios (v4.3)
 
+Detalhes completos (decisões, segurança, verificação e configuração) na **seção 18 do PDF** em [`documentacao/`](documentacao/).
+
 Página **`/sugerir`**: o visitante digita o nome de um navio que sentiu falta (e, se quiser, marinha, guerra e uma fonte).
 O site confere o acervo **só lendo o banco**, com o mesmo papel `navios_leitura` da consulta:
 
