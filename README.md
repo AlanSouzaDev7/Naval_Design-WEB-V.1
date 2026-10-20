@@ -141,6 +141,8 @@ navegador ──GET──> Flask (/api/navios/...) ──papel navios_leitura─
 
 ### PDFs dos navios (v4.4)
 
+Detalhes (decisões, segurança e verificação) na **seção 19 do PDF** em [`documentacao/`](documentacao/).
+
 Na página de consulta há dois downloads, gerados na hora pelo próprio servidor:
 
 | Botão | Rota | Conteúdo |
