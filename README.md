@@ -135,7 +135,27 @@ navegador ──GET──> Flask (/api/navios/...) ──papel navios_leitura─
 | `GET /api/navios/busca?q=&marinha=&guerra=&tipo=&pagina=` | busca (sem acento, tolera erro de digitação), 10 por página |
 | `GET /api/navios/<id>` | ficha completa + outros navios da mesma classe |
 | `GET /api/navios/filtros` | marinhas, guerras e tipos com contagem |
+| `GET /api/navios/<id>/pdf` | ficha do navio em PDF, para download (v4.4) |
+| `GET /api/navios/busca/pdf?q=&marinha=&guerra=&tipo=` | resultado da busca em PDF, para download (v4.4) |
 | `GET /api/saude` | verificação de funcionamento |
+
+### PDFs dos navios (v4.4)
+
+Na página de consulta há dois downloads, gerados na hora pelo próprio servidor:
+
+| Botão | Rota | Conteúdo |
+|---|---|---|
+| **Baixar ficha (PDF)** (na ficha) | `GET /api/navios/<id>/pdf` | ficha completa: marinha, tipo, guerra, casco, classe, cronologia, comando, batalhas, armamento, situação, observações e navios da mesma classe |
+| **Baixar resultados (PDF)** (acima da lista) | `GET /api/navios/busca/pdf?q=&marinha=&guerra=&tipo=` | a busca na tela, em tabela (A4 paisagem), com os filtros usados; até 200 navios por PDF |
+
+- **Rápidos:** gerados em memória com o ReportLab e as fontes padrão do PDF (nenhum arquivo de fonte no servidor):
+  cerca de 60–110 ms e poucos KB.
+- **Mesma segurança da consulta:** os dados vêm do papel somente leitura e da view `v_navios`; a busca passa
+  pela mesma validação estrita (parâmetros inválidos dão 400); limite de 10 fichas e 6 buscas em PDF por minuto
+  por IP; `no-store`; nome do arquivo só com `[a-z0-9-]`.
+- **Texto do banco:** escapado antes de entrar no PDF (uma marcação como `<b>` aparece literalmente).
+  Caracteres fora do alfabeto latino viram a letra sem o sinal (ex.: “Sōryū” → “Soryu”).
+- **Dependências:** `reportlab==5.0.1` e `pillow==13.0.0` (a 12.3.0 tem avisos na base OSV).
 
 ### Como o banco fica protegido
 
@@ -184,7 +204,7 @@ Em modo local (`python app.py`) a própria mensagem da página mostra o motivo e
 
 ```bash
 pip install -r requirements-dev.txt
-pytest tests                      # 157 testes: consulta, sugestões, painel, CSRF, injeção de SQL, XSS, CSP, limite, privilégios do banco, segredos
+pytest tests                      # 186 testes: consulta, PDFs, sugestões, painel, CSRF, injeção de SQL, XSS, CSP, limite, privilégios do banco, segredos
 bandit -r app.py consulta_api.py protecao.py sugestoes.py db build_static.py ferramentas
 pip-audit -r requirements-lock.txt
 ```
@@ -200,7 +220,7 @@ $env:PGHOST="127.0.0.1"; $env:PGPORT="55432"; $env:PGPASSWORD="<senha-aleatoria>
 $env:RN_ENV_FILE="$env:TEMP\rn-teste.env"   # segredos de teste fora do ~/.royalnavy
 python db/seed_teste.py                     # cria a tabela e 84 navios sintéticos (só roda em localhost)
 python db/aplicar.py                        # extensões, view v_navios, papel navios_leitura e verificação
-pytest tests                                # 157 passed
+pytest tests                                # 186 passed
 docker rm -f rn-pg-teste                    # descarta o banco
 ```
 
@@ -317,14 +337,15 @@ static/js/calm-sea.js   mergulho, patrulha, recife de coral e medidor (modo clar
 static/js/war-hero.js   batalha naval do hero (modo escuro)
 static/js/deep-sea.js   mergulho, guerra submarina e naufrágios (modo escuro)
 static/js/consulta.js   página de consulta (busca, filtros, ficha; só textContent)
-consulta_api.py         API de consulta (validação, limite, consultas parametrizadas)
+consulta_api.py         API de consulta (validação, limite, consultas parametrizadas) e rotas dos PDFs
+pdf_navios.py           gera os PDFs da ficha e da busca (ReportLab, em memória)
 sugestoes.py            sugestões de navios: comparação com o acervo, arquivo JSON (GitHub ou local) e painel /admin
 protecao.py             CSRF, sessão segura e campo-isca dos formulários
 ferramentas/            gerar_hash_admin.py (hash da senha do painel)
 config_env.py           onde ficam os segredos (fora do Git e do OneDrive)
 db/                     SQL da busca e do papel de leitura, aplicar.py, seed_teste.py (dados sintéticos de teste) e README do banco
 deploy/                 publicação online (v4.0): render.yaml, raiz TLS, dependências extras
-tests/                  157 testes de funcionamento e segurança
+tests/                  186 testes de funcionamento e segurança
 ```
 
 ## Notas de desempenho

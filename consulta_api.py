@@ -336,22 +336,73 @@ def filtros():
     return resposta(_cache_filtros["dados"])
 
 
-@bp.get("/navios/<int:navio_id>")
-@limiter.limit("60 per minute")
-def ficha(navio_id):
+def _carregar_ficha(navio_id):
+    """Ficha completa (ou None). Usada pela resposta JSON e pelo PDF: mesma consulta, mesma validacao."""
     if request.args:
         raise ValorInvalido("Parâmetros inválidos.")
     if not (1 <= navio_id <= 2_147_483_647):
-        return erro("nao_encontrado", "Navio não encontrado.", 404)
+        return None
     linhas = consultar(SQL_FICHA, {"id": navio_id})
     if not linhas:
-        return erro("nao_encontrado", "Navio não encontrado.", 404)
+        return None
     navio = linhas[0]
     for campo in ("data_batismo", "data_comissionamento", "data_baixa"):
         navio[campo] = _iso(navio[campo])
     navio["mesma_classe"] = (consultar(SQL_MESMA_CLASSE, {"classe": navio["classe"], "marinha": navio["marinha"],
                                                           "id": navio_id}) if navio["classe"] else [])
+    return navio
+
+
+@bp.get("/navios/<int:navio_id>")
+@limiter.limit("60 per minute")
+def ficha(navio_id):
+    navio = _carregar_ficha(navio_id)
+    if navio is None:
+        return erro("nao_encontrado", "Navio não encontrado.", 404)
     return resposta(navio)
+
+
+# ── PDFs (v4.4) ──────────────────────────────────────────────────────────────
+MAX_PDF = 200                                       # linhas no PDF de uma busca (o resto: refinar a busca)
+
+
+def _pdf(conteudo, arquivo):
+    """Resposta de download. O nome do arquivo ja vem so com [a-z0-9-] (ver pdf_navios.nome_arquivo)."""
+    from flask import Response
+    return Response(conteudo, mimetype="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{arquivo}"',
+                             "Content-Length": str(len(conteudo))})
+
+
+def _gerador():
+    try:
+        import pdf_navios
+    except ImportError as exc:                          # sem o ReportLab, so os PDFs ficam fora do ar
+        raise BancoIndisponivel(f"gerador de PDF indisponivel: {exc}") from exc
+    return pdf_navios
+
+
+@bp.get("/navios/<int:navio_id>/pdf")
+@limiter.limit("10 per minute")
+def ficha_pdf(navio_id):
+    navio = _carregar_ficha(navio_id)
+    if navio is None:
+        return erro("nao_encontrado", "Navio não encontrado.", 404)
+    gerador = _gerador()
+    return _pdf(gerador.ficha_pdf(navio), gerador.nome_arquivo(f"navio-{navio_id}", navio["nome"]))
+
+
+@bp.get("/navios/busca/pdf")
+@limiter.limit("6 per minute")
+def busca_pdf():
+    q, marinha, guerra, tipo, _pagina = validar_busca(request.args)
+    linhas = consultar(SQL_BUSCA, {"q": q, "marinha": marinha, "guerra": guerra, "tipo": tipo,
+                                   "lim": MAX_PDF, "off": 0})
+    total = linhas[0]["total"] if linhas else 0
+    gerador = _gerador()
+    filtros = {"q": q, "marinha": marinha, "guerra": guerra, "tipo": tipo}
+    nome = " ".join(v for v in filtros.values() if v)
+    return _pdf(gerador.lista_pdf(linhas, total, filtros, MAX_PDF), gerador.nome_arquivo("busca", nome))
 
 
 def init_app(app):

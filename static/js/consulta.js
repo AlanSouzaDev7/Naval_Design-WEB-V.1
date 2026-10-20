@@ -23,7 +23,7 @@
     form: $('consulta-form'), q: $('q'), limpar: $('q-limpar'),
     marinha: $('f-marinha'), guerra: $('f-guerra'), tipo: $('f-tipo'),
     aviso: $('aviso'), grade: $('grade'), total: $('lista-total'), chips: $('chips'),
-    lista: $('resultados'), pag: $('paginacao'), ant: $('pg-ant'), prox: $('pg-prox'), info: $('pg-info'),
+    lista: $('resultados'), listaPdf: $('lista-pdf'), pag: $('paginacao'), ant: $('pg-ant'), prox: $('pg-prox'), info: $('pg-info'),
     ficha: $('ficha'), status: $('status'),
   };
 
@@ -122,9 +122,19 @@
     }
   }
 
+  // Link de download do PDF com os mesmos critérios da busca na tela (o servidor valida tudo de novo)
+  function atualizaPdfLista(total) {
+    if (!el.listaPdf) return;
+    const p = new URLSearchParams();
+    ['q', 'marinha', 'guerra', 'tipo'].forEach(k => { if (state[k]) p.set(k, state[k]); });
+    el.listaPdf.href = API + '/api/navios/busca/pdf?' + p.toString();
+    el.listaPdf.hidden = !total;
+  }
+
   function renderResultados(dados) {
     limpaFilhos(el.lista);
     el.total.textContent = dados.total ? '(' + dados.total + ')' : '';
+    atualizaPdfLista(dados.total);
     if (!dados.resultados.length) {
       const li = cria('li', 'resultados__vazio', 'Nenhum navio encontrado. Tente outra grafia ou remova algum filtro. ');
       if (state.q.length >= 2) {                            // não está no acervo? leva o nome para a página de sugestão
@@ -165,13 +175,13 @@
     gravaUrl();
     if (!TEXTO_OK.test(state.q)) {                          // evita uma requisição que o servidor recusaria
       if (ctrlBusca) ctrlBusca.abort();
-      limpaFilhos(el.lista); el.total.textContent = ''; el.pag.hidden = true;
+      limpaFilhos(el.lista); el.total.textContent = ''; el.pag.hidden = true; atualizaPdfLista(0);
       mostraAviso("Use apenas letras, números, espaço e os símbolos . ' ( ) / -", 'info');
       return;
     }
     if (!temFiltro()) {                                     // nada para buscar: volta ao estado inicial
       if (ctrlBusca) ctrlBusca.abort();
-      limpaFilhos(el.lista); el.total.textContent = ''; el.pag.hidden = true; mostraAviso('');
+      limpaFilhos(el.lista); el.total.textContent = ''; el.pag.hidden = true; atualizaPdfLista(0); mostraAviso('');
       if (state.q.length === 1) mostraAviso('Digite ao menos 2 letras.', 'info');
       return;
     }
@@ -224,6 +234,10 @@
     topo.appendChild(cria('h2', 'ficha-nome', n.nome));
     const sub = [n.designacao_casco ? 'Casco ' + n.designacao_casco : null, n.classe ? 'Classe ' + n.classe : null].filter(Boolean).join(' · ');
     if (sub) topo.appendChild(cria('p', 'ficha-sub', sub));
+    const pdf = cria('a', 'btn-mini ficha-pdf', 'Baixar ficha (PDF)');
+    pdf.href = API + '/api/navios/' + encodeURIComponent(String(n.id)) + '/pdf';
+    pdf.setAttribute('download', '');
+    topo.appendChild(pdf);
     el.ficha.appendChild(topo);
 
     const cron = secao('Cronologia');

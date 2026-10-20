@@ -6,3 +6,7 @@ psycopg-binary==3.3.6
 psycopg-pool==3.3.3
 Flask-Limiter==4.1.1
 python-dotenv==1.2.3
+# PDFs das fichas e das buscas (v4.4). Pillow fixado na 13.0.0: a 12.3.0 tem avisos na base OSV
+reportlab==5.0.1
+pillow==13.0.0
+charset-normalizer==3.5.2
