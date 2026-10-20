@@ -1,0 +1,37 @@
+{% extends "admin_base.html" %}
+{% block titulo %}Sugestões{% endblock %}
+{% block conteudo %}
+<h1 class="admin-h1">Sugestões de navios</h1>
+{% if aviso %}<p class="admin-aviso" role="status">{{ aviso }}</p>{% endif %}
+{% if erro %}<p class="contato-erro" role="alert">{{ erro }}</p>{% endif %}
+
+<p class="admin-resumo">
+  <strong>{{ contagem.em_analise }}</strong> em análise{% if novas %} · <span class="admin-nova">{{ novas }} nova{{ 's' if novas > 1 }}</span>{% endif %}
+  · {{ contagem.aprovado }} aprovada{{ 's' if contagem.aprovado != 1 }} · {{ contagem.rejeitado }} rejeitada{{ 's' if contagem.rejeitado != 1 }}
+</p>
+
+<nav class="admin-filtros" aria-label="Filtrar por situação">
+  {% for chave, rotulo in [('em_analise', 'Em análise'), ('aprovado', 'Aprovadas'), ('rejeitado', 'Rejeitadas'), ('todas', 'Todas')] %}
+  <a class="chip{% if filtro == chave %} chip--ativo{% endif %}" href="{{ url_for('sugestoes.painel', status=chave) }}"{% if filtro == chave %} aria-current="page"{% endif %}>{{ rotulo }}</a>
+  {% endfor %}
+</nav>
+
+{% if itens %}
+<table class="admin-tabela">
+  <thead><tr><th>Navio</th><th>Marinha / guerra</th><th>Pedidos</th><th>Situação</th><th>Sugerido em</th></tr></thead>
+  <tbody>
+  {% for i in itens %}
+    <tr>
+      <td><a href="{{ url_for('sugestoes.item', item_id=i.id) }}">{{ i.nome }}</a>{% if not i.lida and i.status == 'em_analise' %} <span class="admin-nova">nova</span>{% endif %}</td>
+      <td>{{ i.marinha or '—' }}{% if i.guerra %} · {{ i.guerra }}{% endif %}</td>
+      <td>{{ i.pedidos }}</td>
+      <td><span class="admin-status admin-status--{{ i.status }}">{{ STATUS.get(i.status, i.status) }}</span></td>
+      <td>{{ (i.criada_em or '')[:10] }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="sugerir-nota">Nenhuma sugestão nesta lista.</p>
+{% endif %}
+{% endblock %}

@@ -121,6 +121,8 @@ a.nav-brand { display: flex; align-items: center; gap: 0.6rem; text-decoration: 
 .chip__n { font: 700 0.72rem 'Rajdhani', sans-serif; padding: 0.05rem 0.45rem; border-radius: 100px; color: #fff; background: var(--sea-600); }
 
 .resultados { list-style: none; display: grid; gap: 0.6rem; }
+.resultados__sugerir { font-weight: 600; text-decoration: underline; color: var(--sea-700); }
+.consulta-ajuda a { color: inherit; font-weight: 600; text-decoration: underline; }
 .resultados__vazio { padding: 1.2rem; color: var(--text-secondary); background: #fff; border: var(--border-soft); border-radius: var(--radius-md); }
 .resultado {
   display: grid; gap: 0.25rem; width: 100%; text-align: left; cursor: pointer;
@@ -221,6 +223,7 @@ a.nav-brand { display: flex; align-items: center; gap: 0.6rem; text-decoration: 
 [data-theme="dark"] .chip { color: var(--d-tx); background: var(--d-panel); border-color: var(--d-line); }
 [data-theme="dark"] .chip:hover { background: rgba(20, 60, 90, 0.85); border-color: var(--d-cyan); }
 [data-theme="dark"] .chip__n { background: #14859d; }
+[data-theme="dark"] .resultados__sugerir { color: var(--d-cyan); }
 [data-theme="dark"] .resultados__vazio { color: var(--d-tx2); background: var(--d-panel); border-color: var(--d-line); }
 [data-theme="dark"] .resultado { background: var(--d-panel-2); border-color: var(--d-line); box-shadow: var(--d-shadow); }
 [data-theme="dark"] .resultado:hover { border-color: rgba(255, 138, 61, 0.5); box-shadow: var(--d-shadow-h); }

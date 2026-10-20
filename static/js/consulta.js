@@ -126,7 +126,12 @@
     limpaFilhos(el.lista);
     el.total.textContent = dados.total ? '(' + dados.total + ')' : '';
     if (!dados.resultados.length) {
-      const li = cria('li', 'resultados__vazio', 'Nenhum navio encontrado. Tente outra grafia ou remova algum filtro.');
+      const li = cria('li', 'resultados__vazio', 'Nenhum navio encontrado. Tente outra grafia ou remova algum filtro. ');
+      if (state.q.length >= 2) {                            // não está no acervo? leva o nome para a página de sugestão
+        const a = cria('a', 'resultados__sugerir', 'Sugerir “' + state.q + '” para o acervo');
+        a.href = 'sugerir?nome=' + encodeURIComponent(state.q);
+        li.appendChild(a);
+      }
       el.lista.appendChild(li);
     }
     dados.resultados.forEach(n => {

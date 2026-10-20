@@ -72,6 +72,12 @@ def main() -> None:
     consulta = consulta.replace('href="contato"', 'href="contato.html"')
     contato = contato.replace('href="contato"', 'href="contato.html"')
 
+    # sugerir (v4.3): comparar com o acervo e registrar precisam do servidor; a versao estatica so avisa
+    sugerir = Environment(autoescape=True).from_string(
+        (ROOT / "templates" / "sugerir.html").read_text(encoding="utf-8")).render(estatico=True)
+    sugerir = sugerir.replace("../static/", "static/").replace('href="consulta"', 'href="consulta.html"')
+    index, consulta, contato = (h.replace('href="sugerir"', 'href="sugerir.html"') for h in (index, consulta, contato))
+
     if DOCS.exists():
         shutil.rmtree(DOCS)
     DOCS.mkdir()
@@ -79,6 +85,7 @@ def main() -> None:
     (DOCS / "index.html").write_text(index, encoding="utf-8", newline="\n")
     (DOCS / "consulta.html").write_text(consulta, encoding="utf-8", newline="\n")
     (DOCS / "contato.html").write_text(contato, encoding="utf-8", newline="\n")
+    (DOCS / "sugerir.html").write_text(sugerir, encoding="utf-8", newline="\n")
     shutil.copytree(ROOT / "static", DOCS / "static")
     (DOCS / ".nojekyll").write_text("", encoding="utf-8")   # desliga o processamento Jekyll do Pages
 

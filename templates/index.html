@@ -565,6 +565,11 @@
     </div>
     <!--contact-form-->
     <form class="contact-form" action="contato" method="POST" novalidate>
+      <input type="hidden" name="{{ CAMPO_CSRF }}" value="{{ csrf_token() }}">
+      <div class="campo-isca" aria-hidden="true">
+        <label for="{{ CAMPO_ISCA }}">Não preencha este campo</label>
+        <input type="text" id="{{ CAMPO_ISCA }}" name="{{ CAMPO_ISCA }}" tabindex="-1" autocomplete="off">
+      </div>
       <div class="contato-campo">
         <label for="email">E-mail</label>
         <input type="email" id="email" name="email" maxlength="120" autocomplete="email" required>
@@ -574,6 +579,7 @@
         <textarea id="message" name="message" rows="5" maxlength="2000" required></textarea>
       </div>
       <button type="submit" class="btn btn-primary">Enviar</button>
+      <p class="contato-dica">Quer sugerir um navio para o acervo? Use a página <a href="sugerir">Sugerir navio</a>.</p>
     </form>
     <!--/contact-form-->
   </section>

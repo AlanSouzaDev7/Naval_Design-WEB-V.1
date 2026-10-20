@@ -1,0 +1,15 @@
+{% extends "admin_base.html" %}
+{% block titulo %}Entrar{% endblock %}
+{% block conteudo %}
+<form class="contact-form admin-login" method="POST" action="{{ url_for('sugestoes.entrar') }}" novalidate>
+  <h1 class="admin-h1">Acesso restrito</h1>
+  {% if erro %}<p class="contato-erro" role="alert">{{ erro }}</p>{% endif %}
+  <input type="hidden" name="{{ CAMPO_CSRF }}" value="{{ csrf_token() }}">
+  <div class="contato-campo">
+    <label for="senha">Senha do administrador</label>
+    <input type="password" id="senha" name="senha" maxlength="200" required autocomplete="current-password" autofocus>
+  </div>
+  <button type="submit" class="btn btn-primary">Entrar</button>
+  <p class="sugerir-nota">A sessão expira após 20 minutos sem uso (e no máximo 2 horas).</p>
+</form>
+{% endblock %}

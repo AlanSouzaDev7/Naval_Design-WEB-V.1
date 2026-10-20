@@ -31,3 +31,14 @@ services:
         value: "1"
       - key: RN_HTTPS
         value: "1"
+      # v4.3 - sessoes/CSRF: o Render gera uma chave aleatoria e a guarda no painel
+      - key: SECRET_KEY
+        generateValue: true
+      # v4.3 - sugestoes de navios num repositorio do GitHub (valores so no painel do Render)
+      - key: SUGESTOES_GITHUB_REPO
+        sync: false
+      - key: SUGESTOES_GITHUB_TOKEN
+        sync: false
+      # v4.3 - liga o painel /admin (hash gerado por ferramentas/gerar_hash_admin.py)
+      - key: ADMIN_PASSWORD_HASH
+        sync: false

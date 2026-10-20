@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Sugira um navio que ainda não está no acervo da Royal Navy: a equipe avalia e completa as informações." />
+  <meta name="theme-color" content="#2a9bdc" />
+  <!-- Segurança: só carrega recursos das origens que o site realmente usa (cdnjs e Google Fonts) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <!-- Aplica o tema salvo antes de pintar a página (evita piscar claro→escuro) -->
+  <script src="../static/js/theme-init.js"></script>
+  <title>Sugerir navio — Royal Navy</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%93%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../static/css/style.css" />
+  <link rel="stylesheet" href="../static/css/dark.css" />
+  <link rel="stylesheet" href="../static/css/contato.css" />
+  <link rel="stylesheet" href="../static/css/sugerir.css" />
+</head>
+<body class="page-contato page-sugerir">
+
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+
+  <!-- ═══════════════════════════════════════════ NAV ═══ -->
+  <nav class="navbar scrolled" id="navbar">
+    <div class="nav-inner">
+      <a class="nav-brand" href="./" aria-label="Royal Navy — página inicial">
+        <div class="nav-anchor">⚓</div>
+        <span class="brand-text">ROYAL NAVY</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="./#hero"    class="nav-link">Início</a></li>
+        <li><a href="./#history" class="nav-link">História</a></li>
+        <li><a href="./#ships"   class="nav-link">Navios</a></li>
+        <li><a href="./#battles" class="nav-link">Batalhas</a></li>
+        <li><a href="./#fleet"   class="nav-link">Frota Atual</a></li>
+        <li><a href="./#gallery" class="nav-link">Galeria</a></li>
+        <li><a href="consulta"   class="nav-link">Consulta</a></li>
+        <li><a href="./#contact" class="nav-link">Contato</a></li>
+      </ul>
+      <div class="nav-badge">Since 1546</div>
+      <button class="theme-toggle" id="theme-toggle" type="button" role="switch" aria-checked="false"
+              aria-label="Alternar entre modo claro e modo escuro">
+        <span class="theme-toggle__track">
+          <span class="theme-toggle__knob">
+            <svg class="theme-toggle__icon theme-toggle__icon--sun" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4.6" fill="currentColor"/>
+              <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>
+              </g>
+            </svg>
+            <svg class="theme-toggle__icon theme-toggle__icon--moon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20.2 14.6A8.4 8.4 0 0 1 9.4 3.8a8.4 8.4 0 1 0 10.8 10.8z" fill="currentColor"/>
+            </svg>
+          </span>
+        </span>
+        <span class="theme-toggle__label" id="theme-label">Claro</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════ SUGERIR NAVIO ═══ -->
+  <header class="contato-hero">
+    <div class="contato-hero__inner">
+      <div class="section-tag">Acervo colaborativo</div>
+      <h1 class="contato-title">Sugira um <span class="accent">navio</span></h1>
+      <p class="contato-sub">Sentiu falta de algum navio na consulta? Diga o nome: conferimos se ele já está no acervo e, se não estiver, a equipe avalia e completa as informações.</p>
+    </div>
+  </header>
+
+  <main class="contato-main" id="conteudo">
+    {% if estatico %}
+    <section class="contato-ok" role="status">
+      <div class="contato-ok__icone" aria-hidden="true">⚓</div>
+      <h2>Sugestões indisponíveis nesta versão</h2>
+      <p>Para conferir o acervo e registrar a sugestão é preciso o servidor (Flask), que o GitHub Pages não executa. Use a versão publicada em <a href="https://royalnavy-consulta.onrender.com/sugerir">royalnavy-consulta.onrender.com/sugerir</a>.</p>
+    </section>
+    {% elif indisponivel %}
+    <section class="contato-ok" role="status">
+      <div class="contato-ok__icone" aria-hidden="true">⚓</div>
+      <h2>Sugestões indisponíveis no momento</h2>
+      <p>O serviço que confere o acervo está fora do ar. Tente de novo mais tarde.</p>
+    </section>
+    {% elif resultado %}
+    <section class="contato-ok sugerir-resultado sugerir-resultado--{{ resultado.tipo }}" role="status">
+      <div class="contato-ok__icone" aria-hidden="true">{% if resultado.tipo == 'existente' %}📘{% else %}⚓{% endif %}</div>
+      {% if resultado.tipo == 'existente' %}
+        <h2>Navio já existente</h2>
+        <p><strong>{{ resultado.nome }}</strong> já está no acervo:</p>
+        <ul class="sugerir-lista">
+          {% for n in resultado.navios %}
+          <li><a href="consulta?id={{ n.id }}">{{ n.nome }}{% if n.casco %} ({{ n.casco }}){% endif %}</a></li>
+          {% endfor %}
+        </ul>
+      {% elif resultado.tipo == 'em_analise' %}
+        <h2>Já está em análise</h2>
+        <p><strong>{{ resultado.nome }}</strong> já foi sugerido por outras pessoas e está na fila de avaliação. Registramos o seu pedido também ({{ resultado.pedidos }} no total).</p>
+      {% elif resultado.tipo == 'avaliada' %}
+        <h2>Sugestão já avaliada</h2>
+        {% if resultado.status == 'aprovado' %}
+        <p><strong>{{ resultado.nome }}</strong> já foi aprovado pela equipe e logo estará disponível na consulta.</p>
+        {% else %}
+        <p><strong>{{ resultado.nome }}</strong> já foi sugerido e avaliado pela equipe.</p>
+        {% endif %}
+      {% else %}
+        <h2>Sugestão registrada!</h2>
+        <p><strong>{{ resultado.nome }}</strong> não está no acervo e ficou <strong>em análise</strong>. A equipe vai conferir e completar as informações antes de incluí-lo na consulta.</p>
+      {% endif %}
+      <a class="btn btn-primary" href="sugerir">Sugerir outro navio</a>
+    </section>
+    {% else %}
+    <form class="contact-form" action="sugerir" method="POST" novalidate>
+      {% if erro %}<p class="contato-erro" role="alert">{{ erro }}</p>{% endif %}
+      {% if confirmar %}
+      <div class="sugerir-parecidos" role="status">
+        <p><strong>Você quis dizer…?</strong> Encontramos navios com nome parecido no acervo:</p>
+        <ul class="sugerir-lista">
+          {% for n in parecidos %}
+          <li><a href="consulta?id={{ n.id }}">{{ n.nome }}{% if n.designacao_casco %} ({{ n.designacao_casco }}){% endif %}</a></li>
+          {% endfor %}
+        </ul>
+        <p>Se for outro navio, confira o nome abaixo e confirme a sugestão.</p>
+      </div>
+      <input type="hidden" name="confirmar" value="1">
+      {% endif %}
+      <input type="hidden" name="{{ CAMPO_CSRF }}" value="{{ csrf_token() }}">
+      <div class="contato-campo">
+        <label for="nome">Nome do navio <span class="sugerir-obrig">(obrigatório)</span></label>
+        <input type="text" id="nome" name="nome" maxlength="60" required autocomplete="off" spellcheck="false"
+               placeholder="Ex.: HMS Ark Royal, USS Enterprise, Bismarck" value="{{ valores.nome or '' }}">
+      </div>
+      <div class="sugerir-linha">
+        <div class="contato-campo">
+          <label for="marinha">Marinha <span class="sugerir-opc">(opcional)</span></label>
+          <input type="text" id="marinha" name="marinha" maxlength="40" list="dl-marinhas" autocomplete="off" value="{{ valores.marinha or '' }}">
+        </div>
+        <div class="contato-campo">
+          <label for="guerra">Guerra <span class="sugerir-opc">(opcional)</span></label>
+          <input type="text" id="guerra" name="guerra" maxlength="40" list="dl-guerras" autocomplete="off" value="{{ valores.guerra or '' }}">
+        </div>
+      </div>
+      <div class="contato-campo">
+        <label for="fonte">Fonte <span class="sugerir-opc">(opcional: um link ou referência)</span></label>
+        <input type="text" id="fonte" name="fonte" maxlength="200" autocomplete="off" value="{{ valores.fonte or '' }}">
+      </div>
+      <div class="campo-isca" aria-hidden="true">
+        <label for="{{ CAMPO_ISCA }}">Não preencha este campo</label>
+        <input type="text" id="{{ CAMPO_ISCA }}" name="{{ CAMPO_ISCA }}" tabindex="-1" autocomplete="off">
+      </div>
+      <p class="sugerir-nota">Use letras, números, espaço e os símbolos . ' ( ) / -. Não pedimos nenhum dado pessoal.</p>
+      <button type="submit" class="btn btn-primary">{% if confirmar %}Não é nenhum desses — registrar sugestão{% else %}Enviar sugestão{% endif %}</button>
+      <datalist id="dl-marinhas">{% for m in (opcoes.marinhas or []) %}<option value="{{ m }}"></option>{% endfor %}</datalist>
+      <datalist id="dl-guerras">{% for g in (opcoes.guerras or []) %}<option value="{{ g }}"></option>{% endfor %}</datalist>
+    </form>
+    {% endif %}
+  </main>
+
+  <footer class="footer contato-footer">
+    <div class="footer-bottom">
+      <span>© 2026 Royal Navy Educational. Fins educativos.</span>
+      <span>O acervo é consultado somente para leitura; as sugestões ficam numa fila separada até a avaliação.</span>
+    </div>
+  </footer>
+
+  <script defer src="../static/js/theme.js"></script>
+</body>
+</html>

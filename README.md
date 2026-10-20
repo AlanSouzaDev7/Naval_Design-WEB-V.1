@@ -4,7 +4,8 @@ Site educativo sobre a Marinha Real Britânica: linha do tempo, navios lendário
 batalhas, frota atual e galeria. Servido por Flask, com dois temas que são o **contraponto** um do outro: **“Mar em Paz”** (modo claro: comboio de navios
 rumo ao horizonte, águas claras e recifes de coral) e **“Guerra em alto mar”** (modo escuro). A partir da **v3.0** tem uma página de **Consulta de Navios** ligada a um banco
 PostgreSQL (somente leitura, com camadas de segurança) — e desde a **v4.0** essa consulta está publicada na internet,
-acessível de qualquer aparelho, em **<https://royalnavy-consulta.onrender.com>**.
+acessível de qualquer aparelho, em **<https://royalnavy-consulta.onrender.com>**. Na **v4.3** o visitante pode **sugerir navios**
+que ainda não estão no acervo, e um painel restrito permite avaliá-los.
 
 ## Como rodar
 
@@ -65,6 +66,55 @@ máquinas lentas; a cena do outro tema é pré-aquecida quando o mouse chega ao 
 
 Arquivos: `theme-init.js` (aplica o tema antes da 1ª pintura), `theme.js` (botão, transição, `RNPerf`), `dark.css`,
 `war-hero.js` (batalha do hero), `deep-sea.js` (mergulho, guerra submarina, naufrágios, medidor).
+
+## Sugestões de navios (v4.3)
+
+Página **`/sugerir`**: o visitante digita o nome de um navio que sentiu falta (e, se quiser, marinha, guerra e uma fonte).
+O site confere o acervo **só lendo o banco**, com o mesmo papel `navios_leitura` da consulta:
+
+| O visitante digita | O site responde |
+|---|---|
+| um navio que já está no acervo (`USS Arizona`, `arizona`, `BB-39`, `KMS Bismarck`, `blücher`…) | **"Navio já existente"**, com link para a ficha. A comparação ignora acentos, maiúsculas e prefixos (USS, HMS, SMS, KMS, HMAS…) |
+| um nome **parecido** com um do acervo (`Arizonna`) | **"Você quis dizer…?"** com os candidatos; só registra se a pessoa confirmar que é outro navio |
+| um navio que **não** está no acervo | **"Sugestão registrada"**: entra na fila com a situação **em análise** |
+| um navio que **já foi sugerido** | "Já está em análise" (soma +1 pedido, sem duplicar) ou "já avaliada" |
+
+**As sugestões não ficam no banco.** Elas são gravadas num arquivo `sugestoes.json`, e o PostgreSQL continua somente leitura:
+
+- **Em produção:** o arquivo fica num **repositório do GitHub** (de preferência **privado**, só para os dados), gravado pela
+  API do GitHub com um token *fine-grained* que só acessa esse repositório (*Contents: Read and write*). Cada sugestão vira
+  um commit, então o próprio GitHub guarda o histórico. O disco do Render gratuito é apagado a cada reinício, por isso o
+  arquivo **não** fica no servidor.
+- **Local/testes:** `SUGESTOES_ARQUIVO=caminho/sugestoes.json`.
+- **Sem nenhum dos dois:** a página avisa que o registro está indisponível (nunca grava num lugar que se apaga sozinho).
+
+O link para a página fica na **Consulta** (no texto de ajuda e quando a busca não encontra nada, já com o nome
+preenchido) e nas seções de contato. O menu principal não ganhou um 9º item para não quebrar a barra de navegação.
+
+### Painel do administrador (`/admin`)
+
+Login só com senha, que fica **apenas como hash** (scrypt) na variável `ADMIN_PASSWORD_HASH`; sem ela o painel não existe
+(404). No painel você vê as sugestões (novas destacadas, contagem de pedidos), completa as informações, **aprova**,
+**rejeita** ou **reabre**. Ao aprovar, o painel mostra o comando `INSERT` pronto para colar no **SQL Editor do Neon**: o site
+nunca escreve no banco, e o comando não duplica um navio que já exista.
+
+```bash
+python ferramentas/gerar_hash_admin.py   # pede a senha (não aparece na tela) e imprime ADMIN_PASSWORD_HASH=...
+```
+
+### Segurança dos formulários (sugestão, painel e contato)
+
+| Camada | O que foi feito |
+|---|---|
+| **CSRF** | Token aleatório na sessão e em cada formulário (comparação em tempo constante) + recusa de `Origin` de outro site |
+| **Sessão** | Cookie assinado (`SECRET_KEY`), `HttpOnly`, `SameSite=Strict` e `Secure` em HTTPS. O painel sai sozinho após 20 min sem uso (máx. 2 h), troca a sessão no login (contra fixação) e responde com `no-store` e `noindex` |
+| **Robôs** | Campo-isca invisível (quem o preenche recebe "sucesso" e nada é gravado); limite por IP: 6 sugestões/min e 40/h; contato 5/min |
+| **Força bruta** | Login: 5 tentativas a cada 15 min por IP **e** trava geral após 20 erros em 15 min (contra ataque distribuído) |
+| **Entrada** | Mesma lista de caracteres da busca; tamanhos máximos; fonte só `http(s)://` válido; fila limitada a 500 sugestões em análise |
+| **Saída** | Tudo escapado (sem XSS refletido); SQL do painel com aspas dobradas, testado contra o PostgreSQL |
+| **Segredos** | Token do GitHub, hash da senha e `SECRET_KEY` só no ambiente (Render), nunca no Git; erros não mostram detalhes ao visitante |
+
+Na versão estática (GitHub Pages) a página `/sugerir` apenas avisa que precisa do servidor.
 
 ## Consulta de navios (v3.0)
 
@@ -132,8 +182,8 @@ Em modo local (`python app.py`) a própria mensagem da página mostra o motivo e
 
 ```bash
 pip install -r requirements-dev.txt
-pytest tests                      # 99 testes: funcionamento, injeção de SQL, XSS, CSP, limite, privilégios do banco, segredos
-bandit -r app.py consulta_api.py db build_static.py
+pytest tests                      # 157 testes: consulta, sugestões, painel, CSRF, injeção de SQL, XSS, CSP, limite, privilégios do banco, segredos
+bandit -r app.py consulta_api.py protecao.py sugestoes.py db build_static.py ferramentas
 pip-audit -r requirements-lock.txt
 ```
 
@@ -148,7 +198,7 @@ $env:PGHOST="127.0.0.1"; $env:PGPORT="55432"; $env:PGPASSWORD="<senha-aleatoria>
 $env:RN_ENV_FILE="$env:TEMP\rn-teste.env"   # segredos de teste fora do ~/.royalnavy
 python db/seed_teste.py                     # cria a tabela e 84 navios sintéticos (só roda em localhost)
 python db/aplicar.py                        # extensões, view v_navios, papel navios_leitura e verificação
-pytest tests                                # 99 passed
+pytest tests                                # 157 passed
 docker rm -f rn-pg-teste                    # descarta o banco
 ```
 
@@ -247,11 +297,14 @@ docs/                   site estático publicado
 templates/index.html    página única
 templates/consulta.html página de consulta de navios (v3.0)
 templates/contato.html  página de contato (formulário só com o servidor; na versão estática apenas avisa)
+templates/sugerir.html  página "Sugerir navio" (v4.3)
+templates/admin_*.html  painel do administrador das sugestões (v4.3)
 static/css/style.css    estilos gerais do site (paleta "dia de sol no mar" em variáveis CSS) e regras da barra de navegação
 static/css/light.css    estilos do modo claro "Mar em Paz" (v4.1)
 static/css/dark.css     estilos do modo escuro (guerra em alto mar)
 static/css/consulta.css estilos da página de consulta (claro e escuro)
 static/css/contato.css  estilos da página de contato (claro e escuro)
+static/css/sugerir.css  estilos da página de sugestão e do painel (claro e escuro)
 static/js/main.js       navegação, controlador do hero (RNHero), contadores, modal
 static/js/ships-3d.js   motor 3D (cenas sob demanda, loop único, modelos procedurais)
 static/js/ships-data.js dados dos navios
@@ -263,10 +316,13 @@ static/js/war-hero.js   batalha naval do hero (modo escuro)
 static/js/deep-sea.js   mergulho, guerra submarina e naufrágios (modo escuro)
 static/js/consulta.js   página de consulta (busca, filtros, ficha; só textContent)
 consulta_api.py         API de consulta (validação, limite, consultas parametrizadas)
+sugestoes.py            sugestões de navios: comparação com o acervo, arquivo JSON (GitHub ou local) e painel /admin
+protecao.py             CSRF, sessão segura e campo-isca dos formulários
+ferramentas/            gerar_hash_admin.py (hash da senha do painel)
 config_env.py           onde ficam os segredos (fora do Git e do OneDrive)
 db/                     SQL da busca e do papel de leitura, aplicar.py, seed_teste.py (dados sintéticos de teste) e README do banco
 deploy/                 publicação online (v4.0): render.yaml, raiz TLS, dependências extras
-tests/                  99 testes de funcionamento e segurança
+tests/                  157 testes de funcionamento e segurança
 ```
 
 ## Notas de desempenho

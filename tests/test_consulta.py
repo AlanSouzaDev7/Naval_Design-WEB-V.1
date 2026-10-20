@@ -154,10 +154,13 @@ def test_csp_no_cabecalho_das_paginas(client):
 
 def test_csp_do_cabecalho_igual_a_meta_do_html(client):
     cab = client.get("/consulta").headers["Content-Security-Policy"].replace("; frame-ancestors 'none'", "")
-    for arq in ("index.html", "consulta.html"):
-        html = (RAIZ / "templates" / arq).read_text(encoding="utf-8")
-        meta = re.search(r'http-equiv="Content-Security-Policy" content="([^"]+)"', html).group(1)
-        assert meta == cab, arq
+    com_meta = 0
+    for caminho in sorted((RAIZ / "templates").glob("*.html")):
+        m = re.search(r'http-equiv="Content-Security-Policy" content="([^"]+)"', caminho.read_text(encoding="utf-8"))
+        if m:                                                   # modelos filhos (admin_*) herdam a meta do admin_base
+            com_meta += 1
+            assert m.group(1) == cab, caminho.name
+    assert com_meta >= 5
 
 
 def test_host_forjado_e_barrado(client):
@@ -329,12 +332,12 @@ def test_pool_testa_a_conexao_antes_de_entrega_la(monkeypatch):
 
 # ── Front-end: CSP estrita e nenhum ponto de injecao no DOM ──────────────────
 def test_csp_nao_permite_estilo_nem_script_inline(client):
-    for rota in ("/", "/consulta"):
+    for rota in ("/", "/consulta", "/contato", "/sugerir"):
         csp = client.get(rota).headers["Content-Security-Policy"]
         assert "unsafe-inline" not in csp and "unsafe-eval" not in csp
 
 
-@pytest.mark.parametrize("arq", ["index.html", "consulta.html"])
+@pytest.mark.parametrize("arq", sorted(p.name for p in (RAIZ / "templates").glob("*.html")))
 def test_templates_sem_estilo_script_ou_evento_inline(arq):
     """A CSP barra tudo isto; o teste garante que ninguem reintroduza (e depois precise afrouxar a CSP)."""
     html = (RAIZ / "templates" / arq).read_text(encoding="utf-8")

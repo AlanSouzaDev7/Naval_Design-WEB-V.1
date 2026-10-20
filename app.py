@@ -1,5 +1,5 @@
 """
-Royal Navy Educational Site - Flask Server (v3.0)
+Royal Navy Educational Site - Flask Server (v4.3)
 Run: python app.py
 Then open: http://localhost:5000
 
@@ -11,15 +11,21 @@ Configuracao: variaveis de ambiente ou o arquivo de segredos (config_env.py; mod
   TRUST_PROXY_HOPS quantos proxies confiaveis ha na frente (0 = nenhum; use 1 atras de nginx/Cloudflare)
   RN_HTTPS         "1" ativa o cabecalho HSTS (so quando o site esta servido por HTTPS)
   DB_*             conexao do PAPEL DE LEITURA do banco (ver db/aplicar.py e .env.example)
+  SECRET_KEY       chave das sessoes/CSRF (64+ caracteres aleatorios; obrigatoria em producao)
+  SUGESTOES_*      onde ficam as sugestoes de navios (ver sugestoes.py); ADMIN_PASSWORD_HASH liga o painel /admin
 """
 
 import logging
 import os
 
+from datetime import timedelta
+
 from flask import Flask, jsonify, render_template, request
+from markupsafe import escape
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 import config_env
+import protecao
 
 config_env.carregar()                           # segredos: ver config_env.py (fora do Git e, por padrao, fora do OneDrive)
 
@@ -48,7 +54,10 @@ app = Flask(
     static_folder="static",
 )
 
-app.config["MAX_CONTENT_LENGTH"] = 4096                 # o site so recebe GET: corpo grande e sempre suspeito
+# Os formularios (contato, sugestao e o painel) sao pequenos: corpo grande e sempre suspeito
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=2)
+protecao.configurar(app)                                # sessao segura (cookie HttpOnly/SameSite) e token CSRF
 
 # Fora do debug o navegador guarda os arquivos estaticos por 1 hora;
 # em debug fica sem cache para voce ver as mudancas na hora.
@@ -101,11 +110,26 @@ def consulta():
     return render_template("consulta.html")
 
 
+def _limite_post(regra):
+    """Limite de requisicoes por IP nos POST (usa o limitador da API; sem ele, segue sem limite)."""
+    def deco(view):
+        try:
+            from consulta_api import limiter
+        except Exception:                               # noqa: BLE001 - dependencias da consulta ausentes
+            return view
+        return limiter.limit(regra, methods=["POST"])(view)
+    return deco
+
+
 @app.route("/contato", methods=["GET", "POST"])
+@_limite_post("5 per minute;30 per hour")
+@protecao.exige_csrf
 def contato():
     """Pagina de contato (TESTE): valida a mensagem, mas nao a armazena nem a envia a ninguem."""
     if request.method == "GET":
         return render_template("contato.html")
+    if protecao.isca_preenchida():                      # robo: finge sucesso
+        return render_template("contato.html", enviado=True)
     email = (request.form.get("email") or "").strip()[:120]
     message = (request.form.get("message") or "").strip()[:2000]
     if "@" not in email or "." not in email.rsplit("@", 1)[-1] or not message:
@@ -132,6 +156,15 @@ except Exception as exc:                                # noqa: BLE001
                     "python -m pip install -r requirements.txt — e reinicie o servidor. Motivo: " + _motivo + ")")
         return jsonify(erro="servico_indisponivel", mensagem=msg), 503
 
+# ── Sugestoes de navios (v4.3): compara com o banco (so leitura) e grava num arquivo JSON ──
+if CONSULTA_ATIVA:
+    import sugestoes
+    sugestoes.init_app(app)
+else:
+    @app.route("/sugerir", methods=["GET", "POST"])
+    def sugerir_indisponivel():
+        return render_template("sugerir.html", indisponivel=True, opcoes={}, valores={}), 503
+
 
 # ── Erros ──────────────────────────────────────────────────────
 # A pagina inicial e de uma tela so: URLs desconhecidas voltam para ela. Mas arquivos
@@ -155,7 +188,11 @@ def method_not_allowed(e):
 
 @app.errorhandler(429)
 def too_many(e):
-    r = jsonify(erro="muitas_requisicoes", mensagem="Muitas requisições. Aguarde um instante e tente de novo.")
+    msg = "Muitas requisições. Aguarde um instante e tente de novo."
+    if not request.path.startswith("/api/"):            # paginas (formularios): resposta legivel, nao JSON
+        return (f"<!DOCTYPE html><meta charset=\"utf-8\"><title>Aguarde</title><p>{msg} "
+                f"<a href=\"{escape(request.path)}\">Voltar</a></p>"), 429
+    r = jsonify(erro="muitas_requisicoes", mensagem=msg)
     r.status_code = 429
     return r
 
@@ -168,7 +205,7 @@ def too_large(e):
 if __name__ == "__main__":
     # Banner so com ASCII: o console do Windows (cp1252) quebrava com caracteres Unicode
     print("\n" + "=" * 55)
-    print("  ROYAL NAVY - Educational Site v3.0")
+    print("  ROYAL NAVY - Educational Site v4.3")
     print(f"  http://localhost:{PORT}")
     print("  Consulta de navios: " + ("ativa (segredos: " + str(config_env.localizar() or "NAO ENCONTRADOS - rode db/aplicar.py") + ")"
                                      if CONSULTA_ATIVA else "DESATIVADA - " + _motivo))

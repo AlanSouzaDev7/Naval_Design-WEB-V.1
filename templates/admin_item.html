@@ -1,0 +1,63 @@
+{% extends "admin_base.html" %}
+{% block titulo %}{{ item.nome }}{% endblock %}
+{% block conteudo %}
+<p><a href="{{ url_for('sugestoes.painel') }}">&larr; Voltar à lista</a></p>
+<h1 class="admin-h1">{{ item.nome }} <span class="admin-status admin-status--{{ item.status }}">{{ STATUS.get(item.status, item.status) }}</span></h1>
+{% if aviso %}<p class="admin-aviso" role="status">{{ aviso }}</p>{% endif %}
+{% if erros %}<div class="contato-erro" role="alert">{% for e in erros %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+
+<dl class="admin-meta">
+  <div><dt>Sugerido em</dt><dd>{{ (item.criada_em or '')[:16]|replace('T', ' ') }} (UTC)</dd></div>
+  <div><dt>Pedidos</dt><dd>{{ item.pedidos }}</dd></div>
+  <div><dt>Marinha / guerra informadas</dt><dd>{{ item.marinha or '—' }} · {{ item.guerra or '—' }}</dd></div>
+  <div><dt>Fonte informada</dt><dd>
+    {% if item.fonte and (item.fonte.startswith('https://') or item.fonte.startswith('http://')) %}
+      <a href="{{ item.fonte }}" rel="noopener noreferrer nofollow" target="_blank">{{ item.fonte }}</a>
+    {% else %}{{ item.fonte or '—' }}{% endif %}
+  </dd></div>
+</dl>
+
+{% if sql %}
+<section class="admin-sql">
+  <h2>SQL para incluir no acervo</h2>
+  <p class="sugerir-nota">O site não escreve no banco. Copie o comando e execute-o no SQL Editor do Neon (ele não duplica o navio se já existir).</p>
+  <label class="sr-only" for="sql">Comando SQL</label>
+  <textarea id="sql" class="admin-sql__texto" rows="8" readonly>{{ sql }}</textarea>
+</section>
+{% endif %}
+
+<form class="contact-form admin-form" method="POST" action="{{ url_for('sugestoes.item', item_id=item.id) }}" novalidate>
+  <input type="hidden" name="{{ CAMPO_CSRF }}" value="{{ csrf_token() }}">
+  <h2 class="admin-h2">Completar informações</h2>
+  <p class="sugerir-nota">Campos marcados com * são necessários para aprovar.</p>
+  <div class="admin-campos">
+    {% for chave, rotulo, maximo, obrigatorio in campos %}
+    <div class="contato-campo{% if maximo > 200 %} admin-campo--largo{% endif %}">
+      <label for="c-{{ chave }}">{{ rotulo }}{% if obrigatorio %} *{% endif %}</label>
+      {% if maximo > 200 %}
+      <textarea id="c-{{ chave }}" name="{{ chave }}" rows="3" maxlength="{{ maximo }}">{{ dados.get(chave) or '' }}</textarea>
+      {% else %}
+      <input type="text" id="c-{{ chave }}" name="{{ chave }}" maxlength="{{ maximo }}" value="{{ dados.get(chave) or '' }}" autocomplete="off">
+      {% endif %}
+    </div>
+    {% endfor %}
+    <div class="contato-campo admin-campo--largo">
+      <label for="c-notas">Notas internas (não vão para o banco)</label>
+      <textarea id="c-notas" name="notas" rows="2" maxlength="1000">{{ notas if notas is defined else (item.notas or '') }}</textarea>
+    </div>
+  </div>
+  <div class="admin-acoes">
+    <button type="submit" name="acao" value="salvar" class="btn-mini">Salvar</button>
+    {% if item.status != 'aprovado' %}<button type="submit" name="acao" value="aprovar" class="btn btn-primary">Aprovar</button>{% endif %}
+    {% if item.status != 'rejeitado' %}<button type="submit" name="acao" value="rejeitar" class="btn-mini btn-mini--perigo">Rejeitar</button>{% endif %}
+    {% if item.status != 'em_analise' %}<button type="submit" name="acao" value="reabrir" class="btn-mini">Reabrir</button>{% endif %}
+  </div>
+</form>
+
+{% if item.historico %}
+<section class="admin-historico">
+  <h2 class="admin-h2">Histórico</h2>
+  <ul>{% for h in item.historico|reverse %}<li>{{ (h.em or '')[:16]|replace('T', ' ') }} — {{ h.acao }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% endblock %}

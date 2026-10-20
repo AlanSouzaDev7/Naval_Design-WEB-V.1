@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <!-- Segurança: só carrega recursos das origens que o site realmente usa (cdnjs e Google Fonts) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta name="referrer" content="same-origin" />
+  <script src="{{ url_for('static', filename='js/theme-init.js') }}"></script>
+  <title>{% block titulo %}Painel{% endblock %} — Royal Navy</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%93%3C/text%3E%3C/svg%3E" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dark.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/contato.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/sugerir.css') }}" />
+</head>
+<body class="page-admin">
+  <header class="admin-topo">
+    <a class="admin-marca" href="{{ url_for('sugestoes.painel') }}"><span aria-hidden="true">⚓</span> Royal Navy · Painel de sugestões</a>
+    {% if session.get('admin') %}
+    <form method="POST" action="{{ url_for('sugestoes.sair') }}">
+      <input type="hidden" name="{{ CAMPO_CSRF }}" value="{{ csrf_token() }}">
+      <button type="submit" class="btn-mini">Sair</button>
+    </form>
+    {% endif %}
+  </header>
+  <main class="admin-main" id="conteudo">
+    {% block conteudo %}{% endblock %}
+  </main>
+</body>
+</html>
