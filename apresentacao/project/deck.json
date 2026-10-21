@@ -1,0 +1,96 @@
+{
+  "v": 4,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-02T12:00:00Z"
+  },
+  "lists": "css",
+  "title": "Royal Navy Digital — Apresentação Institucional",
+  "cover": "cover",
+  "order": [
+    "cover",
+    "resumo",
+    "mercado",
+    "valor",
+    "usos",
+    "jornada",
+    "tres-d",
+    "temas",
+    "consulta",
+    "seguranca",
+    "sugestoes",
+    "cod-arquitetura",
+    "cod-linguagens",
+    "cod-flask",
+    "cod-validacao",
+    "cod-rotas",
+    "cod-sql-busca",
+    "cod-sql-objetos",
+    "cod-sql-papel",
+    "cod-pdf",
+    "cod-sugestoes",
+    "cod-csrf",
+    "cod-html",
+    "cod-css",
+    "cod-3d",
+    "cod-threejs",
+    "cod-canvas",
+    "cod-temas",
+    "cod-consulta-js",
+    "cod-yaml",
+    "cod-testes",
+    "rf-grafico",
+    "rf-matriz",
+    "rnf-visao",
+    "rnf-desempenho",
+    "rnf-otimizacao",
+    "rnf-testes",
+    "rnf-resiliencia",
+    "rnf-manutencao",
+    "transparencia",
+    "proximos",
+    "declaracao",
+    "encerramento"
+  ],
+  "sections": {
+    "s1": {
+      "description": "Abertura, mercado e proposta de valor",
+      "start": "cover"
+    },
+    "s2": {
+      "description": "Trajetória e principais valências do produto",
+      "start": "jornada"
+    },
+    "s3": {
+      "description": "Requisitos funcionais, com gráfico e matriz",
+      "start": "rf-grafico"
+    },
+    "s4": {
+      "description": "Requisitos não funcionais medidos",
+      "start": "rnf-visao"
+    },
+    "s5": {
+      "description": "Transparência, próximos passos e encerramento",
+      "start": "transparencia"
+    },
+    "s2c": {
+      "description": "Por dentro do código: back-end, banco, front-end, publicação e testes",
+      "start": "cod-arquitetura"
+    }
+  },
+  "faces": {
+    "cormorant-garamond": {
+      "family": "Cormorant Garamond",
+      "href": "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&display=swap"
+    },
+    "ibm-plex-sans": {
+      "family": "IBM Plex Sans",
+      "href": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+    },
+    "jetbrains-mono": {
+      "family": "JetBrains Mono",
+      "href": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap"
+    }
+  },
+  "designSystems": []
+}
