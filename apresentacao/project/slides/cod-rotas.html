@@ -1,0 +1,15 @@
+<section id="cod-rotas" data-transition="fade" style="background:radial-gradient(ellipse at 82% 8%, #153F68 0%, #06172A 62%);color:#E9E4D6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;letter-spacing:4px;color:#D4AE5A;text-transform:uppercase">Back-end · Python · Rotas</p>
+<h2 style="font-family:'Cormorant Garamond', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#F6F1E4">Rotas enxutas, com limite por IP</h2>
+<img data-build-in="rise 1" src="/_blob/4e8298e8ad929d2870abe8ca52d600f6" alt="Trecho de código real: consulta_api.py · linhas 314–392" style="position:absolute;left:128px;top:300px;width:1180px;height:552px;object-fit:contain;border-radius:18px;border:1px solid #24496F;box-shadow:0px 40px 80px rgba(0,0,0,0.6)">
+<p style="position:absolute;left:128px;top:868px;width:1180px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#8196AE">consulta_api.py · linhas 314–392</p>
+<div data-build-in="rise 2" style="position:absolute;left:1352px;top:300px;width:440px;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="width:48px;height:3px;background:#D4AE5A;border-radius:2px"></div><h3 style="font-size:28px;font-weight:600;line-height:1.25;color:#F6F1E4">Limite por IP</h3><p style="font-size:24px;line-height:1.4;color:#B3C2D2">30 buscas/min; 10 PDFs de ficha e 6 de busca.</p></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="width:48px;height:3px;background:#D4AE5A;border-radius:2px"></div><h3 style="font-size:28px;font-weight:600;line-height:1.25;color:#F6F1E4">Validar e só então ler</h3><p style="font-size:24px;line-height:1.4;color:#B3C2D2">Toda rota valida antes de tocar no banco.</p></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="width:48px;height:3px;background:#D4AE5A;border-radius:2px"></div><h3 style="font-size:28px;font-weight:600;line-height:1.25;color:#F6F1E4">Paginação no banco</h3><p style="font-size:24px;line-height:1.4;color:#B3C2D2">10 por página, com LIMIT e OFFSET.</p></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="width:48px;height:3px;background:#D4AE5A;border-radius:2px"></div><h3 style="font-size:28px;font-weight:600;line-height:1.25;color:#F6F1E4">JSON e PDF, mesma base</h3><p style="font-size:24px;line-height:1.4;color:#B3C2D2">A ficha usa a mesma consulta nos dois.</p></div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1400px;font-size:24px;color:#8196AE">Código-fonte real · branch main, v4.4.0 · linhas numeradas como no arquivo</p>
+<p style="position:absolute;right:128px;bottom:64px;width:240px;text-align:right;font-size:24px;color:#8196AE">16 / 43</p>
+<aside>As rotas da API são curtas: validam a entrada, executam uma consulta parametrizada e devolvem JSON. O Flask-Limiter impõe limites por IP em cada rota. A rota de PDF da v4.4 reaproveita a mesma função que monta a ficha em JSON, então PDF e tela mostram exatamente os mesmos dados.</aside>
+</section>

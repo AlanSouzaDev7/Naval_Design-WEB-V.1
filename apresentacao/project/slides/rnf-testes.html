@@ -1,0 +1,112 @@
+<section id="rnf-testes" data-transition="fade" style="background:radial-gradient(ellipse at 15% 92%, #123658 0%, #081C33 70%);color:#E9E4D6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:16px">
+<x-embed style="position:absolute;left:128px;top:330px;width:760px;height:600px"><style>html,body{margin:0;padding:0;overflow:hidden;background:transparent}canvas{display:block}</style><canvas id="c"></canvas><script>
+(function(){
+var D={"w":760,"h":600,"cx":380,"cy":270,"R":270,"r":160,"th":40,"segs":[[52,"#7FC8A9"],[29,"#E39B6B"],[28,"#5DB8C9"],[23,"#3E92AC"],[17,"#2C6F93"],[10,"#D4AE5A"],[8,"#B38C3A"],[7,"#8F6F2A"],[10,"#A9BED3"],[2,"#E9E4D6"]],"names":["Sugestões\ne painel","PDFs","Validação\nde entrada","Cargas\nhostis","Privilégios\ndo banco","Robustez e\nresiliência","Cabeçalhos\ne rede","Funcionamento","Front-end\ne CSP","Segredos"]};
+var W=D.w,H=D.h,PX=2,FF='"Segoe UI","Helvetica Neue",Arial,sans-serif';
+var cv=document.getElementById('c'),cx=cv.getContext('2d'),K=1,OX=0,OY=0;
+function fit(){var iw=window.innerWidth||W,ih=window.innerHeight||H,s=Math.min(iw/W,ih/H);cv.style.width=iw+'px';cv.style.height=ih+'px';cv.width=Math.round(iw*PX);cv.height=Math.round(ih*PX);K=s*PX;OX=(iw-W*s)/2*PX;OY=(ih-H*s)/2*PX;}
+fit();window.addEventListener('resize',fit);
+function hx(c){return[parseInt(c.substr(1,2),16),parseInt(c.substr(3,2),16),parseInt(c.substr(5,2),16)];}
+function sh(c,f){var a=hx(c),r=[],i;for(i=0;i<3;i++){r.push(Math.round(f>=0?a[i]+(255-a[i])*f:a[i]*(1+f)));}return 'rgb('+r.join(',')+')';}
+function cl(x){return x<0?0:(x>1?1:x);}
+function eo(x){x=cl(x);return 1-Math.pow(1-x,3);}
+var S=D.segs,N=S.length,TOT=0,i,E=0.5,R=D.R,r=D.r,TH=D.th,CXC=D.cx,CYC=D.cy,TAU=Math.PI*2;
+for(i=0;i<N;i++){TOT+=S[i][0];}
+function ring(a0,a1,k,ox,oy,f){
+cx.beginPath();
+cx.ellipse(CXC+ox,CYC+oy+k,R,R*E,0,a0,a1,false);
+cx.ellipse(CXC+ox,CYC+oy+k,r,r*E,0,a1,a0,true);
+cx.closePath();cx.fillStyle=f;cx.fill();
+}
+function draw(t,tt){
+var sweep=TAU*eo(t/1.8),rot=-Math.PI/2+tt*0.12,ph=(tt/2.4)%1,act=Math.floor(tt/2.4)%N,pop=Math.sin(ph*Math.PI);
+var acc=0,sg=[],a0,a1,lim=rot+sweep,j,k,o,mid,ox,oy,s,al,gr;
+cx.setTransform(1,0,0,1,0,0);cx.clearRect(0,0,cv.width,cv.height);cx.setTransform(K,0,0,K,OX,OY);
+cx.fillStyle='rgba(0,0,0,0.30)';cx.beginPath();cx.ellipse(CXC,CYC+TH+16,R*1.03,R*E*1.03,0,0,TAU);cx.fill();
+for(j=0;j<N;j++){
+a0=rot+acc/TOT*TAU;a1=rot+(acc+S[j][0])/TOT*TAU;acc+=S[j][0];
+if(a0>=lim){continue;}
+if(a1>lim){a1=lim;}
+mid=(a0+a1)/2;o=(j===act)?pop*16:0;
+sg.push({a0:a0,a1:a1,c:S[j][1],ox:Math.cos(mid)*o,oy:Math.sin(mid)*o*E});
+}
+for(k=TH;k>=2;k-=2){
+for(j=0;j<sg.length;j++){s=sg[j];ring(s.a0,s.a1,k,s.ox,s.oy,sh(s.c,-0.62+0.3*(1-k/TH)));}
+}
+for(j=0;j<sg.length;j++){
+s=sg[j];ring(s.a0,s.a1,0,s.ox,s.oy,sh(s.c,0.06));
+cx.strokeStyle='rgba(4,16,31,0.7)';cx.lineWidth=2;
+cx.beginPath();cx.ellipse(CXC+s.ox,CYC+s.oy,R,R*E,0,s.a0,s.a1,false);cx.ellipse(CXC+s.ox,CYC+s.oy,r,r*E,0,s.a1,s.a0,true);cx.closePath();cx.stroke();
+}
+al=Math.min(1,ph*8,(1-ph)*8);gr=cl(t/1.8);
+cx.globalAlpha=al*gr;cx.textAlign='center';
+cx.font='700 76px '+FF;cx.fillStyle=sh(S[act][1],0.15);cx.fillText(String(S[act][0]),CXC,CYC+4);
+var ln=D.names[act].split('\n'),q;
+cx.font='500 24px '+FF;cx.fillStyle='#E9E4D6';
+for(q=0;q<ln.length;q++){cx.fillText(ln[q],CXC,CYC+40+q*28);}
+cx.globalAlpha=1;
+}
+var T0=null,last=0,vis=true;
+function loop(now){
+var t=now/1000;
+if(T0===null||now-last>700){T0=t;}
+last=now;
+if(vis){try{draw(t-T0,t);}catch(e){}}
+requestAnimationFrame(loop);
+}
+try{draw(99,0);}catch(e){}
+try{new IntersectionObserver(function(e){var v=e[0].isIntersecting;if(v&&!vis){T0=performance.now()/1000;}vis=v;},{threshold:0}).observe(cv);}catch(e){}
+requestAnimationFrame(loop);
+})();
+</script></x-embed>
+<p style="font-size:24px;font-weight:600;letter-spacing:4px;color:#D4AE5A;text-transform:uppercase">Requisito não funcional · Segurança</p>
+<h2 style="font-family:'Cormorant Garamond', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#F6F1E4">Segurança verificada por 186 testes</h2>
+<p style="font-size:28px;line-height:1.4;color:#B3C2D2;width:1500px">Funcionamento, ataques, privilégios, formulários, PDFs e front-end, de ponta a ponta.</p>
+
+<div data-build-in="rise 1" style="position:absolute;left:940px;top:330px;width:852px;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;flex-direction:row;gap:16px;align-items:flex-start">
+<div style="width:24px;height:24px;background:#7FC8A9;border-radius:6px"></div>
+<div style="display:flex;flex-direction:column;flex:1"><p style="font-size:28px;font-weight:600;line-height:1.15;color:#F6F1E4">Sugestões e painel · 52</p><p style="font-size:24px;line-height:1.2;color:#9DB0C4">comparação, fila, CSRF, login e GitHub (v4.3)</p></div>
+</div>
+<div style="display:flex;flex-direction:row;gap:16px;align-items:flex-start">
+<div style="width:24px;height:24px;background:#E39B6B;border-radius:6px"></div>
+<div style="display:flex;flex-direction:column;flex:1"><p style="font-size:28px;font-weight:600;line-height:1.15;color:#F6F1E4">PDFs · 29 <span style="font-size:24px;font-weight:400;color:#9DB0C4">conteúdo lido, limites e dados hostis (v4.4)</span></p></div>
+</div>
+<div style="display:flex;flex-direction:row;gap:16px;align-items:flex-start">
+<div style="width:24px;height:24px;background:#5DB8C9;border-radius:6px"></div>
+<div style="display:flex;flex-direction:column;flex:1"><p style="font-size:28px;font-weight:600;line-height:1.15;color:#F6F1E4">Validação de entrada · 28</p><p style="font-size:24px;line-height:1.2;color:#9DB0C4">inválidas, limites e métodos proibidos</p></div>
+</div>
+<div style="display:flex;flex-direction:row;gap:16px;align-items:flex-start">
+<div style="width:24px;height:24px;background:#3E92AC;border-radius:6px"></div>
+<div style="display:flex;flex-direction:column;flex:1"><p style="font-size:28px;font-weight:600;line-height:1.15;color:#F6F1E4">Cargas hostis · 23</p><p style="font-size:24px;line-height:1.2;color:#9DB0C4">SQL, XSS, CRLF, Log4Shell, traversal</p></div>
+</div>
+<div style="display:flex;flex-direction:row;gap:16px;align-items:flex-start">
+<div style="width:24px;height:24px;background:#2C6F93;border-radius:6px"></div>
+<div style="display:flex;flex-direction:column;flex:1"><p style="font-size:28px;font-weight:600;line-height:1.15;color:#F6F1E4">Privilégios do banco · 17</p><p style="font-size:24px;line-height:1.2;color:#9DB0C4">15 comandos proibidos ao papel de leitura</p></div>
+</div>
+<div style="display:flex;flex-direction:row;gap:16px;align-items:flex-start">
+<div style="width:24px;height:24px;background:#D4AE5A;border-radius:6px"></div>
+<div style="display:flex;flex-direction:column;flex:1"><p style="font-size:28px;font-weight:600;line-height:1.15;color:#F6F1E4">Robustez e resiliência · 10</p><p style="font-size:24px;line-height:1.2;color:#9DB0C4">pool, timeouts e site no ar sem a consulta</p></div>
+</div>
+<div style="display:flex;flex-direction:row;gap:16px;align-items:flex-start">
+<div style="width:24px;height:24px;background:#B38C3A;border-radius:6px"></div>
+<div style="display:flex;flex-direction:column;flex:1"><p style="font-size:28px;font-weight:600;line-height:1.15;color:#F6F1E4">Cabeçalhos e rede · 8</p><p style="font-size:24px;line-height:1.2;color:#9DB0C4">CSP, Host forjado, CORS e limite de requisições</p></div>
+</div>
+<div style="display:flex;flex-direction:row;gap:16px;align-items:flex-start">
+<div style="width:24px;height:24px;background:#8F6F2A;border-radius:6px"></div>
+<div style="display:flex;flex-direction:column;flex:1"><p style="font-size:28px;font-weight:600;line-height:1.15;color:#F6F1E4">Funcionamento · 7 <span style="font-size:24px;font-weight:400;color:#9DB0C4">busca, ficha e filtros</span></p></div>
+</div>
+<div style="display:flex;flex-direction:row;gap:16px;align-items:flex-start">
+<div style="width:24px;height:24px;background:#A9BED3;border-radius:6px"></div>
+<div style="display:flex;flex-direction:column;flex:1"><p style="font-size:28px;font-weight:600;line-height:1.15;color:#F6F1E4">Front-end e CSP · 10</p><p style="font-size:24px;line-height:1.2;color:#9DB0C4">todos os modelos sem inline, innerHTML ou eval</p></div>
+</div>
+<div style="display:flex;flex-direction:row;gap:16px;align-items:flex-start">
+<div style="width:24px;height:24px;background:#E9E4D6;border-radius:6px"></div>
+<div style="display:flex;flex-direction:column;flex:1"><p style="font-size:28px;font-weight:600;line-height:1.15;color:#F6F1E4">Segredos · 2 <span style="font-size:24px;font-weight:400;color:#9DB0C4">nenhuma senha versionada</span></p></div>
+</div>
+</div>
+
+<p style="position:absolute;left:128px;bottom:64px;width:1400px;font-size:24px;color:#8196AE">88 (v3.0) + 11 (v4.2) + 58 (v4.3) + 29 (v4.4) · doc. técnica §13.7, §17–§19</p>
+<p style="position:absolute;right:128px;bottom:64px;width:240px;text-align:right;font-size:24px;color:#8196AE">37 / 43</p>
+<aside>A suíte tem 186 testes. A v4.4 acrescentou 29 para os PDFs: eles leem o texto dos arquivos gerados (nome, casco, datas, filtros e total), cobrem navio inexistente, parâmetros inválidos, limite por minuto, dados hostis e nomes de arquivo perigosos. A v4.3 acrescentou 58: 52 da página de sugestões e do painel do administrador (comparação com o acervo, fila, CSRF, campo-isca, limites, login e força bruta, e a API do GitHub simulada) e 6 que estendem a regra de front-end a todos os modelos de página. Antes disso, a v3.0 entregou 88 e a revisão da v4.2 acrescentou 11: sete de robustez (limites de tempo configuráveis e pool que testa a conexão) e quatro que impedem regressão de front-end e CSP. Um achado importante da revisão: os 88 testes originais estavam todos ignorados neste computador por falta de um banco local, o que parece verde mas não prova nada. A correção foi um banco descartável em Docker com 84 navios sintéticos de teste; a suíte passou a rodar de ponta a ponta. A rosca gira sozinha e destaca cada grupo no centro.</aside>
+</section>

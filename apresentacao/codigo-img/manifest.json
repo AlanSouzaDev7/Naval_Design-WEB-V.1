@@ -1,0 +1,92 @@
+{
+ "cod-flask": {
+  "w": 2297,
+  "h": 764,
+  "legenda": "app.py · linhas 86–99"
+ },
+ "cod-validacao": {
+  "w": 1727,
+  "h": 1040,
+  "legenda": "consulta_api.py · linhas 70–90"
+ },
+ "cod-rotas": {
+  "w": 2126,
+  "h": 994,
+  "legenda": "consulta_api.py · linhas 314–392"
+ },
+ "cod-sql-busca": {
+  "w": 2202,
+  "h": 948,
+  "legenda": "consulta_api.py · SQL_BUSCA · linhas 182–199"
+ },
+ "cod-sql-objetos": {
+  "w": 2050,
+  "h": 902,
+  "legenda": "db/01_busca.sql · linhas 16–53"
+ },
+ "cod-sql-papel": {
+  "w": 2164,
+  "h": 764,
+  "legenda": "db/02_papel_leitura.sql · linhas 11–37"
+ },
+ "cod-pdf": {
+  "w": 1974,
+  "h": 764,
+  "legenda": "pdf_navios.py · linhas 141–154"
+ },
+ "cod-sugestoes": {
+  "w": 2411,
+  "h": 718,
+  "legenda": "sugestoes.py · linhas 349–373"
+ },
+ "cod-csrf": {
+  "w": 2107,
+  "h": 994,
+  "legenda": "protecao.py · linhas 36–56"
+ },
+ "cod-html": {
+  "w": 2259,
+  "h": 534,
+  "legenda": "templates/sugerir.html · linhas 129–151"
+ },
+ "cod-css": {
+  "w": 2145,
+  "h": 1058,
+  "legenda": "static/css/style.css · linhas 1579–1687  |  static/css/dark.css · linhas 12–16"
+ },
+ "cod-3d": {
+  "w": 1480,
+  "h": 1086,
+  "legenda": "static/js/ships-3d.js · linhas 672–692"
+ },
+ "cod-threejs": {
+  "w": 1651,
+  "h": 810,
+  "legenda": "static/js/ships-3d.js · linhas 284–298"
+ },
+ "cod-canvas": {
+  "w": 1556,
+  "h": 718,
+  "legenda": "static/js/war-hero.js · linhas 199–211"
+ },
+ "cod-temas": {
+  "w": 2240,
+  "h": 718,
+  "legenda": "static/js/theme.js · linhas 73–85"
+ },
+ "cod-consulta-js": {
+  "w": 1974,
+  "h": 902,
+  "legenda": "static/js/consulta.js · linhas 34–65"
+ },
+ "cod-yaml": {
+  "w": 1822,
+  "h": 810,
+  "legenda": "deploy/render.yaml · linhas 4–27"
+ },
+ "cod-testes": {
+  "w": 1993,
+  "h": 856,
+  "legenda": "tests/test_consulta.py · linhas 92–107"
+ }
+}
