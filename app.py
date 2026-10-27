@@ -105,6 +105,20 @@ def index():
     return render_template("index.html")
 
 
+# Sinal de "servidor acordado" para a pagina de carregamento do GitHub Pages (abrir.html). O plano gratuito do
+# Render dorme sem visitas; a pagina, em outra origem, carrega este SVG como imagem ate ele responder. Por isso
+# e o unico recurso com CORP cross-origin (o resto continua same-origin). Nao tem dados nem toca o banco.
+SINAL_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>'
+
+
+@app.route("/sinal.svg")
+def sinal():
+    resp = app.response_class(SINAL_SVG, mimetype="image/svg+xml")
+    resp.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
 @app.route("/consulta")
 def consulta():
     return render_template("consulta.html")

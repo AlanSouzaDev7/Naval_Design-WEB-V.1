@@ -84,6 +84,15 @@ def main() -> None:
     index, consulta, contato, sugerir, navegacao = (h.replace('href="navegacao"', 'href="navegacao.html"')
                                                     for h in (index, consulta, contato, sugerir, navegacao))
 
+    # pagina de carregamento: acorda o servidor do Render e so entra quando ele responde (sem a tela do Render)
+    abrir = (ROOT / "templates" / "abrir.html").read_text(encoding="utf-8").replace("../static/", "static/")
+    abrir = abrir.replace("img-src 'self' data:", "img-src 'self' data: https://royalnavy-consulta.onrender.com", 1)   # so o /sinal.svg
+    # os avisos "use a versao publicada" passam pela pagina de carregamento
+    index, contato, sugerir = (h.replace('href="https://royalnavy-consulta.onrender.com/#contact"', 'href="abrir.html?ir=inicio"')
+                               .replace('href="https://royalnavy-consulta.onrender.com/contato"', 'href="abrir.html?ir=contato"')
+                               .replace('href="https://royalnavy-consulta.onrender.com/sugerir"', 'href="abrir.html?ir=sugerir"')
+                               for h in (index, contato, sugerir))
+
     if DOCS.exists():
         shutil.rmtree(DOCS)
     DOCS.mkdir()
@@ -93,6 +102,7 @@ def main() -> None:
     (DOCS / "contato.html").write_text(contato, encoding="utf-8", newline="\n")
     (DOCS / "sugerir.html").write_text(sugerir, encoding="utf-8", newline="\n")
     (DOCS / "navegacao.html").write_text(navegacao, encoding="utf-8", newline="\n")
+    (DOCS / "abrir.html").write_text(abrir, encoding="utf-8", newline="\n")
     shutil.copytree(ROOT / "static", DOCS / "static")
     (DOCS / ".nojekyll").write_text("", encoding="utf-8")   # desliga o processamento Jekyll do Pages
 

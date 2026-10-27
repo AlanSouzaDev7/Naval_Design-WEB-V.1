@@ -90,3 +90,24 @@ def test_acessibilidade_das_abas_e_da_bussola(client):
     assert 'id="ceu-hero-legenda" aria-live' not in html                # a legenda muda a cada segundo: nao pode ser regiao viva
     js = (RAIZ / "static" / "js" / "planetas-3d.js").read_text(encoding="utf-8")
     assert "aria-controls" in js and "Home" in js and "End" in js
+
+
+def test_sinal_para_a_pagina_de_carregamento(client):
+    """/sinal.svg e o unico recurso liberado para outra origem (CORP cross-origin), sem cache e sem dados."""
+    r = client.get("/sinal.svg")
+    assert r.status_code == 200 and r.mimetype == "image/svg+xml"
+    assert r.headers["Cross-Origin-Resource-Policy"] == "cross-origin" and r.headers["Cache-Control"] == "no-store"
+    assert len(r.data) < 200
+    assert client.get("/").headers["Cross-Origin-Resource-Policy"] == "same-origin"   # o resto continua fechado
+
+
+def test_pagina_de_carregamento_no_pages(tmp_path, monkeypatch):
+    import build_static
+    monkeypatch.setattr(build_static, "DOCS", tmp_path / "docs")
+    build_static.main()
+    html = (tmp_path / "docs" / "abrir.html").read_text(encoding="utf-8")
+    assert 'src="static/js/abrir.js"' in html and "../static/" not in html
+    assert "img-src 'self' data: https://royalnavy-consulta.onrender.com;" in html     # so o sinal do Render, nada mais
+    assert 'href="abrir.html?ir=contato"' in (tmp_path / "docs" / "contato.html").read_text(encoding="utf-8")
+    js = (RAIZ / "static" / "js" / "abrir.js").read_text(encoding="utf-8")
+    assert "hasOwnProperty.call(DESTINOS, ir)" in js and "location.replace(destino)" in js   # destino so de lista fixa

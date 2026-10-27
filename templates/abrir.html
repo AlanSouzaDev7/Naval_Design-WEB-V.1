@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Acordando o servidor da Royal Navy: em instantes você entra no site." />
+  <meta name="theme-color" content="#06101f" />
+  <meta name="robots" content="noindex" />
+  <!-- Segurança: a mesma política das outras páginas; o build_static.py libera só o "sinal" do Render (img-src) na versão do Pages -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <!-- Endereço do servidor que esta página acorda -->
+  <meta name="rn-servidor" content="https://royalnavy-consulta.onrender.com" />
+  <script src="../static/js/theme-init.js"></script>
+  <title>Preparando o navio… — Royal Navy</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%93%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../static/css/abrir.css" />
+</head>
+<body class="pagina-abrir">
+  <canvas class="abrir__mar" id="abrir-mar" aria-hidden="true"></canvas>
+
+  <main class="abrir" aria-labelledby="abrir-titulo">
+    <p class="abrir__marca"><span aria-hidden="true">⚓</span> ROYAL NAVY</p>
+
+    <svg class="abrir__rosa" viewBox="-60 -60 120 120" aria-hidden="true">
+      <circle r="56" class="rosa-aro" />
+      <circle r="47" class="rosa-aro rosa-aro--fino" />
+      <g class="rosa-giro">
+        <path d="M0 -50 L7 0 L0 50 L-7 0 Z" class="rosa-ponta" />
+        <path d="M-50 0 L0 -7 L50 0 L0 7 Z" class="rosa-ponta rosa-ponta--clara" />
+        <path d="M0 -50 L7 0 L-7 0 Z" class="rosa-norte" />
+      </g>
+      <circle r="4" class="rosa-centro" />
+    </svg>
+
+    <h1 class="abrir__titulo" id="abrir-titulo">Preparando o navio</h1>
+    <p class="abrir__estado" id="abrir-estado" role="status" aria-live="polite">Içando a âncora…</p>
+
+    <div class="abrir__barra" id="abrir-barra" role="progressbar" aria-label="Preparando o site" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <span class="abrir__barra-fill" id="abrir-barra-fill"></span>
+    </div>
+    <p class="abrir__tempo" id="abrir-tempo" aria-hidden="true">0 s</p>
+
+    <p class="abrir__nota">O servidor gratuito descansa quando ninguém o visita. Acordá-lo leva cerca de um minuto, e esta página leva você ao site assim que ele responder.</p>
+
+    <div class="abrir__acoes" id="abrir-acoes" hidden>
+      <p>Está demorando mais que o normal.</p>
+      <a class="abrir__botao" id="abrir-direto" href="https://royalnavy-consulta.onrender.com/">Abrir o site mesmo assim</a>
+      <a class="abrir__botao abrir__botao--sec" href="index.html">Ver a versão estática</a>
+    </div>
+
+    <noscript>
+      <p class="abrir__nota">Sem JavaScript, entre direto: <a href="https://royalnavy-consulta.onrender.com/">royalnavy-consulta.onrender.com</a> (o primeiro acesso pode levar um minuto).</p>
+    </noscript>
+  </main>
+
+  <script defer src="../static/js/abrir.js"></script>
+</body>
+</html>

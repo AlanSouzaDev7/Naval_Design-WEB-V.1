@@ -6,9 +6,9 @@ As páginas das seções 1 a 19 vêm da BASE (o PDF publicado na tag v4.4.0); o 
 cabeçalhos, rodapés e o histórico de versões, e acrescenta as seções novas no fim.
 """
 
-VERSAO = "4.5.1"
+VERSAO = "4.5.2"
 DATA = "27 de outubro de 2026"
-TAG = "v4.5.1"
+TAG = "v4.5.2"
 HOSPEDAGEM = "GitHub Pages + Render + Neon"
 SUBTITULO = "Desempenho, dois temas, consulta segura ao banco e publicação online"
 
@@ -18,7 +18,7 @@ BASE_ARQUIVO = "documentacao/Royal_Navy_Documentacao_Tecnica.pdf"
 
 ASSUNTO = ("Auditoria, desempenho, paleta, modo escuro, consulta segura ao banco, publicação online e dossiê técnico; "
            "tema claro “Mar em Paz” (v4.1); revisão de segurança e robustez (v4.2); sugestões de navios e painel do "
-           "administrador (v4.3); PDFs dos navios para download (v4.4); navegação pelas estrelas, carta celeste e planetas (v4.5); teste de qualidade da página (v4.5.1)")
+           "administrador (v4.3); PDFs dos navios para download (v4.4); navegação pelas estrelas, carta celeste e planetas (v4.5); teste de qualidade da página (v4.5.1); página de carregamento do servidor (v4.5.2)")
 
 # (número, título, descrição) — o título tem de ser igual ao do cabeçalho da seção
 SUMARIO = [
@@ -43,13 +43,14 @@ SUMARIO = [
     ("19", "PDFs dos navios para download (v4.4)", "ficha de cada navio e resultado da busca em PDF"),
     ("20", "Navegação pelas Estrelas (v4.5)", "das estrelas ao GPS, carta celeste, planetas em 3D, orrery e o gerador deste PDF"),
     ("21", "Teste de qualidade (v4.5.1)", "página Navegação pelas Estrelas: defeitos, desempenho e acessibilidade"),
+    ("22", "Página de carregamento (v4.5.2)", "o site acorda o servidor do Render sem mostrar a tela de espera dele"),
 ]
 
 COMO_LER = (
     "<b>Como ler este documento.</b> As seções 1 a 4 explicam <i>o que é o site e como ele funciona</i>; cada versão "
     "grande tem o seu dossiê: modo escuro (seção 5, v2.0), consulta ao banco de dados (13, v3.0), publicação online "
     "(14, v4.0), tema claro “Mar em Paz” (15, v4.1), revisão de segurança (17, v4.2), sugestões de navios (18, v4.3), "
-    "PDFs dos navios (19, v4.4), navegação pelas estrelas (20, v4.5) e o teste de qualidade dessa página (21, v4.5.1). As seções 6 e 7 registram <i>o que estava errado e o que foi feito</i>; a 8 documenta as "
+    "PDFs dos navios (19, v4.4), navegação pelas estrelas (20, v4.5) o teste de qualidade dessa página (21, v4.5.1) e a página de carregamento (22, v4.5.2). As seções 6 e 7 registram <i>o que estava errado e o que foi feito</i>; a 8 documenta as "
     "identidades visuais; as seções 9 a 12 cobrem verificação, pendências, operação e publicação; a 16 é o glossário. "
     "Todos os números citados foram medidos ou extraídos do código-fonte durante o trabalho — nada é estimativa sem indicação."
 )
@@ -57,6 +58,8 @@ COMO_LER = (
 # Do mais novo para o mais antigo: (versão, texto completo, resumo curto). O primeiro aparece em destaque no
 # sumário; os demais, só pelo resumo curto.
 MUDANCAS = [
+    ("4.5.2", "página de carregamento com o tema do site no GitHub Pages: acorda o servidor do Render em segundo plano e só "
+              "leva o visitante quando ele responde, no lugar da tela de espera do Render — seção 22.", "página de carregamento, seção 22"),
     ("4.5.1", "teste de qualidade da página Navegação pelas Estrelas: orrery que travava em telas de 120 Hz, dica que vazava no "
               "celular, rótulos sobrepostos, 3D carregado só quando necessário (página pronta em menos de 1 s), topo sem salto de "
               "layout e sete melhorias de acessibilidade — seção 21.", "teste de qualidade, seção 21"),
@@ -89,7 +92,10 @@ HISTORICO = [
     ["<b>4.5.1</b>", "27/10/2026", "tag <font name='Mono'>v4.5.1</font>",
      "Teste de qualidade da página Navegação pelas Estrelas: orrery em 120 Hz, dica no celular, rótulos sem sobreposição, Three.js "
      "sob demanda, CLS de 0,37 para 0,04, abas e bússola acessíveis, 2 testes novos (seção 21)"],
+    ["<b>4.5.2</b>", "27/10/2026", "tag <font name='Mono'>v4.5.2</font>",
+     "Página de carregamento (abrir.html) no GitHub Pages que acorda o servidor do Render pelo /sinal.svg e entra no site quando ele "
+     "responde; 3 testes novos (seção 22)"],
 ]
 
 # Módulos de secoes/ com as seções novas desta edição, na ordem (ex.: ["secao_20"])
-SECOES_NOVAS = ["secao_20", "secao_21"]
+SECOES_NOVAS = ["secao_20", "secao_21", "secao_22"]

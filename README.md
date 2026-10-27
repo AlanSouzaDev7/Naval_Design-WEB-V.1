@@ -4,9 +4,9 @@ Site educativo sobre a Marinha Real Britânica: linha do tempo, navios lendário
 batalhas, frota atual e galeria. Servido por Flask, com dois temas que são o **contraponto** um do outro: **“Mar em Paz”** (modo claro: comboio de navios
 rumo ao horizonte, águas claras e recifes de coral) e **“Guerra em alto mar”** (modo escuro). A partir da **v3.0** tem uma página de **Consulta de Navios** ligada a um banco
 PostgreSQL (somente leitura, com camadas de segurança) — e desde a **v4.0** essa consulta está publicada na internet,
-acessível de qualquer aparelho, em **<https://royalnavy-consulta.onrender.com>**. Na **v4.3** o visitante pode **sugerir navios**
+acessível de qualquer aparelho, em **<https://alansouzadev7.github.io/Naval_Design-WEB-V.1/abrir.html>** (a página de carregamento acorda o servidor e entra no site). Na **v4.3** o visitante pode **sugerir navios**
 que ainda não estão no acervo, e um painel restrito permite avaliá-los. A **v4.5** acrescenta a página **Navegação pelas
-Estrelas**, com o céu real calculado no navegador; a **v4.5.1** é o teste de qualidade dessa página.
+Estrelas**, com o céu real calculado no navegador; a **v4.5.1** é o teste de qualidade dessa página, e a **v4.5.2** troca a tela de espera do Render por uma página de carregamento com o tema do site.
 
 ## Como rodar
 
@@ -230,7 +230,7 @@ Detalhes, passo a passo do banco e instruções do administrador: [`db/README.md
 
 ### Disponível online (v4.0)
 
-A consulta está publicada em **<https://royalnavy-consulta.onrender.com>** — mesma segurança do modo local (papel
+A consulta está publicada em **<https://royalnavy-consulta.onrender.com>** (entrada recomendada: a [página de carregamento](https://alansouzadev7.github.io/Naval_Design-WEB-V.1/abrir.html), v4.5.2) — mesma segurança do modo local (papel
 `navios_leitura`, view `v_navios`, TLS agora com verificação completa do certificado, `verify-full`). Arquitetura:
 **[Render](https://render.com)** (aplicação, plano gratuito) + **[Neon](https://neon.tech)** (PostgreSQL gerenciado,
 plano gratuito). Arquivos de implantação em [`deploy/`](deploy/).
@@ -246,6 +246,20 @@ Duas pegadinhas reais encontradas ao publicar (documentadas em detalhe na seçã
 | O SQL Editor do Neon trava no meio de um script com `COPY ... FROM stdin` | `COPY` interativo é um recurso do **protocolo** do psql, não SQL padrão — o editor web não o suporta | Usar `INSERT INTO ... VALUES (...), (...);` (SQL padrão) |
 | `certificate verify failed` / `root certificate file ... does not exist` com `DB_SSLMODE=verify-full` | O OpenSSL empacotado dentro do `psycopg[binary]` não localiza de forma confiável os certificados do sistema operacional do host | Raiz `ISRG Root X1` (Let's Encrypt, pública, válida até 2035) incluída no projeto em [`deploy/isrg-root-x1.pem`](deploy/isrg-root-x1.pem), referenciada direto em `sslrootcert` (ver `consulta_api.py`) |
 
+### Página de carregamento (v4.5.2)
+
+O plano gratuito do Render desliga o servidor depois de alguns minutos sem visitas, e quem chegava nesse momento via a tela de
+“waking up” do próprio Render. Essa tela é servida antes de o nosso código rodar, então não dá para trocá-la. Por isso o link público
+passou a ser **<https://alansouzadev7.github.io/Naval_Design-WEB-V.1/abrir.html>**, uma página no GitHub Pages (que nunca dorme) com o tema do site: céu estrelado, mar, uma fragata e uma
+rosa dos ventos de latão girando, nos dois temas.
+
+- A página pede ao Render, como imagem, o **`/sinal.svg`**; enquanto o servidor dorme, tenta de novo a cada 2,5 s. Quando a imagem
+  carrega, mostra “Porto à vista!” e abre o site. Depois de 2,5 min oferece abrir mesmo assim ou ver a versão estática.
+- Destino por lista fixa: `abrir.html?ir=consulta` (também `navegacao`, `sugerir`, `contato`); outro valor leva à página inicial.
+- `/sinal.svg` é o único recurso com `Cross-Origin-Resource-Policy: cross-origin` (1 px, sem dados, sem cache); o resto continua
+  `same-origin`. A CSP do template é a mesma das outras páginas; o `build_static.py` acrescenta o Render em `img-src` só no Pages.
+- Para valer no ar: **Manual Deploy** no Render (para o `/sinal.svg` existir) e o *Website* do repositório apontando para o link acima.
+
 ### Solução de problemas: "O serviço de consulta está indisponível"
 
 Em modo local (`python app.py`) a própria mensagem da página mostra o motivo entre parênteses. Causas mais comuns:
@@ -260,7 +274,7 @@ Em modo local (`python app.py`) a própria mensagem da página mostra o motivo e
 
 ```bash
 pip install -r requirements-dev.txt
-pytest tests                      # 195 testes: consulta, PDFs, sugestões, painel, CSRF, injeção de SQL, XSS, CSP, limite, privilégios do banco, segredos
+pytest tests                      # 198 testes: consulta, PDFs, sugestões, painel, CSRF, injeção de SQL, XSS, CSP, limite, privilégios do banco, segredos
 bandit -r app.py consulta_api.py protecao.py sugestoes.py db build_static.py ferramentas
 pip-audit -r requirements-lock.txt
 ```
@@ -276,7 +290,7 @@ $env:PGHOST="127.0.0.1"; $env:PGPORT="55432"; $env:PGPASSWORD="<senha-aleatoria>
 $env:RN_ENV_FILE="$env:TEMP\rn-teste.env"   # segredos de teste fora do ~/.royalnavy
 python db/seed_teste.py                     # cria a tabela e 84 navios sintéticos (só roda em localhost)
 python db/aplicar.py                        # extensões, view v_navios, papel navios_leitura e verificação
-pytest tests                                # 195 passed
+pytest tests                                # 198 passed
 docker rm -f rn-pg-teste                    # descarta o banco
 ```
 
@@ -389,6 +403,7 @@ templates/consulta.html página de consulta de navios (v3.0)
 templates/contato.html  página de contato (formulário só com o servidor; na versão estática apenas avisa)
 templates/sugerir.html  página "Sugerir navio" (v4.3)
 templates/navegacao.html página Navegação pelas Estrelas (v4.5)
+templates/abrir.html    página de carregamento que acorda o servidor do Render (v4.5.2, só no GitHub Pages)
 templates/admin_*.html  painel do administrador das sugestões (v4.3)
 static/css/style.css    estilos gerais do site (paleta "dia de sol no mar" em variáveis CSS) e regras da barra de navegação
 static/css/light.css    estilos do modo claro "Mar em Paz" (v4.1)
@@ -419,7 +434,7 @@ ferramentas/            gerar_hash_admin.py (hash da senha do painel) e document
 config_env.py           onde ficam os segredos (fora do Git e do OneDrive)
 db/                     SQL da busca e do papel de leitura, aplicar.py, seed_teste.py (dados sintéticos de teste) e README do banco
 deploy/                 publicação online (v4.0): render.yaml, raiz TLS, dependências extras
-tests/                  195 testes de funcionamento e segurança
+tests/                  198 testes de funcionamento e segurança
 ```
 
 ## Notas de desempenho
