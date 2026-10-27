@@ -5,7 +5,8 @@ batalhas, frota atual e galeria. Servido por Flask, com dois temas que são o **
 rumo ao horizonte, águas claras e recifes de coral) e **“Guerra em alto mar”** (modo escuro). A partir da **v3.0** tem uma página de **Consulta de Navios** ligada a um banco
 PostgreSQL (somente leitura, com camadas de segurança) — e desde a **v4.0** essa consulta está publicada na internet,
 acessível de qualquer aparelho, em **<https://royalnavy-consulta.onrender.com>**. Na **v4.3** o visitante pode **sugerir navios**
-que ainda não estão no acervo, e um painel restrito permite avaliá-los.
+que ainda não estão no acervo, e um painel restrito permite avaliá-los. A **v4.5** acrescenta a página **Navegação pelas
+Estrelas**, com o céu real calculado no navegador.
 
 ## Como rodar
 
@@ -66,6 +67,32 @@ máquinas lentas; a cena do outro tema é pré-aquecida quando o mouse chega ao 
 
 Arquivos: `theme-init.js` (aplica o tema antes da 1ª pintura), `theme.js` (botão, transição, `RNPerf`), `dark.css`,
 `war-hero.js` (batalha do hero), `deep-sea.js` (mergulho, guerra submarina, naufrágios, medidor).
+
+## Navegação pelas Estrelas (v4.5)
+
+Página **`/navegacao`** (link **Estrelas** na barra): como as marinhas navegaram pelas estrelas e como isso evoluiu até hoje,
+e como os planetas eram conhecidos em cada época. Funciona igual no GitHub Pages, porque **todo o céu é calculado no navegador**.
+
+| Trecho | O que mostra |
+|---|---|
+| **Topo** | O céu real desta noite sobre o Observatório de Greenwich, 240× mais rápido, girando em volta da Polar com rastros, e uma fragata em silhueta. |
+| **Cinco eras** | Bússola estelar polinésia (Hōkūleʻa, 1976) · latitude pela Polar, Zacuto (1496) e o Cruzeiro do Sul · desastre das Scilly (1707), Longitude Act, H4 de Harrison e Nautical Almanac (1767) · sextante, linhas de posição e o meridiano de Greenwich (1884) · LORAN, Transit, GPS e a volta do sextante à Academia Naval dos EUA (2015). |
+| **Instrumentos** | Bússola estelar havaiana (32 casas), quadrante (alinhar com a Polar dá a latitude) e cronômetro (diferença de horas = longitude, e o erro de um relógio ruim). |
+| **Carta celeste** | 2.309 estrelas reais, 88 constelações, as **57 estrelas de navegação + Polar** em dourado, Sol, Lua e planetas. Noites históricas: Scilly 1707, H4 na Jamaica 1762, trânsito de Vênus no Taiti 1769, Trafalgar 1805, e esta noite sobre Greenwich ou o Rio. |
+| **Os errantes** | Os 7 planetas em 3D (Three.js, texturas geradas no navegador) com a história de cada um: desde quando é conhecido e se serve ao navegador. |
+| **Orrery** | Planetário mecânico com as posições reais de 1500 a 2100; Urano e Netuno aparecem “ainda desconhecidos” antes de 1781 e 1846. |
+
+**Visual:** no modo claro, o **crepúsculo náutico** (a hora em que o navegador mede as estrelas) e as seções em papel de carta
+náutica, com a carta celeste em estilo de atlas impresso; no modo escuro, a **noite em alto-mar**. Detalhes em latão de instrumento antigo.
+
+**Como é calculado** (`static/js/astro.js`): tempo sideral, precessão (Meeus, cap. 21), planetas pelos elementos keplerianos da
+NASA/JPL (Standish, válidos de 3000 a.C. a 3000 d.C.), Lua pela fórmula de baixa precisão do Astronomical Almanac e projeção
+estereográfica. Conferido contra os exemplos resolvidos de Meeus (*Astronomical Algorithms*): tempo sideral exato e Vênus a 0,004°.
+As estrelas e as constelações (`static/data/ceu.json`, 69 KB) vêm do [d3-celestial](https://github.com/ofrohn/d3-celestial)
+(Olaf Frohn, licença BSD-3-Clause, catálogo Hipparcos). As fontes históricas estão listadas no rodapé da página e na **seção 20 do PDF**.
+
+**Barra de navegação com 9 links:** para caber o link novo, a faixa compacta da barra foi estendida até 1480 px (some o texto do
+botão de tema e a etiqueta “Since 1546”) e ganhou um ajuste extra até 820 px; medido de 769 a 1920 px, o botão de tema sempre cabe.
 
 ## Sugestões de navios (v4.3)
 
@@ -206,7 +233,7 @@ Em modo local (`python app.py`) a própria mensagem da página mostra o motivo e
 
 ```bash
 pip install -r requirements-dev.txt
-pytest tests                      # 186 testes: consulta, PDFs, sugestões, painel, CSRF, injeção de SQL, XSS, CSP, limite, privilégios do banco, segredos
+pytest tests                      # 193 testes: consulta, PDFs, sugestões, painel, CSRF, injeção de SQL, XSS, CSP, limite, privilégios do banco, segredos
 bandit -r app.py consulta_api.py protecao.py sugestoes.py db build_static.py ferramentas
 pip-audit -r requirements-lock.txt
 ```
@@ -222,7 +249,7 @@ $env:PGHOST="127.0.0.1"; $env:PGPORT="55432"; $env:PGPASSWORD="<senha-aleatoria>
 $env:RN_ENV_FILE="$env:TEMP\rn-teste.env"   # segredos de teste fora do ~/.royalnavy
 python db/seed_teste.py                     # cria a tabela e 84 navios sintéticos (só roda em localhost)
 python db/aplicar.py                        # extensões, view v_navios, papel navios_leitura e verificação
-pytest tests                                # 186 passed
+pytest tests                                # 193 passed
 docker rm -f rn-pg-teste                    # descarta o banco
 ```
 
@@ -256,6 +283,18 @@ estático, com um aviso. Isso já foi resolvido publicando em Render + Neon (se�
    e autorize a origem em `CORS_ORIGINS` no servidor da API.
 5. **Privacidade/LGPD**: o texto pesquisado aparece na URL e, portanto, nos logs de acesso — defina o prazo de retenção.
 6. Rodar `pytest`, `bandit` e `pip-audit` a cada atualização.
+
+## Documentação em PDF
+
+`documentacao/Royal_Navy_Documentacao_Tecnica.pdf` é gerado por `ferramentas/documentacao/gerar_pdf.py` (reconstruído na v4.5;
+o script anterior só existia em pastas temporárias). Ele parte do PDF da tag `v4.4.0`, refaz capa, sumário, cabeçalhos, rodapés e
+o histórico de versões com a mesma identidade visual e acrescenta as seções novas. Passo a passo em
+[`ferramentas/documentacao/README.md`](ferramentas/documentacao/README.md):
+
+```bash
+pip install -r requirements-docs.txt
+python ferramentas/documentacao/gerar_pdf.py
+```
 
 ## Publicar na internet (GitHub Pages)
 
@@ -322,6 +361,7 @@ templates/index.html    página única
 templates/consulta.html página de consulta de navios (v3.0)
 templates/contato.html  página de contato (formulário só com o servidor; na versão estática apenas avisa)
 templates/sugerir.html  página "Sugerir navio" (v4.3)
+templates/navegacao.html página Navegação pelas Estrelas (v4.5)
 templates/admin_*.html  painel do administrador das sugestões (v4.3)
 static/css/style.css    estilos gerais do site (paleta "dia de sol no mar" em variáveis CSS) e regras da barra de navegação
 static/css/light.css    estilos do modo claro "Mar em Paz" (v4.1)
@@ -329,6 +369,7 @@ static/css/dark.css     estilos do modo escuro (guerra em alto mar)
 static/css/consulta.css estilos da página de consulta (claro e escuro)
 static/css/contato.css  estilos da página de contato (claro e escuro)
 static/css/sugerir.css  estilos da página de sugestão e do painel (claro e escuro)
+static/css/navegacao.css estilos da página Navegação pelas Estrelas (crepúsculo náutico / noite em alto-mar)
 static/js/main.js       navegação, controlador do hero (RNHero), contadores, modal
 static/js/ships-3d.js   motor 3D (cenas sob demanda, loop único, modelos procedurais)
 static/js/ships-data.js dados dos navios
@@ -339,15 +380,19 @@ static/js/calm-sea.js   mergulho, patrulha, recife de coral e medidor (modo clar
 static/js/war-hero.js   batalha naval do hero (modo escuro)
 static/js/deep-sea.js   mergulho, guerra submarina e naufrágios (modo escuro)
 static/js/consulta.js   página de consulta (busca, filtros, ficha; só textContent)
+static/js/astro.js      cálculos astronômicos: tempo sideral, precessão, planetas (NASA/JPL), Lua, projeção (v4.5)
+static/js/navegacao.js  céu do topo, bússola estelar, quadrante, cronômetro, carta celeste e orrery (v4.5)
+static/js/planetas-3d.js planetas em 3D com texturas geradas no navegador (v4.5)
+static/data/ceu.json    estrelas, 57 estrelas de navegação + Polar e linhas das 88 constelações (d3-celestial, BSD-3)
 consulta_api.py         API de consulta (validação, limite, consultas parametrizadas) e rotas dos PDFs
 pdf_navios.py           gera os PDFs da ficha e da busca (ReportLab, em memória)
 sugestoes.py            sugestões de navios: comparação com o acervo, arquivo JSON (GitHub ou local) e painel /admin
 protecao.py             CSRF, sessão segura e campo-isca dos formulários
-ferramentas/            gerar_hash_admin.py (hash da senha do painel)
+ferramentas/            gerar_hash_admin.py (hash da senha do painel) e documentacao/ (gerador do PDF, v4.5)
 config_env.py           onde ficam os segredos (fora do Git e do OneDrive)
 db/                     SQL da busca e do papel de leitura, aplicar.py, seed_teste.py (dados sintéticos de teste) e README do banco
 deploy/                 publicação online (v4.0): render.yaml, raiz TLS, dependências extras
-tests/                  186 testes de funcionamento e segurança
+tests/                  193 testes de funcionamento e segurança
 ```
 
 ## Notas de desempenho

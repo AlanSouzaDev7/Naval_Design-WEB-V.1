@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Como as marinhas navegaram pelas estrelas: da bússola estelar polinésia ao sextante, ao cronômetro de Harrison e ao GPS. Carta celeste interativa, planetas em 3D e um planetário mecânico com posições reais." />
+  <meta name="theme-color" content="#0b1530" />
+  <!-- Segurança: só carrega recursos das origens que o site realmente usa (cdnjs e Google Fonts) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <!-- Aplica o tema salvo antes de pintar a página (evita piscar claro→escuro) -->
+  <script src="static/js/theme-init.js"></script>
+  <title>Navegação pelas Estrelas — Royal Navy</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%93%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="static/css/style.css" />
+  <link rel="stylesheet" href="static/css/dark.css" />
+  <link rel="stylesheet" href="static/css/navegacao.css" />
+</head>
+<body class="page-navegacao">
+
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+
+  <!-- ═══════════════════════════════════════════ NAV ═══ -->
+  <nav class="navbar scrolled" id="navbar">
+    <div class="nav-inner">
+      <a class="nav-brand" href="./" aria-label="Royal Navy — página inicial">
+        <div class="nav-anchor">⚓</div>
+        <span class="brand-text">ROYAL NAVY</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="./#hero"    class="nav-link">Início</a></li>
+        <li><a href="./#history" class="nav-link">História</a></li>
+        <li><a href="./#ships"   class="nav-link">Navios</a></li>
+        <li><a href="./#battles" class="nav-link">Batalhas</a></li>
+        <li><a href="./#fleet"   class="nav-link">Frota Atual</a></li>
+        <li><a href="./#gallery" class="nav-link">Galeria</a></li>
+        <li><a href="navegacao.html"  class="nav-link active" aria-current="page">Estrelas</a></li>
+        <li><a href="consulta.html"   class="nav-link">Consulta</a></li>
+        <li><a href="./#contact" class="nav-link">Contato</a></li>
+      </ul>
+      <div class="nav-badge">Since 1546</div>
+      <button class="theme-toggle" id="theme-toggle" type="button" role="switch" aria-checked="false"
+              aria-label="Alternar entre modo claro e modo escuro">
+        <span class="theme-toggle__track">
+          <span class="theme-toggle__knob">
+            <svg class="theme-toggle__icon theme-toggle__icon--sun" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4.6" fill="currentColor"/>
+              <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>
+              </g>
+            </svg>
+            <svg class="theme-toggle__icon theme-toggle__icon--moon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20.2 14.6A8.4 8.4 0 0 1 9.4 3.8a8.4 8.4 0 1 0 10.8 10.8z" fill="currentColor"/>
+            </svg>
+          </span>
+        </span>
+        <span class="theme-toggle__label" id="theme-label">Claro</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════ HERO: O CÉU DE AGORA ═══ -->
+  <header class="nav-hero" id="topo">
+    <canvas class="nav-hero__ceu" id="ceu-hero" aria-hidden="true"></canvas>
+    <div class="nav-hero__veu" aria-hidden="true"></div>
+    <div class="nav-hero__conteudo">
+      <div class="section-tag">Navegação astronômica</div>
+      <h1 class="nav-hero__titulo">Navegar pelas <span class="accent">estrelas</span></h1>
+      <p class="nav-hero__sub">Antes do GPS, todo navio de guerra encontrava o seu lugar no mar medindo o céu. Da bússola estelar polinésia ao sextante e ao cronômetro de Harrison, esta é a história de como as marinhas leram as estrelas, e de por que ainda as estudam hoje.</p>
+      <div class="nav-hero__botoes">
+        <a class="btn btn-primary" href="#carta">Abrir a carta celeste</a>
+        <a class="btn btn-outline" href="#eras">Linha do tempo</a>
+      </div>
+      <p class="nav-hero__legenda" id="ceu-hero-legenda" aria-live="polite">Calculando o céu de agora…</p>
+    </div>
+    <ul class="nav-hero__numeros" aria-label="Números da navegação astronômica">
+      <li><strong>57 + 1</strong><span>estrelas de navegação</span></li>
+      <li><strong>£20.000</strong><span>prêmio da longitude, 1714</span></li>
+      <li><strong>1767</strong><span>primeiro Nautical Almanac</span></li>
+      <li><strong>2015</strong><span>o sextante volta à Academia Naval dos EUA</span></li>
+    </ul>
+  </header>
+
+  <main id="conteudo">
+
+    <!-- ═══════════════════════════════════════════ LINHA DO TEMPO ═══ -->
+    <section class="eras" id="eras" aria-labelledby="eras-titulo">
+      <div class="section-header">
+        <div class="section-tag">Cinco eras</div>
+        <h2 class="section-title" id="eras-titulo">Do horizonte <span class="accent">ao satélite</span></h2>
+        <p class="section-sub">Cada era resolveu um problema que a anterior não conseguia: primeiro a direção, depois a latitude, depois a longitude, depois a precisão e, por fim, a independência do céu.</p>
+      </div>
+
+      <ol class="eras__lista">
+        <!-- ERA I -->
+        <li class="era" data-era="I">
+          <div class="era__marca" aria-hidden="true"><span>I</span></div>
+          <article class="era__corpo">
+            <p class="era__datas">Há mais de 3.000 anos · Oceano Pacífico</p>
+            <h3 class="era__titulo">A bússola de estrelas da Polinésia</h3>
+            <p>Sem instrumento algum, os navegadores da Oceania cruzavam milhares de quilômetros de mar aberto guardando na memória o ponto do horizonte onde cada estrela nasce e se põe. Uma estrela que nasce numa “casa” do horizonte a leste se põe na casa de mesmo nome a oeste: seguindo uma sequência de estrelas, mantinha-se o rumo a noite inteira.</p>
+            <p>Em 1976, o navegador micronésio <strong>Mau Piailug</strong> levou a canoa dupla <em>Hōkūleʻa</em> do Havaí ao Taiti só com esse conhecimento: no 31º dia ele anunciou que a terra estava perto, e no dia seguinte avistaram o Taiti. A bússola estelar havaiana, organizada por Nainoa Thompson, divide o horizonte em <strong>32 casas de 11,25°</strong>.</p>
+            <figure class="instrumento instrumento--rosa">
+              <svg id="rosa-estelar" viewBox="-200 -200 400 400" role="img" aria-labelledby="rosa-desc"></svg>
+              <figcaption id="rosa-desc">Bússola estelar havaiana: passe o ponteiro (ou toque) nas casas para ver o nome e o significado. A estrela dourada mostra uma estrela nascendo e se pondo na mesma casa, dos dois lados do horizonte.</figcaption>
+              <p class="instrumento__leitura" id="rosa-leitura" aria-live="polite">Casa <strong>Lā</strong> (Sol), junto ao leste e ao oeste.</p>
+            </figure>
+          </article>
+        </li>
+
+        <!-- ERA II -->
+        <li class="era" data-era="II">
+          <div class="era__marca" aria-hidden="true"><span>II</span></div>
+          <article class="era__corpo">
+            <p class="era__datas">Séculos XV e XVI · Atlântico</p>
+            <h3 class="era__titulo">A latitude: medir a altura da Estrela Polar</h3>
+            <p>A Estrela Polar fica quase sobre o eixo da Terra; por isso a sua <strong>altura acima do horizonte é praticamente igual à latitude</strong> de quem a observa. Com o <strong>astrolábio náutico</strong> e o <strong>quadrante</strong>, os pilotos portugueses passaram a navegar “por alturas”. Em 1496 saiu em Leiria o <em>Almanach Perpetuum</em> de <strong>Abraão Zacuto</strong>, tábuas que davam a declinação do Sol e permitiam achar a latitude também ao meio-dia, e que acompanharam as viagens dos Descobrimentos.</p>
+            <p>Ao cruzar o equador a Polar desaparece. Em 1500, Mestre João, físico e astrônomo da armada de Cabral, descreveu ao rei D. Manuel as estrelas do <strong>Cruzeiro do Sul</strong>, que passaram a guiar os pilotos no hemisfério sul.</p>
+            <figure class="instrumento instrumento--latitude">
+              <canvas id="quadrante" width="560" height="340" role="img" aria-label="Quadrante náutico mirando a Estrela Polar"></canvas>
+              <figcaption>Experimente: escolha um porto e mova a alidade do quadrante até alinhar a mira com a Polar. A leitura do arco é a latitude.</figcaption>
+              <div class="instrumento__controles">
+                <label>Porto
+                  <select id="quadrante-porto">
+                    <option value="51.48">Greenwich (51,5° N)</option>
+                    <option value="38.71" selected>Lisboa (38,7° N)</option>
+                    <option value="28.47">Ilhas Canárias (28,5° N)</option>
+                    <option value="14.69">Cabo Verde (14,7° N)</option>
+                    <option value="0.0">Linha do equador (0°)</option>
+                    <option value="-12.97">Salvador (13,0° S)</option>
+                  </select>
+                </label>
+                <label>Alidade <input type="range" id="quadrante-alidade" min="0" max="90" step="0.1" value="20" /></label>
+              </div>
+              <p class="instrumento__leitura" id="quadrante-leitura" aria-live="polite"></p>
+            </figure>
+          </article>
+        </li>
+
+        <!-- ERA III -->
+        <li class="era" data-era="III">
+          <div class="era__marca" aria-hidden="true"><span>III</span></div>
+          <article class="era__corpo">
+            <p class="era__datas">1707 – 1767 · Royal Navy e Observatório de Greenwich</p>
+            <h3 class="era__titulo">O problema da longitude</h3>
+            <p>A latitude vinha das estrelas; a longitude, não. Na noite de <strong>22 de outubro de 1707</strong>, a esquadra de Sir Cloudesley Shovell, voltando do Mediterrâneo, julgava estar a oeste da Bretanha e bateu nas rochas das <strong>Ilhas Scilly</strong>: o HMS <em>Association</em>, o <em>Eagle</em>, o <em>Romney</em> e o <em>Firebrand</em> se perderam, com 1.400 a 2.000 homens, um dos piores desastres da história naval britânica.</p>
+            <p>O Parlamento aprovou o <strong>Longitude Act de 1714</strong>, com prêmio de <strong>£20.000</strong> para quem achasse a longitude no mar. Duas respostas venceram. O relojoeiro <strong>John Harrison</strong> construiu o cronômetro <strong>H4</strong>, testado em 1761 numa viagem à Jamaica: chegou atrasado apenas alguns segundos. E o Astrônomo Real <strong>Nevil Maskelyne</strong> publicou o <strong>Nautical Almanac</strong> de 1767, com as “distâncias lunares”: a Lua anda entre as estrelas como o ponteiro de um relógio celeste.</p>
+            <figure class="instrumento instrumento--longitude">
+              <canvas id="cronometro" width="560" height="300" role="img" aria-label="Dois relógios: hora local e hora de Greenwich"></canvas>
+              <figcaption>A Terra gira 15° por hora. Ao meio-dia local (Sol no ponto mais alto), compare com o cronômetro, que guarda a hora de Greenwich: cada hora de diferença é 15° de longitude. Mova o navio e veja também o que um relógio impreciso faz.</figcaption>
+              <div class="instrumento__controles">
+                <label>Longitude do navio <input type="range" id="cronometro-long" min="-180" max="180" step="1" value="-64" /></label>
+                <label>Erro do relógio (s/dia) <input type="range" id="cronometro-erro" min="0" max="60" step="1" value="0" /></label>
+              </div>
+              <p class="instrumento__leitura" id="cronometro-leitura" aria-live="polite"></p>
+            </figure>
+          </article>
+        </li>
+
+        <!-- ERA IV -->
+        <li class="era" data-era="IV">
+          <div class="era__marca" aria-hidden="true"><span>IV</span></div>
+          <article class="era__corpo">
+            <p class="era__datas">1731 – 1884 · O sextante e as linhas de posição</p>
+            <h3 class="era__titulo">Precisão: o sextante e o meridiano de Greenwich</h3>
+            <p>Em 1731, <strong>John Hadley</strong> apresentou à Royal Society o octante de dupla reflexão (Thomas Godfrey, na Filadélfia, chegou à mesma ideia de forma independente): dois espelhos trazem a estrela até o horizonte, e a imagem não treme com o balanço do navio. Em 1757, o capitão <strong>John Campbell</strong> propôs ampliar o arco para um sexto de círculo, e nasceu o <strong>sextante</strong>.</p>
+            <p>Em 1837, o capitão americano <strong>Thomas Sumner</strong> percebeu que uma só altura de estrela coloca o navio sobre uma <strong>linha de posição</strong>; duas linhas se cruzam no ponto. Em 1875 o almirante francês <strong>Marcq Saint-Hilaire</strong> criou o método da interceptação, usado até hoje. Em 1884, a Conferência Internacional do Meridiano, em Washington, adotou <strong>Greenwich como longitude zero</strong>.</p>
+            <ul class="era__fatos">
+              <li><strong>57 + 1 estrelas</strong> estão tabeladas no Nautical Almanac (as 57 de navegação e a Polar). Elas aparecem em dourado na carta celeste abaixo.</li>
+              <li>A hora certa para medir é o <strong>crepúsculo náutico</strong>: o Sol entre 6° e 12° abaixo do horizonte, quando as estrelas já brilham e o horizonte ainda se vê.</li>
+            </ul>
+          </article>
+        </li>
+
+        <!-- ERA V -->
+        <li class="era" data-era="V">
+          <div class="era__marca" aria-hidden="true"><span>V</span></div>
+          <article class="era__corpo">
+            <p class="era__datas">1940 – hoje · Rádio, satélites e a volta do sextante</p>
+            <h3 class="era__titulo">Do LORAN ao GPS, e de volta às estrelas</h3>
+            <p>Na Segunda Guerra Mundial, o <strong>LORAN</strong> passou a dar a posição por diferenças de tempo entre sinais de rádio. Em 1964 entrou em operação o <strong>Transit</strong>, o primeiro sistema de navegação por satélite, criado para os submarinos da Marinha dos EUA. Em 1978 subiu o primeiro satélite do <strong>GPS</strong>; o Transit foi desligado em 1996.</p>
+            <p>O céu, porém, não pode ser interferido nem desligado. Em 2015, diante do risco de interferência e de ataques cibernéticos ao GPS, a <strong>Academia Naval dos EUA voltou a ensinar navegação astronômica</strong>, quase duas décadas depois de cortar a disciplina.</p>
+          </article>
+        </li>
+      </ol>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ CARTA CELESTE ═══ -->
+    <section class="carta" id="carta" aria-labelledby="carta-titulo">
+      <div class="section-header">
+        <div class="section-tag">Carta celeste interativa</div>
+        <h2 class="section-title" id="carta-titulo">O céu <span class="accent">de qualquer noite</span></h2>
+        <p class="section-sub">2.300 estrelas reais, as 88 constelações e os planetas calculados para a data, vistos de onde o navio estava. Escolha uma noite histórica ou o céu de agora e passe o ponteiro sobre as estrelas douradas.</p>
+      </div>
+      <div class="carta__painel">
+        <div class="carta__palco">
+          <canvas id="carta-celeste" role="img" aria-label="Mapa do céu visível no local e na data escolhidos"></canvas>
+          <div class="carta__dica" id="carta-dica" role="status" hidden></div>
+        </div>
+        <aside class="carta__controles" aria-label="Controles da carta celeste">
+          <label class="campo">Noite
+            <select id="carta-noite">
+              <option value="agora">Esta noite, sobre Greenwich</option>
+              <option value="scilly">1707 · Ilhas Scilly, o desastre</option>
+              <option value="h4">1762 · O H4 chega à Jamaica</option>
+              <option value="endeavour">1769 · Taiti, trânsito de Vênus</option>
+              <option value="trafalgar">1805 · Cabo Trafalgar</option>
+              <option value="rio">Esta noite, sobre o Rio de Janeiro</option>
+            </select>
+          </label>
+          <label class="campo">Hora <input type="range" id="carta-hora" min="-12" max="12" step="0.25" value="0" />
+            <output id="carta-hora-saida" for="carta-hora"></output></label>
+          <fieldset class="campo campo--chaves">
+            <legend>Mostrar</legend>
+            <label><input type="checkbox" id="carta-constelacoes" checked /> Constelações</label>
+            <label><input type="checkbox" id="carta-nomes" checked /> Nomes das estrelas de navegação</label>
+            <label><input type="checkbox" id="carta-planetas" checked /> Sol, Lua e planetas</label>
+            <label><input type="checkbox" id="carta-grade" /> Grade de altura</label>
+          </fieldset>
+          <div class="carta__nota" id="carta-nota" aria-live="polite"></div>
+          <p class="carta__legenda"><span class="ponto ponto--nav"></span> estrela de navegação <span class="ponto ponto--planeta"></span> planeta <span class="ponto ponto--polar"></span> Polar</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ OS ERRANTES ═══ -->
+    <section class="errantes" id="errantes" aria-labelledby="errantes-titulo">
+      <div class="section-header">
+        <div class="section-tag">Os errantes</div>
+        <h2 class="section-title" id="errantes-titulo">Os planetas <span class="accent">de cada época</span></h2>
+        <p class="section-sub">Para os gregos, <em>planētēs</em> quer dizer “errante”: astros que vagavam entre as estrelas fixas. Cinco eram conhecidos desde a Antiguidade; dois só apareceram com o telescópio. Quatro deles (Vênus, Marte, Júpiter e Saturno) estão até hoje no Nautical Almanac.</p>
+      </div>
+      <div class="errantes__painel">
+        <div class="errantes__palco" id="planetas-3d" role="img" aria-label="Modelo 3D do planeta selecionado"></div>
+        <div class="errantes__ficha" aria-live="polite">
+          <div class="errantes__abas" role="tablist" aria-label="Escolha um planeta" id="planetas-abas"></div>
+          <h3 class="errantes__nome" id="planeta-nome"></h3>
+          <p class="errantes__apelido" id="planeta-apelido"></p>
+          <dl class="errantes__dados">
+            <div><dt>Conhecido desde</dt><dd id="planeta-desde"></dd></div>
+            <div><dt>Para o navegador</dt><dd id="planeta-nav"></dd></div>
+          </dl>
+          <p class="errantes__historia" id="planeta-historia"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ PLANETÁRIO MECÂNICO ═══ -->
+    <section class="planetario" id="planetario" aria-labelledby="planetario-titulo">
+      <div class="section-header">
+        <div class="section-tag">Planetário mecânico</div>
+        <h2 class="section-title" id="planetario-titulo">Um <span class="accent">orrery</span> com posições reais</h2>
+        <p class="section-sub">Os modelos mecânicos do Sistema Solar ganharam o nome de <em>orrery</em> em homenagem a Charles Boyle, 4º Conde de Orrery, para quem foi feito um dos primeiros, por volta de 1713. Este calcula onde cada planeta estava em qualquer data entre 1500 e 2100 (escalas de distância comprimidas para caber na tela).</p>
+      </div>
+      <div class="planetario__painel">
+        <canvas id="orrery" role="img" aria-label="Sistema Solar visto de cima, com os planetas nas posições da data escolhida"></canvas>
+        <div class="planetario__controles">
+          <button type="button" class="btn-mini" id="orrery-play" aria-pressed="false">▶ Girar o tempo</button>
+          <label>Ano <input type="range" id="orrery-ano" min="1500" max="2100" step="0.01" value="2026" /></label>
+          <output id="orrery-data" for="orrery-ano"></output>
+          <div class="planetario__marcos" id="orrery-marcos"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ HOJE ═══ -->
+    <section class="hoje" id="hoje" aria-labelledby="hoje-titulo">
+      <div class="section-header">
+        <div class="section-tag">Por que ainda hoje</div>
+        <h2 class="section-title" id="hoje-titulo">O céu não pode ser <span class="accent">desligado</span></h2>
+      </div>
+      <div class="hoje__grade">
+        <article class="hoje__cartao">
+          <h3>Sextante</h3>
+          <p>Não emite sinal, não pode ser interferido e funciona sem energia. Uma boa medida coloca o navio a poucas milhas da posição real.</p>
+        </article>
+        <article class="hoje__cartao">
+          <h3>Cronômetro</h3>
+          <p>Hoje o rádio e os satélites distribuem a hora certa; ainda assim, os navios carregam relógios de referência para quando tudo falhar.</p>
+        </article>
+        <article class="hoje__cartao">
+          <h3>GPS</h3>
+          <p>Precisão de metros, mas depende de sinais fracos vindos do espaço, que podem ser bloqueados ou falsificados.</p>
+        </article>
+        <article class="hoje__cartao">
+          <h3>Nautical Almanac</h3>
+          <p>Publicado todos os anos desde 1767, hoje em conjunto pelo Reino Unido e pelos EUA.</p>
+        </article>
+      </div>
+      <details class="fontes" id="fontes">
+        <summary>Fontes e dados usados nesta página</summary>
+        <ul>
+          <li>Royal Museums Greenwich: <a href="https://www.rmg.co.uk/stories/time/longitude-found-nevil-maskelyne-lunar-method" rel="noopener" target="_blank">Maskelyne e o método lunar</a>; U.S. Naval Observatory: <a href="https://aa.usno.navy.mil/publications/na_history" rel="noopener" target="_blank">História do Nautical Almanac</a>.</li>
+          <li>Linda Hall Library: <a href="https://www.lindahall.org/about/news/scientist-of-the-day/cloudesley-shovell/" rel="noopener" target="_blank">Cloudesley Shovell e o desastre das Scilly</a>; Historic England: <a href="https://historicengland.org.uk/listing/what-is-designation/heritage-highlights/sinking-of-ship-lead-to-invention-of-marine-chronometer/" rel="noopener" target="_blank">do naufrágio ao cronômetro</a>.</li>
+          <li>Hōkūleʻa / Polynesian Voyaging Society: <a href="https://hokulea.com/polynesian-wayfinding/" rel="noopener" target="_blank">A bússola estelar</a>.</li>
+          <li>Biblioteca Nacional de Portugal: <a href="https://purl.pt/22001" rel="noopener" target="_blank"><em>Almanach Perpetuum</em>, Leiria, 1496</a>.</li>
+          <li>U.S. Naval Institute: <a href="https://www.usni.org/magazines/proceedings/1936/november/evolution-sextant" rel="noopener" target="_blank">A evolução do sextante</a>; Britannica: <a href="https://www.britannica.com/biography/Thomas-Sumner" rel="noopener" target="_blank">Thomas Sumner</a>.</li>
+          <li>U.S. Navy: <a href="https://www.navy.mil/Press-Office/News-Stories/display-news/Article/2264003/charting-a-new-course-celestial-navigation-returns-to-usna/" rel="noopener" target="_blank">A navegação astronômica volta à Academia Naval (2015)</a>; The Aerospace Corporation: <a href="https://aerospace.org/article/brief-history-gps" rel="noopener" target="_blank">Breve história do GPS</a>.</li>
+          <li>NASA/JPL: <a href="https://ssd.jpl.nasa.gov/planets/discovery.html" rel="noopener" target="_blank">Descoberta dos planetas</a> e <a href="https://ssd.jpl.nasa.gov/planets/approx_pos.html" rel="noopener" target="_blank">elementos keplerianos (Standish)</a>, usados para calcular as posições.</li>
+          <li>Rice University, Galileo Project: <a href="https://galileo.library.rice.edu/sci/observations/longitude.html" rel="noopener" target="_blank">Longitude no mar</a>; Whipple Museum: <a href="https://www.whipplemuseum.cam.ac.uk/explore-whipple-collections/astronomy/grand-orrery" rel="noopener" target="_blank">o Grand Orrery</a>.</li>
+          <li>Estrelas e constelações: <a href="https://github.com/ofrohn/d3-celestial" rel="noopener" target="_blank">d3-celestial</a> (Olaf Frohn, licença BSD-3-Clause, a partir do catálogo Hipparcos); lista de estrelas de navegação conforme o Nautical Almanac e o Bowditch.</li>
+        </ul>
+      </details>
+    </section>
+  </main>
+
+  <footer class="footer contato-footer">
+    <div class="footer-bottom">
+      <span>© 2026 Royal Navy Educational. Fins educativos.</span>
+      <span>Posições calculadas no seu navegador; precisão adequada para visualização, não para navegar.</span>
+    </div>
+  </footer>
+
+  <script defer src="static/js/theme.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+          integrity="sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script defer src="static/js/astro.js"></script>
+  <script defer src="static/js/navegacao.js"></script>
+  <script defer src="static/js/planetas-3d.js"></script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+# Gerador do PDF de documentacao (ferramentas/documentacao) - nao e usado pelo site
+reportlab==5.0.1
+pillow==13.0.0
+pymupdf==2.0

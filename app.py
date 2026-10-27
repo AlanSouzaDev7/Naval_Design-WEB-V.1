@@ -110,6 +110,12 @@ def consulta():
     return render_template("consulta.html")
 
 
+@app.route("/navegacao")
+def navegacao():
+    """Navegacao pelas estrelas: pagina estatica; o ceu e os planetas sao calculados no navegador."""
+    return render_template("navegacao.html")
+
+
 def _limite_post(regra):
     """Limite de requisicoes por IP nos POST (usa o limitador da API; sem ele, segue sem limite)."""
     def deco(view):

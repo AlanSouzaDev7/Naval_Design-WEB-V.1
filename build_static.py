@@ -78,6 +78,12 @@ def main() -> None:
     sugerir = sugerir.replace("../static/", "static/").replace('href="consulta"', 'href="consulta.html"')
     index, consulta, contato = (h.replace('href="sugerir"', 'href="sugerir.html"') for h in (index, consulta, contato))
 
+    # navegacao pelas estrelas: pagina sem servidor (o ceu e calculado no navegador); funciona igual no Pages
+    navegacao = (ROOT / "templates" / "navegacao.html").read_text(encoding="utf-8")
+    navegacao = navegacao.replace("../static/", "static/").replace('href="consulta"', 'href="consulta.html"')
+    index, consulta, contato, sugerir, navegacao = (h.replace('href="navegacao"', 'href="navegacao.html"')
+                                                    for h in (index, consulta, contato, sugerir, navegacao))
+
     if DOCS.exists():
         shutil.rmtree(DOCS)
     DOCS.mkdir()
@@ -86,6 +92,7 @@ def main() -> None:
     (DOCS / "consulta.html").write_text(consulta, encoding="utf-8", newline="\n")
     (DOCS / "contato.html").write_text(contato, encoding="utf-8", newline="\n")
     (DOCS / "sugerir.html").write_text(sugerir, encoding="utf-8", newline="\n")
+    (DOCS / "navegacao.html").write_text(navegacao, encoding="utf-8", newline="\n")
     shutil.copytree(ROOT / "static", DOCS / "static")
     (DOCS / ".nojekyll").write_text("", encoding="utf-8")   # desliga o processamento Jekyll do Pages
 
