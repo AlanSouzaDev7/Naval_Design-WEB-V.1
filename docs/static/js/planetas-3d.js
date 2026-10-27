@@ -49,15 +49,14 @@
   let atual = 0, aoTrocar = null;
   DADOS.forEach((p, i) => {
     const b = document.createElement('button');
-    b.type = 'button'; b.setAttribute('role', 'tab'); b.id = 'aba-' + p.id;
+    b.type = 'button'; b.setAttribute('role', 'tab'); b.id = 'aba-' + p.id; b.setAttribute('aria-controls', 'planeta-painel');
     const s = document.createElement('span'); s.className = 'simbolo'; s.textContent = p.s; s.setAttribute('aria-hidden', 'true');
     b.append(s, p.nome);
     b.addEventListener('click', () => escolher(i));
     b.addEventListener('keydown', ev => {
-      if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') {
-        const j = (i + (ev.key === 'ArrowRight' ? 1 : DADOS.length - 1)) % DADOS.length;
-        escolher(j); abas.children[j].focus(); ev.preventDefault();
-      }
+      const n = DADOS.length, j = { ArrowRight: (i + 1) % n, ArrowDown: (i + 1) % n, ArrowLeft: (i + n - 1) % n, ArrowUp: (i + n - 1) % n, Home: 0, End: n - 1 }[ev.key];
+      if (j === undefined) return;
+      escolher(j); abas.children[j].focus(); ev.preventDefault();
     });
     abas.appendChild(b);
   });
@@ -65,6 +64,7 @@
     atual = i;
     const p = DADOS[i];
     [...abas.children].forEach((b, k) => { b.setAttribute('aria-selected', String(k === i)); b.tabIndex = k === i ? 0 : -1; });
+    $('planeta-painel').setAttribute('aria-labelledby', 'aba-' + p.id);
     $('planeta-nome').textContent = `${p.s} ${p.nome}`;
     $('planeta-apelido').textContent = p.apelido;
     $('planeta-desde').textContent = p.desde;
@@ -263,7 +263,26 @@
     tamanho();
   }
 
-  /* O Three.js vem do cdnjs com defer; espera ele estar pronto */
-  if (window.THREE) iniciar3D();
-  else window.addEventListener('load', () => (window.THREE ? iniciar3D() : palco.classList.add('errantes__palco--sem3d')));
+  /* O Three.js (≈120 KB) só é baixado, e o WebGL só é ligado, quando o painel se aproxima da tela:
+     compilar os shaders custava ~0,8 s de processamento no carregamento da página. */
+  const THREE_URL = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  const THREE_SRI = 'sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ==';
+  function carregarThree() {
+    if (window.THREE) return Promise.resolve();
+    return new Promise((ok, falha) => {
+      const s = document.createElement('script');
+      s.src = THREE_URL; s.integrity = THREE_SRI; s.crossOrigin = 'anonymous'; s.referrerPolicy = 'no-referrer';
+      s.onload = ok; s.onerror = falha;
+      document.head.appendChild(s);
+    });
+  }
+  const semTresD = () => palco.classList.add('errantes__palco--sem3d');
+  palco.classList.add('errantes__palco--carregando');
+  const vigia = new IntersectionObserver(es => {
+    if (!es[0].isIntersecting) return;
+    vigia.disconnect();
+    carregarThree().then(() => (window.THREE ? iniciar3D() : semTresD()), semTresD)
+      .finally(() => palco.classList.remove('errantes__palco--carregando'));
+  }, { rootMargin: '600px 0px' });
+  vigia.observe(palco);
 })();

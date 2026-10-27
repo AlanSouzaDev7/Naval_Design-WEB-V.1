@@ -71,3 +71,22 @@ def test_versao_estatica_inclui_a_pagina(tmp_path, monkeypatch):
     assert "../static/" not in html and 'src="static/js/navegacao.js"' in html
     assert 'href="consulta.html"' in html and (tmp_path / "docs" / "static" / "data" / "ceu.json").exists()
     assert 'href="navegacao.html"' in (tmp_path / "docs" / "index.html").read_text(encoding="utf-8")
+
+
+def test_three_js_carregado_sob_demanda_com_sri():
+    """O Three.js nao entra no HTML (atrasava o DOMContentLoaded); planetas-3d.js o baixa com SRI quando o painel chega perto."""
+    html = (RAIZ / "templates" / "navegacao.html").read_text(encoding="utf-8")
+    assert "three.min.js" not in html
+    js = (RAIZ / "static" / "js" / "planetas-3d.js").read_text(encoding="utf-8")
+    assert "cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" in js
+    assert re.search(r"integrity\s*=\s*THREE_SRI", js) and re.search(r"THREE_SRI\s*=\s*'sha512-[A-Za-z0-9+/=]{88}'", js)
+    assert "crossOrigin = 'anonymous'" in js and "IntersectionObserver" in js
+
+
+def test_acessibilidade_das_abas_e_da_bussola(client):
+    html = client.get("/navegacao").get_data(as_text=True)
+    assert 'id="planeta-painel" role="tabpanel"' in html               # as abas apontam para um painel de verdade
+    assert 'id="rosa-estelar"' in html and 'role="img" aria-labelledby="rosa-desc"' not in html   # role=img esconderia as casas focaveis
+    assert 'id="ceu-hero-legenda" aria-live' not in html                # a legenda muda a cada segundo: nao pode ser regiao viva
+    js = (RAIZ / "static" / "js" / "planetas-3d.js").read_text(encoding="utf-8")
+    assert "aria-controls" in js and "Home" in js and "End" in js

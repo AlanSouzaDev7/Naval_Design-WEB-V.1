@@ -84,8 +84,8 @@ def gerar_sumario():
     linhas = [[Paragraph("<b>%s</b>" % n, e.cellb), Paragraph("<b>%s</b>" % t, e.cell),
                Paragraph(d, e.S("d", fontSize=8.6, textColor=e.GREY))] for n, t, d in edicao.SUMARIO]
     tt = Table(linhas, colWidths=[1.0 * cm, 7.6 * cm, e.CW - 8.6 * cm])
-    tt.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, -1), 0.4, e.LINE), ("TOPPADDING", (0, 0), (-1, -1), 3.2),
-                            ("BOTTOMPADDING", (0, 0), (-1, -1), 3.2), ("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
+    tt.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, -1), 0.4, e.LINE), ("TOPPADDING", (0, 0), (-1, -1), 2.4),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 2.4), ("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
     (v, txt, _), anteriores = edicao.MUDANCAS[0], edicao.MUDANCAS[1:]
     story = [e.P("Sumário", e.h1), tt, Spacer(1, 10), e.P(edicao.COMO_LER, e.callout),
              e.P("<b>O que mudou nesta edição (v%s).</b> %s" % (v, txt[0].upper() + txt[1:]), e.small)]

@@ -18,7 +18,8 @@
   const DPR = () => Math.min(window.devicePixelRatio || 1, 1.5);
   const escuro = () => document.documentElement.getAttribute('data-theme') === 'dark';
   const $ = id => document.getElementById(id);
-  const fmt = (n, d = 1) => n.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const FMT = [0, 1, 2].map(d => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d }));   // criar o formatador a cada chamada custava caro nos laços de animação
+  const fmt = (n, d = 1) => FMT[d].format(n);
   const SCRIPT = document.currentScript && document.currentScript.src;
   /* Monta texto com **negrito** e _itálico_ usando só nós de texto (sem innerHTML) */
   function textoRico(el, txt) {
@@ -29,6 +30,27 @@
       else if (parte.startsWith('_') && parte.endsWith('_')) { const i = document.createElement('em'); i.textContent = parte.slice(1, -1); el.append(i); }
       else el.append(parte);
     }
+  }
+  /* Põe rótulos sem sobrepor: tenta direita, esquerda, acima e abaixo do ponto; se nada couber
+     (outro rótulo ou fora da área desenhável), o rótulo é omitido. Usa textBaseline 'middle'. */
+  function rotulador(ctx, cabe, halo) {
+    const ocup = [];
+    const livre = b => cabe(b) && !ocup.some(o => b[0] < o[0] + o[2] && o[0] < b[0] + b[2] && b[1] < o[1] + o[3] && o[1] < b[1] + b[3]);
+    return {
+      reserva: b => ocup.push(b),
+      poe(txt, x, y, r, h = 13) {
+        const w = ctx.measureText(txt).width;
+        const d = r + h / 2 + 2;
+        for (const [dx, dy] of [[r + 4, 0], [-r - 4 - w, 0], [-w / 2, -d - 1], [-w / 2, d + 1], [r + 2, -d], [-r - 2 - w, -d], [r + 2, d], [-r - 2 - w, d]]) {
+          const b = [x + dx - 1, y + dy - h / 2, w + 2, h];
+          if (!livre(b)) continue;
+          ocup.push(b);
+          if (halo) { ctx.save(); ctx.strokeStyle = halo; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.strokeText(txt, x + dx, y + dy); ctx.restore(); }   // contorno: legível sobre o brilho do Sol
+          ctx.fillText(txt, x + dx, y + dy); return true;
+        }
+        return false;
+      }
+    };
   }
   const URL_CEU = new URL('../data/ceu.json', SCRIPT || location.href).href;
 
@@ -102,6 +124,7 @@
     const proximaNoite = t => { for (let k = 0; k < 200 && alturaSol(t) > -12; k++) t += 10 * 60000; return t; };
     let W = 0, H = 0, d = 1, tSim = proximaNoite(Date.now()), cx = 0, cy = 0, R = 0, conferido = 0;
     let tema = escuro();
+    const DATA_HERO = new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC', dateStyle: 'short', timeStyle: 'short' });
 
     encaixar(cv, (w, h, dd) => {
       W = w; H = h; d = dd;
@@ -193,15 +216,17 @@
         ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 6.2832); ctx.fill();
         n++;
       };
-      for (const s of dados.est) pinta(s[0], s[1], s[2], s[3], false);
+      if (quadro.base !== dados.est || quadro.limite !== limite) { quadro.base = dados.est; quadro.limite = limite; quadro.visiveis = dados.est.filter(s => s[2] <= limite); }
+      for (const s of quadro.visiveis) pinta(s[0], s[1], s[2], s[3], false);
       for (const s of dados.nav) pinta(s.ra, s.dec, s.mag, s.bv, true, s.n === 0);
       navio(ctx);
       if (legenda && (!quadro.ultimaLegenda || performance.now() - quadro.ultimaLegenda > 900)) {
         quadro.ultimaLegenda = performance.now();
         const pol = dados.nav[0];
         const hp = A.horizontais(pol.ra, pol.dec, LAT, lst);
-        legenda.textContent = `Céu real da noite sobre Greenwich · ${data.toLocaleString('pt-BR', { timeZone: 'UTC', dateStyle: 'short', timeStyle: 'short' })} UTC` +
-          (ACEL ? ` (acelerado ${ACEL}×)` : '') + ` · a Polar está a ${fmt(hp[0])}° de altura, quase a latitude do observatório (51,5°) · ${n} estrelas`;
+        // texto curto (cabe em 2 linhas reservadas no CSS): a legenda não empurra o layout quando muda
+        legenda.textContent = `Céu real sobre Greenwich · ${DATA_HERO.format(data)} UTC` + (ACEL ? ` (${ACEL}× mais rápido)` : '') +
+          ` · Polar a ${fmt(hp[0])}° de altura ≈ latitude 51,5° · ${n} estrelas`;
       }
     }
 
@@ -237,7 +262,7 @@
         nome = CASAS[idx][0];
         sig = `${CASAS[idx][1]} · quadrante ${QUAD[q]}`;
       }
-      const p = el('path', { d: arco(a0, a1, R0, R1), class: 'rosa__casa', tabindex: '0', role: 'button', 'aria-label': `${nome}: ${sig}` });
+      const p = el('path', { d: arco(a0, a1, R0, R1), class: 'rosa__casa', tabindex: i === 8 ? '0' : '-1', role: 'button', 'aria-label': `${nome}: ${sig}` });
       p.dataset.nome = nome; p.dataset.sig = sig;
       casas.push(p);
       el('line', { x1: Math.sin(a0 * Math.PI / 180) * R0, y1: -Math.cos(a0 * Math.PI / 180) * R0, x2: Math.sin(a0 * Math.PI / 180) * R1, y2: -Math.cos(a0 * Math.PI / 180) * R1, class: 'rosa__raio' });
@@ -266,7 +291,16 @@
       const b = document.createElement('strong'); b.textContent = p.dataset.nome;
       leitura.append('Casa ', b, ` — ${p.dataset.sig}.`);
     };
-    casas.forEach(p => { p.addEventListener('pointerenter', () => mostra(p)); p.addEventListener('focus', () => mostra(p)); p.addEventListener('click', () => mostra(p)); });
+    casas.forEach((p, i) => {
+      p.addEventListener('pointerenter', () => mostra(p)); p.addEventListener('focus', () => mostra(p)); p.addEventListener('click', () => mostra(p));
+      /* uma só parada de Tab para as 32 casas; as setas percorrem o anel */
+      p.addEventListener('keydown', ev => {
+        const j = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i + 31, ArrowUp: i + 31, Home: 0, End: 31 }[ev.key];
+        if (j === undefined) return;
+        ev.preventDefault();
+        const q = casas[j % 32]; p.tabIndex = -1; q.tabIndex = 0; q.focus();
+      });
+    });
     const notaHokulea = () => {
       leitura.textContent = '';
       const b = document.createElement('strong'); b.textContent = 'Hōkūleʻa';
@@ -275,7 +309,12 @@
     notaHokulea();
     svg.addEventListener('pointerleave', () => { if (ativa) ativa.classList.remove('ativa'); ativa = null; notaHokulea(); });
     let f = 0;
-    const passo = dt => { f = (f + dt * 9) % pontos.length; const p = pontos[Math.floor(f)]; estrela.setAttribute('cx', p[0]); estrela.setAttribute('cy', p[1]); };
+    let ultimoIdx = -1;
+    const passo = dt => {
+      f = (f + dt * 9) % pontos.length;
+      const k = Math.floor(f); if (k === ultimoIdx) return;   // só mexe no SVG quando a estrela muda de ponto
+      ultimoIdx = k; estrela.setAttribute('cx', pontos[k][0]); estrela.setAttribute('cy', pontos[k][1]);
+    };
     if (!REDUZIDO) animarQuandoVisivel(svg, passo);
   })();
 
@@ -454,6 +493,7 @@
       const pj = (alt, az) => { const p = A.estereografica(alt, az); return [cx + p[0] * R, cy + p[1] * R]; };
       const dados = estrelasNaData(J);
       alvos = [];
+      const pedidos = [];             // rótulos: postos no fim, planetas primeiro e depois as estrelas mais brilhantes
       if (chk.grade.checked) {
         ctx.strokeStyle = atlas ? 'rgba(122,86,21,0.25)' : 'rgba(143,211,255,0.16)'; ctx.lineWidth = 1;
         for (const alt of [30, 60]) { const r = Math.tan((90 - alt) * A.RAD / 2) * R; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.stroke(); }
@@ -490,7 +530,7 @@
         if (!atlas) { const gl = ctx.createRadialGradient(q[0], q[1], 0, q[0], q[1], r * 4); gl.addColorStop(0, polar ? 'rgba(143,211,255,0.5)' : 'rgba(255,215,106,0.45)'); gl.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(q[0], q[1], r * 4, 0, 7); ctx.fill(); }
         ctx.fillStyle = cor; ctx.beginPath(); ctx.arc(q[0], q[1], r, 0, 6.2832); ctx.fill();
         if (atlas) { ctx.strokeStyle = '#5a3e0a'; ctx.lineWidth = 0.8; ctx.stroke(); }
-        if (chk.nomes.checked) { ctx.fillStyle = atlas ? '#8a2c12' : 'rgba(255,231,170,0.9)'; ctx.fillText(s.nome, q[0] + r + 4, q[1]); }
+        if (chk.nomes.checked) pedidos.push({ txt: s.nome, x: q[0], y: q[1], r, pri: s.mag, cor: atlas ? '#8a2c12' : 'rgba(255,231,170,0.9)', fonte: '600 11px Rajdhani, sans-serif' });
         alvos.push({ x: q[0], y: q[1], tipo: 'nav', s, h });
       }
       if (chk.plan.checked) {
@@ -504,11 +544,14 @@
           const q = pj(h[0], h[1]);
           ctx.fillStyle = c.cor; ctx.strokeStyle = atlas ? '#2a2416' : 'rgba(0,0,0,0.6)'; ctx.lineWidth = 1;
           ctx.beginPath(); ctx.arc(q[0], q[1], c.r, 0, 7); ctx.fill(); ctx.stroke();
-          ctx.fillStyle = atlas ? '#1f4a7c' : '#ffb38a'; ctx.font = '700 12px Inter, sans-serif';
-          ctx.fillText(`${c.s} ${c.nome}`, q[0] + c.r + 4, q[1] - 9);
+          pedidos.push({ txt: `${c.s} ${c.nome}`, x: q[0], y: q[1], r: c.r, pri: -10, cor: atlas ? '#1f4a7c' : '#ffb38a', fonte: '700 12px Inter, sans-serif' });
           alvos.push({ x: q[0], y: q[1], tipo: 'corpo', c, h });
         }
       }
+      const dentro = b => [[b[0], b[1]], [b[0] + b[2], b[1]], [b[0], b[1] + b[3]], [b[0] + b[2], b[1] + b[3]]].every(([x, y]) => (x - cx) ** 2 + (y - cy) ** 2 < (R - 3) ** 2);
+      const rot = rotulador(ctx, dentro, atlas ? 'rgba(251,246,230,0.8)' : 'rgba(3,7,18,0.75)');
+      ctx.textBaseline = 'middle';
+      for (const p of pedidos.sort((a, b) => a.pri - b.pri)) { ctx.font = p.fonte; ctx.fillStyle = p.cor; rot.poe(p.txt, p.x, p.y, p.r); }
       ctx.restore();
       // aro de latão com os pontos cardeais (Leste à esquerda: o mapa se lê olhando para cima)
       ctx.lineWidth = 3; ctx.strokeStyle = '#b8862b'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke();
@@ -526,7 +569,7 @@
     }
 
     /* Dica ao passar o ponteiro */
-    cv.addEventListener('pointermove', ev => {
+    const mostrarDica = ev => {
       const r = cv.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
       let melhor = null, dmin = 14 * 14;
       for (const a of alvos) { const dd = (a.x - x) ** 2 + (a.y - y) ** 2; if (dd < dmin) { dmin = dd; melhor = a; } }
@@ -543,8 +586,15 @@
       } else {
         b.textContent = 'Estrela brilhante'; dica.append(b); linha(`magnitude ${fmt(melhor.mag)}`); linha(alt);
       }
-      dica.style.left = `${x}px`; dica.style.top = `${y}px`; dica.hidden = false;
-    });
+      // abre para o lado que cabe e nunca sai da tela (no celular a dica vazava pela direita e criava rolagem lateral)
+      dica.hidden = false;
+      const larg = dica.offsetWidth, alt2 = dica.offsetHeight / 2, vw = document.documentElement.clientWidth;
+      let esq = x + 14 + larg > r.width ? x - 14 - larg : x + 14;
+      esq = Math.max(6 - r.left, Math.min(esq, vw - r.left - larg - 6));
+      dica.style.left = `${esq}px`; dica.style.top = `${Math.min(Math.max(y, alt2), r.height - alt2)}px`;
+    };
+    cv.addEventListener('pointermove', mostrarDica);
+    cv.addEventListener('pointerdown', mostrarDica);     // no celular não há "passar o ponteiro": um toque mostra a dica
     cv.addEventListener('pointerleave', () => { dica.hidden = true; });
 
     const mudarNoite = () => { textoRico(nota, NOITES[sel.value].nota); hora.value = 0; agenda(); };
@@ -566,7 +616,7 @@
       [1781.2, '1781 · Urano'], [1805.8, '1805 · Trafalgar'], [1846.73, '1846 · Netuno'], [1884.8, '1884 · Meridiano de Greenwich']];
     MARCOS.forEach(([a, t]) => {
       const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn-mini'; bt.textContent = t;
-      bt.addEventListener('click', () => { ano.value = a; parar(); desenha(); });
+      bt.addEventListener('click', () => { parar(); ano.value = a; desenha(); });
       marcos.appendChild(bt);
     });
     const agora = new Date(); ano.value = (agora.getUTCFullYear() + agora.getUTCMonth() / 12).toFixed(2);
@@ -574,9 +624,9 @@
     encaixar(cv, (w, h, d) => { W = w; H = h; ctx.setTransform(d, 0, 0, d, 0, 0); desenha(); });
     const dataDoAno = a => new Date(Date.UTC(Math.floor(a), 0, 1) + (a - Math.floor(a)) * 365.2425 * 86400000);
 
-    function desenha() {
+    function desenha(anoExato) {
       if (!W) return;
-      const dark = escuro(), a = parseFloat(ano.value), data = dataDoAno(a), J = A.jd(data);
+      const dark = escuro(), a = typeof anoExato === 'number' ? anoExato : parseFloat(ano.value), data = dataDoAno(a), J = A.jd(data);
       const g = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, W * 0.6);
       if (dark) { g.addColorStop(0, '#0d1a33'); g.addColorStop(1, '#03070f'); } else { g.addColorStop(0, '#fbf6e6'); g.addColorStop(1, '#e9dcb8'); }
       ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
@@ -587,7 +637,14 @@
       ctx.lineWidth = 1;
       for (let l = 0; l < 360; l += 5) { const an = -l * A.RAD, k = l % 30 === 0 ? 9 : 4; ctx.beginPath(); ctx.moveTo(cx + Math.cos(an) * Ra, cy + Math.sin(an) * Ra); ctx.lineTo(cx + Math.cos(an) * (Ra - k), cy + Math.sin(an) * (Ra - k)); ctx.stroke(); }
       ctx.fillStyle = dark ? '#e2bd6a' : '#7a5615'; ctx.font = '700 12px Inter, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillText('♈︎ 0° · ponto vernal', cx + Ra + 6, cy);
+      const rot = rotulador(ctx, b => b[0] >= 2 && b[0] + b[2] <= W - 2 && b[1] >= 2 && b[1] + b[3] <= H - 2, dark ? 'rgba(3,7,15,0.85)' : 'rgba(251,246,230,0.9)');
+      const vernal = '♈︎ 0° · ponto vernal', wv = ctx.measureText(vernal).width;
+      if (cx + Ra + 6 + wv < W) { ctx.fillText(vernal, cx + Ra + 6, cy); rot.reserva([cx + Ra + 2, cy - 9, wv + 8, 18]); }
+      else { ctx.textAlign = 'right'; ctx.fillText(vernal + ' →', W - 8, H - 12); ctx.textAlign = 'left'; }   // tela estreita: no canto, fora do anel
+      // o Sol vem antes dos planetas: o brilho dele cobria o nome dos planetas internos
+      const sol = ctx.createRadialGradient(cx, cy, 0, cx, cy, 22);
+      sol.addColorStop(0, '#fff6c8'); sol.addColorStop(0.4, '#ffcf4a'); sol.addColorStop(1, 'rgba(255,170,40,0)');
+      ctx.fillStyle = sol; ctx.beginPath(); ctx.arc(cx, cy, 22, 0, 7); ctx.fill();
       const corpos = [{ id: 'terra', nome: 'Terra', cor: '#5fb3ff', r: 5 }].concat(PLANETAS.map(p => Object.assign({ r: { mercurio: 3, venus: 4.5, marte: 3.8, jupiter: 9, saturno: 7.5, urano: 6, netuno: 6 }[p.id] }, p)));
       const orbitaA = { mercurio: 0.387, venus: 0.723, terra: 1, marte: 1.524, jupiter: 5.203, saturno: 9.537, urano: 19.19, netuno: 30.07 };
       for (const c of corpos) {
@@ -605,26 +662,25 @@
         ctx.fillStyle = gp; ctx.beginPath(); ctx.arc(x, y, c.r, 0, 7); ctx.fill();
         if (c.id === 'saturno') { ctx.strokeStyle = 'rgba(240,220,154,0.8)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(x, y, c.r * 1.9, c.r * 0.7, -0.4, 0, 7); ctx.stroke(); ctx.lineWidth = 1; }
         ctx.fillStyle = dark ? '#e6edf6' : '#2a2416'; ctx.font = '600 11px Rajdhani, sans-serif';
-        ctx.fillText(futuro ? `${c.nome} (ainda desconhecido)` : c.nome, x + c.r + 4, y - c.r - 3);
+        rot.poe(futuro ? `${c.nome} (ainda desconhecido)` : c.nome, x, y, c.r, 12);
         ctx.globalAlpha = 1;
       }
-      const sol = ctx.createRadialGradient(cx, cy, 0, cx, cy, 22);
-      sol.addColorStop(0, '#fff6c8'); sol.addColorStop(0.4, '#ffcf4a'); sol.addColorStop(1, 'rgba(255,170,40,0)');
-      ctx.fillStyle = sol; ctx.beginPath(); ctx.arc(cx, cy, 22, 0, 7); ctx.fill();
       saida.textContent = data.toLocaleDateString('pt-BR', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' });
     }
-    let laco = 0, ultimo = 0;
+    let laco = 0, ultimo = 0, anoGiro = 0;
     const girar = t => {
       const dt = Math.min(0.1, (t - (ultimo || t)) / 1000); ultimo = t;
-      let a = parseFloat(ano.value) + dt * 0.35;
-      if (a > 2100) a = 1500;
-      ano.value = a; desenha();
+      // o ano corre numa variável própria: em telas de 120 Hz o passo por quadro (~0,003) é menor que o step
+      // do controle (0,01) e, relido do input, era arredondado de volta e o tempo não andava
+      anoGiro += dt * 0.35;
+      if (anoGiro > 2100) anoGiro = 1500;
+      ano.value = anoGiro; desenha(anoGiro);
       laco = requestAnimationFrame(girar);
     };
     function parar() { girando = false; cancelAnimationFrame(laco); laco = 0; play.setAttribute('aria-pressed', 'false'); play.textContent = '▶ Girar o tempo'; }
     play.addEventListener('click', () => {
       if (girando) return parar();
-      girando = true; ultimo = 0; play.setAttribute('aria-pressed', 'true'); play.textContent = '❚❚ Parar';
+      girando = true; ultimo = 0; anoGiro = parseFloat(ano.value); play.setAttribute('aria-pressed', 'true'); play.textContent = '❚❚ Parar';
       laco = requestAnimationFrame(girar);
     });
     ano.addEventListener('input', () => { parar(); desenha(); });

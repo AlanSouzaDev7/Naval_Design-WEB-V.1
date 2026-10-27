@@ -74,7 +74,7 @@
         <a class="btn btn-primary" href="#carta">Abrir a carta celeste</a>
         <a class="btn btn-outline" href="#eras">Linha do tempo</a>
       </div>
-      <p class="nav-hero__legenda" id="ceu-hero-legenda" aria-live="polite">Calculando o céu de agora…</p>
+      <p class="nav-hero__legenda" id="ceu-hero-legenda">Calculando o céu de agora…</p>
     </div>
     <ul class="nav-hero__numeros" aria-label="Números da navegação astronômica">
       <li><strong>57 + 1</strong><span>estrelas de navegação</span></li>
@@ -104,8 +104,8 @@
             <p>Sem instrumento algum, os navegadores da Oceania cruzavam milhares de quilômetros de mar aberto guardando na memória o ponto do horizonte onde cada estrela nasce e se põe. Uma estrela que nasce numa “casa” do horizonte a leste se põe na casa de mesmo nome a oeste: seguindo uma sequência de estrelas, mantinha-se o rumo a noite inteira.</p>
             <p>Em 1976, o navegador micronésio <strong>Mau Piailug</strong> levou a canoa dupla <em>Hōkūleʻa</em> do Havaí ao Taiti só com esse conhecimento: no 31º dia ele anunciou que a terra estava perto, e no dia seguinte avistaram o Taiti. A bússola estelar havaiana, organizada por Nainoa Thompson, divide o horizonte em <strong>32 casas de 11,25°</strong>.</p>
             <figure class="instrumento instrumento--rosa">
-              <svg id="rosa-estelar" viewBox="-200 -200 400 400" role="img" aria-labelledby="rosa-desc"></svg>
-              <figcaption id="rosa-desc">Bússola estelar havaiana: passe o ponteiro (ou toque) nas casas para ver o nome e o significado. A estrela dourada mostra uma estrela nascendo e se pondo na mesma casa, dos dois lados do horizonte.</figcaption>
+              <svg id="rosa-estelar" viewBox="-200 -200 400 400" role="group" aria-labelledby="rosa-desc"></svg>
+              <figcaption id="rosa-desc">Bússola estelar havaiana: passe o ponteiro, toque ou use as setas do teclado nas casas para ver o nome e o significado. A estrela dourada mostra uma estrela nascendo e se pondo na mesma casa, dos dois lados do horizonte.</figcaption>
               <p class="instrumento__leitura" id="rosa-leitura" aria-live="polite">Casa <strong>Lā</strong> (Sol), junto ao leste e ao oeste.</p>
             </figure>
           </article>
@@ -198,7 +198,7 @@
       <div class="carta__painel">
         <div class="carta__palco">
           <canvas id="carta-celeste" role="img" aria-label="Mapa do céu visível no local e na data escolhidos"></canvas>
-          <div class="carta__dica" id="carta-dica" role="status" hidden></div>
+          <div class="carta__dica" id="carta-dica" aria-hidden="true" hidden></div>
         </div>
         <aside class="carta__controles" aria-label="Controles da carta celeste">
           <label class="campo">Noite
@@ -235,15 +235,17 @@
       </div>
       <div class="errantes__painel">
         <div class="errantes__palco" id="planetas-3d" role="img" aria-label="Modelo 3D do planeta selecionado"></div>
-        <div class="errantes__ficha" aria-live="polite">
+        <div class="errantes__ficha">
           <div class="errantes__abas" role="tablist" aria-label="Escolha um planeta" id="planetas-abas"></div>
-          <h3 class="errantes__nome" id="planeta-nome"></h3>
-          <p class="errantes__apelido" id="planeta-apelido"></p>
-          <dl class="errantes__dados">
-            <div><dt>Conhecido desde</dt><dd id="planeta-desde"></dd></div>
-            <div><dt>Para o navegador</dt><dd id="planeta-nav"></dd></div>
-          </dl>
-          <p class="errantes__historia" id="planeta-historia"></p>
+          <div id="planeta-painel" role="tabpanel" tabindex="0">
+            <h3 class="errantes__nome" id="planeta-nome"></h3>
+            <p class="errantes__apelido" id="planeta-apelido"></p>
+            <dl class="errantes__dados">
+              <div><dt>Conhecido desde</dt><dd id="planeta-desde"></dd></div>
+              <div><dt>Para o navegador</dt><dd id="planeta-nav"></dd></div>
+            </dl>
+            <p class="errantes__historia" id="planeta-historia"></p>
+          </div>
         </div>
       </div>
     </section>
@@ -315,8 +317,6 @@
   </footer>
 
   <script defer src="../static/js/theme.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
-          integrity="sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script defer src="../static/js/astro.js"></script>
   <script defer src="../static/js/navegacao.js"></script>
   <script defer src="../static/js/planetas-3d.js"></script>

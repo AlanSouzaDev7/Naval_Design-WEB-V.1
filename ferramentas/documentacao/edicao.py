@@ -6,9 +6,9 @@ As páginas das seções 1 a 19 vêm da BASE (o PDF publicado na tag v4.4.0); o 
 cabeçalhos, rodapés e o histórico de versões, e acrescenta as seções novas no fim.
 """
 
-VERSAO = "4.5"
+VERSAO = "4.5.1"
 DATA = "27 de outubro de 2026"
-TAG = "v4.5.0"
+TAG = "v4.5.1"
 HOSPEDAGEM = "GitHub Pages + Render + Neon"
 SUBTITULO = "Desempenho, dois temas, consulta segura ao banco e publicação online"
 
@@ -18,7 +18,7 @@ BASE_ARQUIVO = "documentacao/Royal_Navy_Documentacao_Tecnica.pdf"
 
 ASSUNTO = ("Auditoria, desempenho, paleta, modo escuro, consulta segura ao banco, publicação online e dossiê técnico; "
            "tema claro “Mar em Paz” (v4.1); revisão de segurança e robustez (v4.2); sugestões de navios e painel do "
-           "administrador (v4.3); PDFs dos navios para download (v4.4); navegação pelas estrelas, carta celeste e planetas (v4.5)")
+           "administrador (v4.3); PDFs dos navios para download (v4.4); navegação pelas estrelas, carta celeste e planetas (v4.5); teste de qualidade da página (v4.5.1)")
 
 # (número, título, descrição) — o título tem de ser igual ao do cabeçalho da seção
 SUMARIO = [
@@ -42,13 +42,14 @@ SUMARIO = [
     ("18", "Sugestões de navios e painel do administrador (v4.3)", "página Sugerir navio, armazenamento no GitHub, painel /admin e CSRF"),
     ("19", "PDFs dos navios para download (v4.4)", "ficha de cada navio e resultado da busca em PDF"),
     ("20", "Navegação pelas Estrelas (v4.5)", "das estrelas ao GPS, carta celeste, planetas em 3D, orrery e o gerador deste PDF"),
+    ("21", "Teste de qualidade (v4.5.1)", "página Navegação pelas Estrelas: defeitos, desempenho e acessibilidade"),
 ]
 
 COMO_LER = (
     "<b>Como ler este documento.</b> As seções 1 a 4 explicam <i>o que é o site e como ele funciona</i>; cada versão "
     "grande tem o seu dossiê: modo escuro (seção 5, v2.0), consulta ao banco de dados (13, v3.0), publicação online "
     "(14, v4.0), tema claro “Mar em Paz” (15, v4.1), revisão de segurança (17, v4.2), sugestões de navios (18, v4.3), "
-    "PDFs dos navios (19, v4.4) e navegação pelas estrelas (20, v4.5). As seções 6 e 7 registram <i>o que estava errado e o que foi feito</i>; a 8 documenta as "
+    "PDFs dos navios (19, v4.4), navegação pelas estrelas (20, v4.5) e o teste de qualidade dessa página (21, v4.5.1). As seções 6 e 7 registram <i>o que estava errado e o que foi feito</i>; a 8 documenta as "
     "identidades visuais; as seções 9 a 12 cobrem verificação, pendências, operação e publicação; a 16 é o glossário. "
     "Todos os números citados foram medidos ou extraídos do código-fonte durante o trabalho — nada é estimativa sem indicação."
 )
@@ -56,6 +57,9 @@ COMO_LER = (
 # Do mais novo para o mais antigo: (versão, texto completo, resumo curto). O primeiro aparece em destaque no
 # sumário; os demais, só pelo resumo curto.
 MUDANCAS = [
+    ("4.5.1", "teste de qualidade da página Navegação pelas Estrelas: orrery que travava em telas de 120 Hz, dica que vazava no "
+              "celular, rótulos sobrepostos, 3D carregado só quando necessário (página pronta em menos de 1 s), topo sem salto de "
+              "layout e sete melhorias de acessibilidade — seção 21.", "teste de qualidade, seção 21"),
     ("4.5", "nova página “Navegação pelas Estrelas”: das estrelas ao GPS em cinco eras, instrumentos interativos, carta celeste "
             "com o céu calculado para noites históricas, planetas em 3D e um orrery com posições reais — seção 20. O gerador deste "
             "PDF foi reconstruído, e o sumário e o histórico de versões foram completados.", "navegação pelas estrelas, seção 20"),
@@ -82,7 +86,10 @@ HISTORICO = [
     ["<b>4.5.0</b>", "27/10/2026", "tag <font name='Mono'>v4.5.0</font>",
      "Página Navegação pelas Estrelas (carta celeste, planetas 3D, orrery, cálculos conferidos com Meeus), link Estrelas e barra "
      "ajustada para 9 links, gerador do PDF reconstruído em ferramentas/documentacao (seção 20)"],
+    ["<b>4.5.1</b>", "27/10/2026", "tag <font name='Mono'>v4.5.1</font>",
+     "Teste de qualidade da página Navegação pelas Estrelas: orrery em 120 Hz, dica no celular, rótulos sem sobreposição, Three.js "
+     "sob demanda, CLS de 0,37 para 0,04, abas e bússola acessíveis, 2 testes novos (seção 21)"],
 ]
 
 # Módulos de secoes/ com as seções novas desta edição, na ordem (ex.: ["secao_20"])
-SECOES_NOVAS = ["secao_20"]
+SECOES_NOVAS = ["secao_20", "secao_21"]

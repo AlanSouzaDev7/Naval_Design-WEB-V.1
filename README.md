@@ -6,7 +6,7 @@ rumo ao horizonte, águas claras e recifes de coral) e **“Guerra em alto mar�
 PostgreSQL (somente leitura, com camadas de segurança) — e desde a **v4.0** essa consulta está publicada na internet,
 acessível de qualquer aparelho, em **<https://royalnavy-consulta.onrender.com>**. Na **v4.3** o visitante pode **sugerir navios**
 que ainda não estão no acervo, e um painel restrito permite avaliá-los. A **v4.5** acrescenta a página **Navegação pelas
-Estrelas**, com o céu real calculado no navegador.
+Estrelas**, com o céu real calculado no navegador; a **v4.5.1** é o teste de qualidade dessa página.
 
 ## Como rodar
 
@@ -93,6 +93,33 @@ As estrelas e as constelações (`static/data/ceu.json`, 69 KB) vêm do [d3-cele
 
 **Barra de navegação com 9 links:** para caber o link novo, a faixa compacta da barra foi estendida até 1480 px (some o texto do
 botão de tema e a etiqueta “Since 1546”) e ganhou um ajuste extra até 820 px; medido de 769 a 1920 px, o botão de tema sempre cabe.
+
+### Teste de qualidade (v4.5.1)
+
+A página passou por um teste de QA em rodadas (auditoria automática no Edge em 5 cenários, perfil de CPU, 61 verificações
+funcionais no computador e no celular e inspeção visual), até todas as verificações passarem. Detalhes na **seção 21 do PDF**.
+
+| Medida | Antes | Depois |
+|---|---|---|
+| Página pronta para uso (DOMContentLoaded) | até 6,0 s | 0,2 a 0,9 s |
+| Maior tarefa longa no carregamento | 1,3 s | ≈ 0,2 s |
+| Salto de layout (CLS) no tablet | 0,37 | 0,04 |
+| Contraste abaixo do WCAG AA | 2 | 0 |
+| Verificações funcionais | 55 de 59 | 61 de 61 |
+
+- **Orrery:** “Girar o tempo” travava em monitores de 120 Hz (o avanço por quadro era menor que o passo do controle e era
+  arredondado para zero). O ano agora corre numa variável própria.
+- **Carta celeste no celular:** a dica vazava pela direita e criava rolagem lateral; agora abre para o lado que cabe, e um toque
+  também a mostra.
+- **Rótulos:** um posicionador comum à carta e ao orrery evita nomes sobrepostos, respeita as bordas e põe contorno no texto;
+  no celular o orrery ficou quadrado.
+- **3D sob demanda:** o Three.js saiu do HTML. `planetas-3d.js` o baixa (com SRI) e liga o WebGL só quando o painel dos planetas
+  chega perto da tela; antes, compilar os shaders custava ≈0,8 s no carregamento.
+- **Topo sem salto:** legenda mais curta com linhas reservadas, título com 2 linhas reservadas e fontes de reserva com as mesmas
+  medidas da Cinzel, Rajdhani e Inter (`size-adjust`).
+- **Acessibilidade:** abas dos planetas com painel (`role="tabpanel"`, `aria-controls`, Home/End); a bússola estelar deixou de ser
+  `role="img"` (escondia as casas) e tem uma só parada de Tab, com as setas percorrendo as 32 casas; a legenda que muda a cada
+  segundo deixou de ser `aria-live`; aba ativa e botões selecionados com contraste acima de 4,5:1.
 
 ## Sugestões de navios (v4.3)
 
@@ -233,7 +260,7 @@ Em modo local (`python app.py`) a própria mensagem da página mostra o motivo e
 
 ```bash
 pip install -r requirements-dev.txt
-pytest tests                      # 193 testes: consulta, PDFs, sugestões, painel, CSRF, injeção de SQL, XSS, CSP, limite, privilégios do banco, segredos
+pytest tests                      # 195 testes: consulta, PDFs, sugestões, painel, CSRF, injeção de SQL, XSS, CSP, limite, privilégios do banco, segredos
 bandit -r app.py consulta_api.py protecao.py sugestoes.py db build_static.py ferramentas
 pip-audit -r requirements-lock.txt
 ```
@@ -249,7 +276,7 @@ $env:PGHOST="127.0.0.1"; $env:PGPORT="55432"; $env:PGPASSWORD="<senha-aleatoria>
 $env:RN_ENV_FILE="$env:TEMP\rn-teste.env"   # segredos de teste fora do ~/.royalnavy
 python db/seed_teste.py                     # cria a tabela e 84 navios sintéticos (só roda em localhost)
 python db/aplicar.py                        # extensões, view v_navios, papel navios_leitura e verificação
-pytest tests                                # 193 passed
+pytest tests                                # 195 passed
 docker rm -f rn-pg-teste                    # descarta o banco
 ```
 
@@ -392,7 +419,7 @@ ferramentas/            gerar_hash_admin.py (hash da senha do painel) e document
 config_env.py           onde ficam os segredos (fora do Git e do OneDrive)
 db/                     SQL da busca e do papel de leitura, aplicar.py, seed_teste.py (dados sintéticos de teste) e README do banco
 deploy/                 publicação online (v4.0): render.yaml, raiz TLS, dependências extras
-tests/                  193 testes de funcionamento e segurança
+tests/                  195 testes de funcionamento e segurança
 ```
 
 ## Notas de desempenho
@@ -403,4 +430,5 @@ tests/                  193 testes de funcionamento e segurança
 - Geometrias e materiais em cache; peças repetidas em `InstancedMesh`.
 - O hero (canvas 2D) pausa fora da tela e com a aba oculta; só `transform`/`opacity` são animados.
 - Tema claro (v4.1): sprites, fundos, níveis de névoa e cáusticas são pré-renderizados; o mergulho usa um canvas fixo em meia resolução; as faixas de patrulha e de recife ligam e desligam por visibilidade; nos navios do comboio, o nível de detalhe cai com a distância.
+- Página Navegação pelas Estrelas (v4.5.1): o Three.js só é baixado quando os planetas chegam perto da tela; cada canvas anima só quando visível.
 - Respeita `prefers-reduced-motion`.

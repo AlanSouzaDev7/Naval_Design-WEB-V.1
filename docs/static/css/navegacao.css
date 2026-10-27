@@ -72,6 +72,17 @@
 }
 
 /* ── HERO: céu calculado em tempo real ──────────────────────── */
+/* Fontes de reserva com as mesmas métricas das webfonts (medidas no navegador):
+   o topo não "pula" quando Cinzel, Rajdhani e Inter terminam de carregar (CLS). */
+@font-face { font-family: 'Cinzel Reserva'; src: local('Times New Roman'), local('TimesNewRomanPSMT'), local('Liberation Serif'); font-weight: 600 900; size-adjust: 133.6%; ascent-override: 73.4%; descent-override: 27.7%; line-gap-override: 0%; }
+@font-face { font-family: 'Cinzel Reserva Num'; src: local('Times New Roman'), local('TimesNewRomanPSMT'), local('Liberation Serif'); font-weight: 600 900; size-adjust: 108.8%; ascent-override: 90.1%; descent-override: 34%; line-gap-override: 0%; }
+@font-face { font-family: 'Rajdhani Reserva'; src: local('Arial'), local('ArialMT'), local('Liberation Sans'); font-weight: 500 700; size-adjust: 85.8%; ascent-override: 108.4%; descent-override: 40.8%; line-gap-override: 0%; }
+@font-face { font-family: 'Inter Reserva'; src: local('Arial'), local('ArialMT'), local('Liberation Sans'); font-weight: 400 600; size-adjust: 104.8%; ascent-override: 92.5%; descent-override: 22.9%; line-gap-override: 0%; }
+.nav-hero { font-family: 'Inter', 'Inter Reserva', sans-serif; }
+.nav-hero__titulo { font-family: 'Cinzel', 'Cinzel Reserva', serif !important; }
+.nav-hero__numeros strong { font-family: 'Cinzel', 'Cinzel Reserva Num', serif !important; }
+.nav-hero .section-tag, .nav-hero .nav-hero__legenda, .nav-hero .nav-hero__numeros span, .nav-hero .btn { font-family: 'Rajdhani', 'Rajdhani Reserva', sans-serif; }
+
 .nav-hero {
   position: relative;
   min-height: 100vh;
@@ -94,12 +105,14 @@
   font-size: clamp(2.5rem, 6.4vw, 4.8rem);
   text-shadow: 0 4px 30px rgba(0, 0, 0, 0.55);
   margin: 0.6rem 0 1rem;
+  min-height: 2.16em;         /* o título sempre ocupa 2 linhas com a Cinzel: reservá-las evita salto antes da fonte chegar */
 }
 .nav-hero__titulo .accent { color: var(--latao-claro); }
 .nav-hero__sub { font-size: 1.1rem; line-height: 1.65; color: rgba(255, 255, 255, 0.9); max-width: 58ch; }
 .nav-hero__botoes { display: flex; flex-wrap: wrap; gap: 0.8rem; margin: 1.8rem 0 1.2rem; }
 .nav-hero__legenda {
-  font-family: 'Rajdhani', sans-serif; letter-spacing: 0.06em; font-size: 0.92rem;
+  font-family: 'Rajdhani', sans-serif; letter-spacing: 0.06em; font-size: 0.92rem; line-height: 1.5;
+  min-height: 3em;            /* reserva as linhas do texto calculado: sem salto de layout quando ele chega */
   color: rgba(255, 255, 255, 0.72);
 }
 .nav-hero__numeros {
@@ -187,7 +200,7 @@
   position: absolute; z-index: 2; pointer-events: none; min-width: 180px; max-width: 240px;
   padding: 0.6rem 0.8rem; border-radius: 10px; font-size: 0.85rem; line-height: 1.45;
   background: rgba(6, 12, 24, 0.92); color: #f1f5fb; border: 1px solid rgba(226, 189, 106, 0.5);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35); transform: translate(14px, -50%);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35); transform: translateY(-50%);
 }
 .carta__dica b { color: var(--latao-claro); font-family: 'Cinzel', serif; }
 .carta__controles { display: flex; flex-direction: column; gap: 1.2rem; padding: 1.4rem; border-radius: var(--radius-lg); background: var(--cartao-bg); border: 1px solid var(--cartao-borda); }
@@ -212,6 +225,13 @@
   overflow: hidden;
 }
 .errantes__palco canvas { display: block; width: 100% !important; height: 100% !important; }
+.errantes__palco--carregando::after {
+  content: 'Preparando o modelo 3D…';
+  position: absolute; inset: 0; display: grid; place-items: center; color: #cfd8e6; font: 600 0.9rem 'Rajdhani', sans-serif; letter-spacing: 0.08em;
+}
+#planeta-painel:focus-visible { outline: 2px solid var(--latao); outline-offset: 6px; border-radius: 4px; }
+.rosa__casa:focus { outline: none; }
+.rosa__casa:focus-visible { fill: rgba(226, 189, 106, 0.32); stroke: var(--latao); stroke-width: 1.5; }
 .errantes__palco--sem3d::after {
   content: 'Seu navegador não ativou o WebGL: o modelo 3D não pôde ser exibido.';
   position: absolute; inset: 0; display: grid; place-items: center; padding: 2rem; text-align: center; color: #cfd8e6; font-size: 0.9rem;
@@ -224,7 +244,8 @@
   background: transparent; border: 1px solid var(--cartao-borda);
   transition: background 0.2s var(--ease), color 0.2s var(--ease);
 }
-.errantes__abas button[aria-selected="true"] { background: var(--latao); color: #fff; border-color: var(--latao); }
+.errantes__abas button[aria-selected="true"] { background: var(--latao-escuro); color: #fff; border-color: var(--latao-escuro); }
+:root[data-theme="dark"] .errantes__abas button[aria-selected="true"] { background: var(--latao-claro); color: #1b1407; border-color: var(--latao-claro); }
 .errantes__abas button:focus-visible { outline: 2px solid var(--latao); outline-offset: 2px; }
 .errantes__abas .simbolo { font-family: 'Inter', serif; margin-right: 0.3rem; }
 .errantes__nome { font-family: 'Cinzel', serif; font-size: 2rem; margin: 0; color: var(--texto); }
@@ -247,7 +268,8 @@
   padding: 0.5rem 0.95rem; border-radius: 999px; cursor: pointer; color: var(--texto);
   background: var(--cartao-bg); border: 1px solid var(--cartao-borda);
 }
-.page-navegacao .btn-mini:hover, .page-navegacao .btn-mini[aria-pressed="true"] { background: var(--latao); border-color: var(--latao); color: #fff; }
+.page-navegacao .btn-mini:hover, .page-navegacao .btn-mini[aria-pressed="true"] { background: var(--latao-escuro); border-color: var(--latao-escuro); color: #fff; }
+:root[data-theme="dark"] .page-navegacao .btn-mini:hover, :root[data-theme="dark"] .page-navegacao .btn-mini[aria-pressed="true"] { background: var(--latao-claro); border-color: var(--latao-claro); color: #1b1407; }
 .page-navegacao .btn-mini:focus-visible { outline: 2px solid var(--latao); outline-offset: 2px; }
 
 /* ── HOJE e fontes ─────────────────────────────────────────── */
@@ -257,7 +279,7 @@
 :root[data-theme="dark"] .hoje__cartao h3 { color: var(--latao-claro); }
 .hoje__cartao p { margin: 0; line-height: 1.6; color: var(--texto); }
 .fontes { max-width: 1180px; margin: 3rem auto 0; padding: 1.2rem 1.4rem; border-radius: var(--radius-md); border: 1px solid var(--cartao-borda); background: var(--cartao-bg); }
-.fontes summary { cursor: pointer; font: 700 0.9rem 'Rajdhani', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texto); }
+.fontes summary { cursor: pointer; padding: 0.35rem 0; font: 700 0.9rem 'Rajdhani', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texto); }
 .fontes ul { margin: 1rem 0 0; padding-left: 1.2rem; line-height: 1.7; font-size: 0.9rem; color: var(--texto-suave); }
 .fontes a { color: var(--latao-escuro); text-decoration: underline; }
 :root[data-theme="dark"] .fontes a { color: var(--latao-claro); }
@@ -275,11 +297,13 @@
   .page-navegacao main > section { padding: 4.5rem 1rem; }
   .nav-hero { padding-top: 100px; }
   .nav-hero__numeros { grid-template-columns: repeat(2, 1fr); }
+  .nav-hero__legenda { min-height: 6em; }
   .eras__lista::before { left: 19px; }
   .era { grid-template-columns: 40px 1fr; gap: 0.9rem; }
   .era__marca span { width: 40px; height: 40px; font-size: 0.85rem; }
   .era__corpo { padding: 1.3rem 1.1rem; }
   .hoje__grade { grid-template-columns: 1fr; }
+  .planetario__painel canvas { aspect-ratio: 1; }   /* 16:9 deixava o Sistema Solar minúsculo e os nomes amontoados */
 }
 @media (prefers-reduced-motion: reduce) {
   .errantes__abas button { transition: none; }
