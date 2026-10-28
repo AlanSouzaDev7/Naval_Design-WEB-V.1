@@ -52,7 +52,7 @@ a.nav-brand { display: flex; align-items: center; gap: 0.6rem; text-decoration: 
 .consulta-sub em { font-style: normal; font-weight: 600; color: var(--sun-200); }
 
 /* ── Campo de busca e filtros ──────────────────────────────── */
-.consulta-form { display: grid; gap: 0.9rem; }
+.consulta-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.9rem; }   /* minmax(0,..): em 320 px o campo não empurra a página para o lado */
 .consulta-field {
   position: relative;
   display: flex; align-items: center;
@@ -262,7 +262,7 @@ a.nav-brand { display: flex; align-items: center; gap: 0.6rem; text-decoration: 
 }
 @media (max-width: 640px) {
   .consulta-hero { padding: 96px 1rem 80px; }
-  .consulta-filtros { grid-template-columns: 1fr; }
+  .consulta-filtros { grid-template-columns: minmax(0, 1fr); }
   .consulta-main { padding: 1rem 1rem 3.5rem; }
   .ficha-topo, .ficha-secao { padding-left: 1.2rem; padding-right: 1.2rem; }
   .ficha-tempo { grid-template-columns: 1fr; }

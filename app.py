@@ -20,8 +20,9 @@ import os
 
 from datetime import timedelta
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request
 from markupsafe import escape
+from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 import config_env
@@ -189,10 +190,29 @@ else:
 # ── Erros ──────────────────────────────────────────────────────
 # A pagina inicial e de uma tela so: URLs desconhecidas voltam para ela. Mas arquivos
 # ausentes (/static/..., /favicon.ico) e qualquer /api/... devolvem 404 de verdade.
+def _sem_barra_final():
+    """'/consulta/' (barra a mais, comum ao digitar ou colar) vai para '/consulta' em vez de abrir a pagina inicial.
+    Redireciona so se a rota existir; o destino e remontado ('/' + segmentos), entao nunca vira '//outro-site'."""
+    if request.method not in ("GET", "HEAD") or request.path == "/" or not request.path.endswith("/"):
+        return None
+    destino = "/" + request.path.strip("/")
+    if destino == "/" or "//" in destino or destino.startswith("/static"):
+        return None
+    try:
+        app.url_map.bind("localhost").match(destino, method="GET")
+    except HTTPException:
+        return None
+    qs = request.query_string.decode("latin-1")
+    return redirect(destino + ("?" + qs if qs else ""), code=308)
+
+
 @app.errorhandler(404)
 def not_found(e):
     if request.path.startswith("/api/"):
         return jsonify(erro="nao_encontrado", mensagem="Recurso não encontrado."), 404
+    volta = _sem_barra_final()
+    if volta:
+        return volta
     last_segment = request.path.rsplit("/", 1)[-1]
     if request.path.startswith("/static/") or "." in last_segment:
         return "Not found", 404

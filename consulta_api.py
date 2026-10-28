@@ -97,7 +97,7 @@ def validar_busca(args):
         raise ValorInvalido("Digite ao menos 2 letras ou escolha um filtro.")
 
     bruta = args.get("pagina", "1")
-    if not re.fullmatch(r"\d{1,2}", bruta) or not (1 <= int(bruta) <= MAX_PAGINA):
+    if not re.fullmatch(r"[0-9]{1,2}", bruta) or not (1 <= int(bruta) <= MAX_PAGINA):      # [0-9]: "\d" aceitaria algarismos de outros alfabetos
         raise ValorInvalido(f"A página deve ser de 1 a {MAX_PAGINA}.")
     return q, marinha, guerra, tipo, int(bruta)
 

@@ -100,6 +100,41 @@
   window.RNTheme = { get, set, toggle };
 
 
+  /* ═════════════ MENU NO CELULAR ═══
+     Até 768 px a barra esconde os links; o botão ☰ abre a lista como um painel sob a barra.
+     Criado aqui (e não em cada página) para valer em todas as páginas com a mesma barra. */
+  (function menuCelular() {
+    const nav = document.getElementById('navbar');
+    const lista = nav && nav.querySelector('.nav-links');
+    const dentro = nav && nav.querySelector('.nav-inner');
+    if (!lista || !dentro) return;
+
+    lista.id = lista.id || 'nav-links';
+    const bt = document.createElement('button');
+    bt.type = 'button';
+    bt.className = 'nav-menu';
+    bt.setAttribute('aria-controls', lista.id);
+    bt.setAttribute('aria-expanded', 'false');
+    bt.setAttribute('aria-label', 'Abrir o menu');
+    for (let i = 0; i < 3; i++) bt.appendChild(document.createElement('span'));
+    dentro.appendChild(bt);
+
+    const estreita = window.matchMedia('(max-width: 768px)');
+    function abre(sim, devolveFoco) {
+      nav.classList.toggle('nav-open', sim);
+      bt.setAttribute('aria-expanded', String(sim));
+      bt.setAttribute('aria-label', sim ? 'Fechar o menu' : 'Abrir o menu');
+      if (!sim && devolveFoco) bt.focus();
+    }
+    bt.addEventListener('click', () => abre(!nav.classList.contains('nav-open')));
+    lista.addEventListener('click', e => { if (e.target.closest('a')) abre(false); });       // link de âncora: fecha e rola
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && nav.classList.contains('nav-open')) abre(false, true); });
+    document.addEventListener('click', e => { if (nav.classList.contains('nav-open') && !nav.contains(e.target)) abre(false); });
+    const largou = () => { if (!estreita.matches) abre(false); };                              // girou o aparelho / alargou a janela
+    if (estreita.addEventListener) estreita.addEventListener('change', largou); else estreita.addListener(largou);
+  })();
+
+
   /* ═════════════ DESEMPENHO ADAPTATIVO (nos dois temas: ambos têm cenas animadas) ═══
      Mede o tempo médio de frame. Se ficar lento, reduz a quantidade de partículas
      e efeitos das cenas; se ficar folgado por bastante tempo, sobe de novo. */

@@ -106,6 +106,15 @@
   box-shadow: 0 4px 16px -4px rgba(255, 90, 30, 0.7);
 }
 [data-theme="dark"] .navbar.scrolled .theme-toggle { color: #b8cde0; }
+@media (max-width: 768px) {                                  /* menu do celular (ver style.css) */
+  [data-theme="dark"] .navbar.scrolled .nav-menu, [data-theme="dark"] .navbar.nav-open .nav-menu { color: #b8cde0; border-color: rgba(120, 180, 220, 0.3); background: rgba(6, 22, 40, 0.7); }
+  [data-theme="dark"] .navbar.nav-open { background: rgba(4, 12, 22, 0.97); border-bottom-color: rgba(255, 138, 61, 0.22); }
+  [data-theme="dark"] .navbar.nav-open .brand-text { color: #f2f7fc; }
+  [data-theme="dark"] .navbar.nav-open .nav-links { background: rgba(4, 12, 22, 0.98); box-shadow: 0 18px 30px -12px rgba(0, 0, 0, 0.85); }
+  [data-theme="dark"] .navbar.nav-open .nav-link { color: #b8cde0; }
+  [data-theme="dark"] .navbar.nav-open .nav-link:hover, [data-theme="dark"] .navbar.nav-open .nav-link.active { color: #fff; background: rgba(255, 255, 255, 0.09); }
+  [data-theme="dark"] .navbar.nav-open .theme-toggle { color: #b8cde0; }
+}
 
 /* ── Hero: batalha naval ──────────────────────────────────── */
 [data-theme="dark"] .hero { background: linear-gradient(180deg, #02050b 0%, #0b1c33 50%, #04101a 100%); }

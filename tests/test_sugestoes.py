@@ -186,7 +186,7 @@ def test_contato_exige_csrf_e_tem_isca(cli):
     assert cli.post("/contato", data={"email": "a@b.co", "message": "oi"}).status_code == 403
     t = token(cli, "/contato")
     r = cli.post("/contato", data={"email": "a@b.co", "message": "oi", "csrf_token": t})
-    assert r.status_code == 200 and "Mensagem recebida" in r.get_data(as_text=True)
+    assert r.status_code == 200 and "Mensagem validada" in r.get_data(as_text=True)
     assert 'name="website"' in cli.get("/contato").get_data(as_text=True)
 
 

@@ -6,7 +6,7 @@ rumo ao horizonte, águas claras e recifes de coral) e **“Guerra em alto mar�
 PostgreSQL (somente leitura, com camadas de segurança) — e desde a **v4.0** essa consulta está publicada na internet,
 acessível de qualquer aparelho, em **<https://alansouzadev7.github.io/Naval_Design-WEB-V.1/abrir.html>** (a página de carregamento acorda o servidor e entra no site). Na **v4.3** o visitante pode **sugerir navios**
 que ainda não estão no acervo, e um painel restrito permite avaliá-los. A **v4.5** acrescenta a página **Navegação pelas
-Estrelas**, com o céu real calculado no navegador; a **v4.5.1** é o teste de qualidade dessa página, e a **v4.5.2** troca a tela de espera do Render por uma página de carregamento com o tema do site.
+Estrelas**, com o céu real calculado no navegador; a **v4.5.1** é o teste de qualidade dessa página, e a **v4.5.2** troca a tela de espera do Render por uma página de carregamento com o tema do site; a **v4.5.3** é uma rodada de QA: menu no celular, textos dos navios acentuados e corrigidos, números da página inicial coerentes, barra final nas URLs e Werkzeug 3.1.9.
 
 ## Como rodar
 
@@ -274,7 +274,7 @@ Em modo local (`python app.py`) a própria mensagem da página mostra o motivo e
 
 ```bash
 pip install -r requirements-dev.txt
-pytest tests                      # 198 testes: consulta, PDFs, sugestões, painel, CSRF, injeção de SQL, XSS, CSP, limite, privilégios do banco, segredos
+pytest tests                      # 226 testes: consulta, PDFs, sugestões, painel, CSRF, injeção de SQL, XSS, CSP, limite, privilégios do banco, segredos
 bandit -r app.py consulta_api.py protecao.py sugestoes.py db build_static.py ferramentas
 pip-audit -r requirements-lock.txt
 ```
@@ -290,7 +290,7 @@ $env:PGHOST="127.0.0.1"; $env:PGPORT="55432"; $env:PGPASSWORD="<senha-aleatoria>
 $env:RN_ENV_FILE="$env:TEMP\rn-teste.env"   # segredos de teste fora do ~/.royalnavy
 python db/seed_teste.py                     # cria a tabela e 84 navios sintéticos (só roda em localhost)
 python db/aplicar.py                        # extensões, view v_navios, papel navios_leitura e verificação
-pytest tests                                # 198 passed
+pytest tests                                # 226 passed
 docker rm -f rn-pg-teste                    # descarta o banco
 ```
 
@@ -434,7 +434,7 @@ ferramentas/            gerar_hash_admin.py (hash da senha do painel) e document
 config_env.py           onde ficam os segredos (fora do Git e do OneDrive)
 db/                     SQL da busca e do papel de leitura, aplicar.py, seed_teste.py (dados sintéticos de teste) e README do banco
 deploy/                 publicação online (v4.0): render.yaml, raiz TLS, dependências extras
-tests/                  198 testes de funcionamento e segurança
+tests/                  226 testes de funcionamento e segurança
 ```
 
 ## Notas de desempenho

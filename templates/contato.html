@@ -82,8 +82,8 @@
     {% elif enviado %}
     <section class="contato-ok" role="status">
       <div class="contato-ok__icone" aria-hidden="true">⚓</div>
-      <h2>Mensagem recebida!</h2>
-      <p>Obrigado pelo contato. (Versão de teste: a mensagem não foi armazenada nem enviada a ninguém.)</p>
+      <h2>Mensagem validada!</h2>
+      <p>Obrigado pelo teste. Esta é uma versão de demonstração: a mensagem não foi armazenada nem enviada a ninguém.</p>
       <a class="btn btn-primary" href="contato">Enviar outra</a>
     </section>
     {% else %}
@@ -103,6 +103,7 @@
         <textarea id="message" name="message" rows="6" maxlength="2000" required>{{ message or '' }}</textarea>
       </div>
       <button type="submit" class="btn btn-primary">Enviar</button>
+      <p class="contato-dica">Versão de demonstração: a mensagem é validada, mas não é armazenada nem enviada a ninguém.</p>
       <p class="contato-dica">Quer sugerir um navio para o acervo? Use a página <a href="sugerir">Sugerir navio</a>.</p>
     </form>
     {% endif %}

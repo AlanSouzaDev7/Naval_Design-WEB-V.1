@@ -27,6 +27,7 @@
     ficha: $('ficha'), status: $('status'),
   };
 
+  const MAX_PAGINA = 20;                                  // mesmo limite do servidor (consulta_api.MAX_PAGINA)
   const state = { q: '', marinha: '', guerra: '', tipo: '', pagina: 1, id: null };
   let ctrlBusca = null, ctrlFicha = null, timer = 0, totalPaginas = 1;
 
@@ -159,7 +160,7 @@
       li.appendChild(b);
       el.lista.appendChild(li);
     });
-    totalPaginas = Math.max(1, Math.ceil(dados.total / dados.por_pagina));
+    totalPaginas = Math.min(MAX_PAGINA, Math.max(1, Math.ceil(dados.total / dados.por_pagina)));   // o servidor só entrega as 20 primeiras páginas
     el.pag.hidden = totalPaginas <= 1;
     el.info.textContent = 'Página ' + dados.pagina + ' de ' + totalPaginas;
     el.ant.disabled = dados.pagina <= 1;

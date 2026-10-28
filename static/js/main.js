@@ -167,7 +167,8 @@ window.RNHero = (function initHero() {
   if (!statsBar) return;
 
   function animateCount(el) {
-    const target = parseInt(el.dataset.target, 10);
+    const since  = parseInt(el.dataset.since, 10);          // "anos de história": calculado a partir da fundação (1546), nunca fica velho
+    const target = since ? new Date().getFullYear() - since : parseInt(el.dataset.target, 10);
     if (REDUCED_MOTION) { el.textContent = target.toLocaleString('pt-BR'); return; }
 
     const duration = 1800;
