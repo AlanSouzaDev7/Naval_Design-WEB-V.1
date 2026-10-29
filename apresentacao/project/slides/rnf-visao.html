@@ -1,0 +1,22 @@
+<section id="rnf-visao" data-transition="push" style="background:radial-gradient(ellipse at 82% 8%, #153F68 0%, #06172A 62%);color:#E9E4D6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;letter-spacing:4px;color:#D4AE5A;text-transform:uppercase">Requisitos não funcionais</p>
+<h2 style="font-family:'Cormorant Garamond', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#F6F1E4">Qualidade medida, não prometida</h2>
+<p style="font-size:28px;line-height:1.4;color:#B3C2D2;width:1500px">Nove requisitos de qualidade, cada um com o resultado registrado na documentação.</p>
+
+<table style="width:1664px;font-size:24px;color:#E9E4D6">
+<tr style="background:#14395F"><th style="width:20%;color:#F1DDA4">Qualidade</th><th style="width:33%;color:#F1DDA4">Requisito</th><th style="width:47%;color:#F1DDA4">Resultado medido</th></tr>
+<tr style="background:#0C2743"><td>Desempenho (interface)</td><td>Animação fluida, ≥ 60 fps</td><td>104–120 fps; p95 ≤ 16,7 ms (tema claro)</td></tr>
+<tr style="background:#0A2038"><td>Desempenho (API)</td><td>Resposta rápida à busca</td><td>Mediana 8 ms; p95 abaixo de 11 ms (local)</td></tr>
+<tr style="background:#0C2743"><td>Segurança (aplicação)</td><td>Entrada hostil sem erro 500</td><td>22 cargas hostis, 0 erros 500</td></tr>
+<tr style="background:#0A2038"><td>Segurança (código)</td><td>Sem falhas conhecidas</td><td>Bandit: 0 achados; OSV: 0 em 7 pacotes</td></tr>
+<tr style="background:#0C2743"><td>Segurança (navegador)</td><td>CSP sem unsafe-inline</td><td>0 violações de CSP; 0 innerHTML no JS</td></tr>
+<tr style="background:#0A2038"><td>Segurança (formulários)</td><td>Envio forjado e robôs barrados</td><td>CSRF, campo-isca e limites; sem token: 403</td></tr>
+<tr style="background:#0C2743"><td>Resiliência</td><td>Sobreviver à conexão ociosa</td><td>/api/saude: 503 antes, 200 depois (v4.2)</td></tr>
+<tr style="background:#0A2038"><td>Acessibilidade</td><td>Movimento reduzido e ARIA</td><td>prefers-reduced-motion; canvases com rótulo</td></tr>
+<tr style="background:#0C2743"><td>Portabilidade</td><td>Desktop e celular</td><td>375 a 1920 px; celular validado por emulação</td></tr>
+</table>
+
+<p style="position:absolute;left:128px;bottom:64px;width:1400px;font-size:24px;color:#8196AE">Fonte: documentação técnica v4.3 (§9, §13.7, §15, §17, §18)</p>
+<p style="position:absolute;right:128px;bottom:64px;width:240px;text-align:right;font-size:24px;color:#8196AE">34 / 43</p>
+<aside>Visão consolidada dos requisitos não funcionais. Cada linha traz o requisito e o resultado medido. Desempenho: 104 a 120 fps no tema claro e API com mediana de 8 ms, medida localmente. Segurança em quatro níveis: aplicação, código, navegador e, desde a v4.3, formulários (CSRF, campo-isca e limites de envio). Resiliência: a falha 503 depois de ociosidade do banco foi reproduzida e corrigida na v4.2. Acessibilidade e portabilidade: movimento reduzido respeitado; celular validado só por emulação, o que é declarado como limite no slide de transparência. Os próximos cinco slides detalham os principais com gráficos.</aside>
+</section>

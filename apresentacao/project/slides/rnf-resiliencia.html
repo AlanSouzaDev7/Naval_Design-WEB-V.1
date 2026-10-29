@@ -1,0 +1,60 @@
+<section id="rnf-resiliencia" data-transition="fade" style="background:radial-gradient(ellipse at 82% 8%, #153F68 0%, #06172A 62%);color:#E9E4D6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;letter-spacing:4px;color:#D4AE5A;text-transform:uppercase">Requisito não funcional · Disponibilidade</p>
+<h2 style="font-family:'Cormorant Garamond', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#F6F1E4">Resiliência comprovada em produção</h2>
+<p style="font-size:28px;line-height:1.4;color:#B3C2D2;width:1500px">Publicada em HTTPS e preparada para a ociosidade do banco gerenciado.</p>
+
+<div data-build-in="rise 1" style="position:absolute;left:128px;top:372px;width:360px;background:linear-gradient(160deg,#133556,#0A2038);border:1px solid #2A5A8A;border-radius:24px;box-shadow:0px 30px 60px rgba(0,0,0,0.55)">
+<div style="display:flex;flex-direction:column;gap:10px;padding:32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;color:#8FA9C4;text-transform:uppercase">Antes · v4.1</p>
+<p style="font-family:'Cormorant Garamond', Georgia, serif;font-size:120px;font-weight:700;line-height:1;color:#8FA9C4">503</p>
+<p style="font-size:24px;line-height:1.4;color:#B3C2D2">Conexão ociosa derrubada pelo banco: a consulta falhava.</p>
+</div>
+</div>
+
+<x-shape data-build-in="pop 2" kind="arrow-right" style="position:absolute;left:508px;top:520px;width:60px;height:36px;background:#D4AE5A"></x-shape>
+
+<div data-build-in="rise 3" style="position:absolute;left:588px;top:372px;width:360px;background:linear-gradient(160deg,#133556,#0A2038);border:1px solid #D4AE5A;border-radius:24px;box-shadow:0px 30px 60px rgba(0,0,0,0.55), 0px 0px 40px rgba(212,174,90,0.18)">
+<div style="display:flex;flex-direction:column;gap:10px;padding:32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;color:#5DB8C9;text-transform:uppercase">Depois · v4.2</p>
+<p style="font-family:'Cormorant Garamond', Georgia, serif;font-size:120px;font-weight:700;line-height:1;color:#5DB8C9">200</p>
+<p style="font-size:24px;line-height:1.4;color:#E9E4D6">O pool testa a conexão antes de usá-la e a consulta responde.</p>
+</div>
+</div>
+
+<div data-build-in="rise 4" style="position:absolute;left:128px;top:740px;width:820px;background:linear-gradient(160deg,#112F4E,#0A2038);border:1px solid #1F4B76;border-radius:20px;box-shadow:0px 24px 50px rgba(0,0,0,0.5)">
+<div style="display:flex;flex-direction:column;gap:8px;padding:26px 30px">
+<p style="font-size:24px;line-height:1.4;color:#F1DDA4">Pool verifica a conexão antes de entregá-la</p>
+<p style="font-size:24px;line-height:1.4;color:#E9E4D6">Tempos limitados: conexão 8 s e pool 5 s</p>
+<p style="font-size:24px;line-height:1.4;color:#E9E4D6">Falha rápida e genérica se o banco cair de fato</p>
+</div>
+</div>
+
+<div data-build-in="rise 2" style="position:absolute;left:1040px;top:372px;width:752px;background:linear-gradient(160deg,#112F4E,#0A2038);border:1px solid #1F4B76;border-radius:20px;box-shadow:0px 24px 50px rgba(0,0,0,0.5)">
+<div style="display:flex;flex-direction:column;gap:6px;padding:20px 28px">
+<h3 style="font-size:28px;font-weight:600;line-height:1.25;color:#F6F1E4">GitHub Pages</h3>
+<p style="font-size:24px;line-height:1.4;color:#9DB0C4">Site estático em HTTPS, publicado a partir de /docs</p>
+</div>
+</div>
+<div data-build-in="rise 3" style="position:absolute;left:1040px;top:512px;width:752px;background:linear-gradient(160deg,#112F4E,#0A2038);border:1px solid #1F4B76;border-radius:20px;box-shadow:0px 24px 50px rgba(0,0,0,0.5)">
+<div style="display:flex;flex-direction:column;gap:6px;padding:20px 28px">
+<h3 style="font-size:28px;font-weight:600;line-height:1.25;color:#F6F1E4">Render</h3>
+<p style="font-size:24px;line-height:1.4;color:#9DB0C4">Flask com gunicorn, CSP, HSTS e Host validado</p>
+</div>
+</div>
+<div data-build-in="rise 4" style="position:absolute;left:1040px;top:652px;width:752px;background:linear-gradient(160deg,#112F4E,#0A2038);border:1px solid #1F4B76;border-radius:20px;box-shadow:0px 24px 50px rgba(0,0,0,0.5)">
+<div style="display:flex;flex-direction:column;gap:6px;padding:20px 28px">
+<h3 style="font-size:28px;font-weight:600;line-height:1.25;color:#F6F1E4">Neon</h3>
+<p style="font-size:24px;line-height:1.4;color:#9DB0C4">PostgreSQL gerenciado, TLS com verify-full</p>
+</div>
+</div>
+<div data-build-in="fade 5" style="position:absolute;left:1040px;top:792px;width:752px;background:rgba(212,174,90,0.10);border:1px solid #D4AE5A;border-radius:20px">
+<div style="display:flex;flex-direction:row;gap:20px;padding:20px 28px;align-items:center">
+<x-icon name="Clock" style="color:#D4AE5A;width:40px;height:40px"></x-icon>
+<p style="font-size:24px;line-height:1.4;color:#F1DDA4;flex:1">Plano gratuito: o primeiro pedido após ociosidade pode levar alguns segundos.</p>
+</div>
+</div>
+
+<p style="position:absolute;left:128px;bottom:64px;width:1400px;font-size:24px;color:#8196AE">Fonte: documentação técnica v4.2 (§14 e §17.3) · falha reproduzida localmente</p>
+<p style="position:absolute;right:128px;bottom:64px;width:240px;text-align:right;font-size:24px;color:#8196AE">38 / 43</p>
+<aside>Na sondagem de produção, o endpoint de saúde respondeu 503 uma vez e voltou a 200 segundos depois. A causa provável: o Neon suspende o banco por inatividade e o pooler derruba conexões ociosas; o pool entregava uma conexão morta e o tempo de 3 segundos era curto para o banco acordar. O mecanismo foi reproduzido localmente: antes da correção, 200 e depois 503 após derrubar a sessão; depois da correção, 200 nas duas etapas. A solução: check_connection no pool, tempos configuráveis limitados entre 1 e 15 segundos e falha rápida e genérica se o banco realmente cair. Limite honesto: no plano gratuito, a primeira requisição após uma suspensão longa ainda pode levar alguns segundos; o que mudou é que ela deixa de falhar. A produção não foi alterada durante a revisão.</aside>
+</section>

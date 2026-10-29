@@ -1,0 +1,38 @@
+<section id="rf-matriz" data-transition="fade" style="background:linear-gradient(180deg,#F6F2E8,#EAE4D6);color:#0F2238;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;letter-spacing:4px;color:#7A5B14;text-transform:uppercase">Requisitos funcionais</p>
+<h2 style="font-family:'Cormorant Garamond', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#0F2238">Matriz de requisitos funcionais</h2>
+<p style="font-size:28px;line-height:1.4;color:#3E5168;width:1500px">Cada requisito, o módulo a que pertence e a forma de verificação.</p>
+
+<div style="display:flex;flex-direction:row;gap:32px;align-items:flex-start;padding-top:12px">
+<table style="width:816px;font-size:24px;color:#0F2238">
+<tr style="background:#0F2238"><th style="width:17%;color:#F6F1E4">ID</th><th style="width:58%;color:#F6F1E4">Requisito</th><th style="width:25%;color:#F6F1E4">Verificação</th></tr>
+<tr style="background:#F6F2E8"><td>RF-01</td><td>Linha do tempo (7 marcos)</td><td>Medição</td></tr>
+<tr style="background:#E6DFCD"><td>RF-02</td><td>Batalhas decisivas (6 cartões)</td><td>Medição</td></tr>
+<tr style="background:#F6F2E8"><td>RF-03</td><td>Frota atual com barras animadas</td><td>Medição</td></tr>
+<tr style="background:#E6DFCD"><td>RF-04</td><td>Contadores animados do hero</td><td>Medição</td></tr>
+<tr style="background:#F6F2E8"><td>RF-05</td><td>Navios 3D interativos (6)</td><td>Medição</td></tr>
+<tr style="background:#E6DFCD"><td>RF-06</td><td>Ficha técnica em modal</td><td>Medição</td></tr>
+<tr style="background:#F6F2E8"><td>RF-07</td><td>Galeria 3D (5 cenas)</td><td>Medição</td></tr>
+<tr style="background:#E6DFCD"><td>RF-08</td><td>Troca de tema com transição</td><td>Medição</td></tr>
+<tr style="background:#F6F2E8"><td>RF-09</td><td>Tema salvo antes da 1ª pintura</td><td>Medição</td></tr>
+<tr style="background:#E6DFCD"><td>RF-10</td><td>Medidor de profundidade</td><td>Medição</td></tr>
+</table>
+<table style="width:816px;font-size:24px;color:#0F2238">
+<tr style="background:#0F2238"><th style="width:17%;color:#F6F1E4">ID</th><th style="width:58%;color:#F6F1E4">Requisito</th><th style="width:25%;color:#F6F1E4">Verificação</th></tr>
+<tr style="background:#F6F2E8"><td>RF-11</td><td>Busca tolerante a erros</td><td>Teste</td></tr>
+<tr style="background:#E6DFCD"><td>RF-12</td><td>Filtros e paginação</td><td>Teste</td></tr>
+<tr style="background:#F6F2E8"><td>RF-13</td><td>Ficha completa do navio</td><td>Teste</td></tr>
+<tr style="background:#E6DFCD"><td>RF-14</td><td>URL compartilhável da busca</td><td>Medição</td></tr>
+<tr style="background:#F6F2E8"><td>RF-15</td><td>Verificação de saúde da API</td><td>Teste</td></tr>
+<tr style="background:#E6DFCD"><td>RF-16</td><td>Site estático em HTTPS</td><td>No ar</td></tr>
+<tr style="background:#F6F2E8"><td>RF-17</td><td>Consulta publicada online</td><td>No ar</td></tr>
+<tr style="background:#E6DFCD"><td>RF-18</td><td>Sugerir navio (checa o acervo)</td><td>Teste</td></tr>
+<tr style="background:#F6F2E8"><td>RF-19</td><td>Painel do administrador</td><td>Teste</td></tr>
+<tr style="background:#E6DFCD"><td>RF-20</td><td>PDF da ficha e da busca</td><td>Teste</td></tr>
+</table>
+</div>
+
+<p style="position:absolute;left:128px;bottom:64px;width:1400px;font-size:24px;color:#5A6A7C">Medição: navegador · Teste: pytest · No ar: endereço publicado</p>
+<p style="position:absolute;right:128px;bottom:64px;width:240px;text-align:right;font-size:24px;color:#5A6A7C">33 / 43</p>
+<aside>Matriz completa dos 20 requisitos funcionais. O RF-20, da v4.4, é o download em PDF da ficha e do resultado da busca, coberto por 29 testes automatizados. Os dois últimos, da v4.3, são a página de sugestão de navios (que confere o acervo antes de registrar) e o painel do administrador; ambos têm testes automatizados e foram verificados no site publicado. Medição significa inspeção, captura e medição em navegador; Teste, a suíte automatizada em pytest; No ar, verificação no endereço publicado. Os requisitos da consulta (busca, filtros, ficha e saúde) são cobertos pela suíte automatizada; os do front-end foram verificados por medição e inspeção em navegador, porque o projeto ainda não tem testes automatizados de interface, o que consta como próximo passo.</aside>
+</section>

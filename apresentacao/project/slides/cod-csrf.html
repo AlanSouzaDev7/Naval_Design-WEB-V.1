@@ -1,0 +1,15 @@
+<section id="cod-csrf" data-transition="fade" style="background:radial-gradient(ellipse at 82% 8%, #153F68 0%, #06172A 62%);color:#E9E4D6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;letter-spacing:4px;color:#D4AE5A;text-transform:uppercase">Back-end · Python · Formulários</p>
+<h2 style="font-family:'Cormorant Garamond', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#F6F1E4">Token CSRF e checagem de origem</h2>
+<img data-build-in="rise 1" src="/_blob/2f1c90642208232c4b867011b8d1b4c1" alt="Trecho de código real: protecao.py · linhas 36–56" style="position:absolute;left:128px;top:300px;width:1180px;height:557px;object-fit:contain;border-radius:18px;border:1px solid #24496F;box-shadow:0px 40px 80px rgba(0,0,0,0.6)">
+<p style="position:absolute;left:128px;top:873px;width:1180px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#8196AE">protecao.py · linhas 36–56</p>
+<div data-build-in="rise 2" style="position:absolute;left:1352px;top:300px;width:440px;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="width:48px;height:3px;background:#D4AE5A;border-radius:2px"></div><h3 style="font-size:28px;font-weight:600;line-height:1.25;color:#F6F1E4">Token por sessão</h3><p style="font-size:24px;line-height:1.4;color:#B3C2D2">32 bytes aleatórios, em tempo constante.</p></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="width:48px;height:3px;background:#D4AE5A;border-radius:2px"></div><h3 style="font-size:28px;font-weight:600;line-height:1.25;color:#F6F1E4">Origem conferida</h3><p style="font-size:24px;line-height:1.4;color:#B3C2D2">POST vindo de outro site é recusado.</p></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="width:48px;height:3px;background:#D4AE5A;border-radius:2px"></div><h3 style="font-size:28px;font-weight:600;line-height:1.25;color:#F6F1E4">Decorador reutilizável</h3><p style="font-size:24px;line-height:1.4;color:#B3C2D2">Uma linha protege qualquer rota.</p></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="width:48px;height:3px;background:#D4AE5A;border-radius:2px"></div><h3 style="font-size:28px;font-weight:600;line-height:1.25;color:#F6F1E4">Recusa clara</h3><p style="font-size:24px;line-height:1.4;color:#B3C2D2">Sem token válido: HTTP 403.</p></div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1400px;font-size:24px;color:#8196AE">Código-fonte real · branch main, v4.4.0 · linhas numeradas como no arquivo</p>
+<p style="position:absolute;right:128px;bottom:64px;width:240px;text-align:right;font-size:24px;color:#8196AE">22 / 43</p>
+<aside>protecao.py concentra a proteção dos formulários. Cada sessão recebe um token CSRF aleatório; em todo POST, o token enviado é comparado em tempo constante (hmac.compare_digest) e o cabeçalho Origin precisa ser o do próprio site. O decorador exige_csrf aplica a regra a qualquer rota com uma linha. O cookie de sessão é HttpOnly e SameSite.</aside>
+</section>
