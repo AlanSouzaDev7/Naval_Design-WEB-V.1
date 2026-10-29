@@ -6,7 +6,7 @@ rumo ao horizonte, águas claras e recifes de coral) e **“Guerra em alto mar�
 PostgreSQL (somente leitura, com camadas de segurança) — e desde a **v4.0** essa consulta está publicada na internet,
 acessível de qualquer aparelho, em **<https://alansouzadev7.github.io/Naval_Design-WEB-V.1/abrir.html>** (a página de carregamento acorda o servidor e entra no site). Na **v4.3** o visitante pode **sugerir navios**
 que ainda não estão no acervo, e um painel restrito permite avaliá-los. A **v4.5** acrescenta a página **Navegação pelas
-Estrelas**, com o céu real calculado no navegador; a **v4.5.1** é o teste de qualidade dessa página, e a **v4.5.2** troca a tela de espera do Render por uma página de carregamento com o tema do site; a **v4.5.3** é uma rodada de QA: menu no celular, textos dos navios acentuados e corrigidos, números da página inicial coerentes, barra final nas URLs e Werkzeug 3.1.9.
+Estrelas**, com o céu real calculado no navegador; a **v4.5.1** é o teste de qualidade dessa página, e a **v4.5.2** troca a tela de espera do Render por uma página de carregamento com o tema do site; a **v4.5.3** é uma rodada de QA: menu no celular, textos dos navios acentuados e corrigidos, números da página inicial coerentes, barra final nas URLs e Werkzeug 3.1.9. A **v4.6** refina o movimento sem mudar a identidade: animações com curvas mais fortes, transição suave entre as páginas, degradês em OKLab, páginas internas integradas ao mar da página inicial e os **seis navios 3D refeitos** a partir do perfil real de cada classe.
 
 ## Como rodar
 
@@ -120,6 +120,37 @@ funcionais no computador e no celular e inspeção visual), até todas as verifi
 - **Acessibilidade:** abas dos planetas com painel (`role="tabpanel"`, `aria-controls`, Home/End); a bússola estelar deixou de ser
   `role="img"` (escondia as casas) e tem uma só parada de Tab, com as setas percorrendo as 32 casas; a legenda que muda a cada
   segundo deixou de ser `aria-live`; aba ativa e botões selecionados com contraste acima de 4,5:1.
+
+## Movimento, integração e navios 3D (v4.6)
+
+Refino feito com as skills de design instaladas no Claude Code (Emil Kowalski, Impeccable e Taste Skill), mantendo o visual da v4.5.3.
+Nenhum texto ou dado do conteúdo mudou. Detalhes na seção 24 do PDF.
+
+- **Animações:** entradas com `cubic-bezier(0.23, 1, 0.32, 1)`, movimento na tela com `cubic-bezier(0.77, 0, 0.175, 1)`; botões com
+  `scale(0.97)` ao pressionar; cards sobem menos; hover só com mouse (no celular não fica "grudado"); modal abre em 340 ms e fecha em 180 ms;
+  topo da página inicial em sequência de 80 ms; blocos da página Estrelas sobem ao entrar na tela (animação ligada à rolagem, só CSS).
+- **Transição entre páginas:** `@view-transition { navigation: auto; }` com a barra parada (`view-transition-name`) e o conteúdo entrando
+  com esmaecimento curto (Chrome e Edge; nos outros navegadores a navegação continua igual). Desligada com `prefers-reduced-motion`.
+- **Degradês:** os 72 degradês com ângulo misturam as cores em OKLab (`linear-gradient(180deg in oklab, …)`).
+- **Páginas internas integradas:** em Consulta, Contato e Sugerir, o cabeçalho e o rodapé recortam a borda em onda com `mask` (antes a
+  onda era uma faixa pintada e sobrava uma faixa azul acima do rodapé); o fundo é um degradê da água rasa até o rodapé de areia. Na
+  página Estrelas o céu termina na mesma onda, sobre o papel de carta.
+- **Fim da página inicial:** o Contato vem antes dos Jardins de Coral / Navios Naufragados, e o fundo do mar desce direto até o rodapé.
+- **Navios 3D (`static/js/ships-3d.js`):** gerador de casco por seções (`loftHull`: proa que afina, borda aberta, espelho de popa, roda
+  inclinada, linha d'água pintada) e modelos conforme as classes reais:
+
+| Navio | O que o modelo mostra |
+|---|---|
+| HMS Queen Elizabeth (284 m) | duas ilhas a estibordo, rampa de 12°, radares S1850M e Type 997 girando, elevadores, Phalanx, F-35B e Merlin |
+| HMS Daring — Type 45 (152 m) | mastro em pirâmide com o SAMPSON, S1850M girando, duas chaminés, Mk 8, 48 células Sylver, hangar, D32 |
+| HMS Astute (97 m × 11,3 m) | torre a vante, lemes de profundidade no casco, popa em cruz com placas, pump-jet com duto, placas acústicas |
+| HMS Victory | xadrez de Nelson (preto e ocre), 104 portinholas, fundo de cobre, galerias na popa, velame, bujarronas, cordame, White Ensign |
+| HMS Westminster — Type 23 (133 m) | faces inclinadas, Mk 8, silo de 32 células, Harpoon, Type 997 girando, chaminé inclinada, F237 |
+| HMS Dreadnought (160,6 m) | torres A/P/Q/X/Y, convés de madeira, tripé atrás da chaminé de vante, redes antitorpedo, proa de aríete |
+
+  Na Frota Atual, cada navio aparece no tamanho relativo real. Fontes: Wikipedia, Navy Lookout, Navypedia, naval-technology,
+  GlobalSecurity e History of War. Limites: geometria feita em código, sem texturas fotográficas; onde as fontes divergem (ex.: ângulo
+  da rampa, 9° a 13°), valeu a mais bem apoiada.
 
 ## Sugestões de navios (v4.3)
 
@@ -413,7 +444,7 @@ static/css/contato.css  estilos da página de contato (claro e escuro)
 static/css/sugerir.css  estilos da página de sugestão e do painel (claro e escuro)
 static/css/navegacao.css estilos da página Navegação pelas Estrelas (crepúsculo náutico / noite em alto-mar)
 static/js/main.js       navegação, controlador do hero (RNHero), contadores, modal
-static/js/ships-3d.js   motor 3D (cenas sob demanda, loop único, modelos procedurais)
+static/js/ships-3d.js   motor 3D (cenas sob demanda, loop único; cascos por seções e modelos fiéis às classes reais, v4.6)
 static/js/ships-data.js dados dos navios
 static/js/theme-init.js aplica o tema salvo antes da primeira pintura
 static/js/theme.js      botão de tema, transição e desempenho adaptativo
@@ -446,4 +477,5 @@ tests/                  226 testes de funcionamento e segurança
 - O hero (canvas 2D) pausa fora da tela e com a aba oculta; só `transform`/`opacity` são animados.
 - Tema claro (v4.1): sprites, fundos, níveis de névoa e cáusticas são pré-renderizados; o mergulho usa um canvas fixo em meia resolução; as faixas de patrulha e de recife ligam e desligam por visibilidade; nos navios do comboio, o nível de detalhe cai com a distância.
 - Página Navegação pelas Estrelas (v4.5.1): o Three.js só é baixado quando os planetas chegam perto da tela; cada canvas anima só quando visível.
+- Navios 3D (v4.6): geometrias dos cascos em cache por tipo; portinholas, canhões e células de mísseis em `InstancedMesh`; o cordame do Victory é um único `LineSegments`; os radares giram no mesmo loop.
 - Respeita `prefers-reduced-motion`.
