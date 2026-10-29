@@ -27,6 +27,10 @@
     ficha: $('ficha'), status: $('status'),
   };
 
+  // pasta static/ a partir deste próprio script: funciona servido pelo Flask (/static/) e no GitHub Pages (static/)
+  const STATIC = (document.currentScript && document.currentScript.src || '').replace(/js\/consulta\.js(\?.*)?$/, '');
+  let fotos = null;                                       // índice de fotos (static/data/fotos-navios.json), carregado uma vez
+
   const MAX_PAGINA = 20;                                  // mesmo limite do servidor (consulta_api.MAX_PAGINA)
   const state = { q: '', marinha: '', guerra: '', tipo: '', pagina: 1, id: null };
   let ctrlBusca = null, ctrlFicha = null, timer = 0, totalPaginas = 1;
@@ -226,9 +230,48 @@
     return s;
   }
 
-  function renderFicha(n) {
+  function carregaFotos() {
+    if (!fotos) {
+      fotos = fetch(STATIC + 'data/fotos-navios.json', { credentials: 'omit' })
+        .then(r => (r.ok ? r.json() : {}))
+        .catch(() => ({}));
+    }
+    return fotos;
+  }
+
+  /** Foto do navio (Wikimedia Commons, licença livre) com o crédito do autor; some se a imagem não carregar. */
+  function fotoNavio(n, indice) {
+    const f = indice && Object.prototype.hasOwnProperty.call(indice, n.nome) ? indice[n.nome] : null;
+    const nomeOk = s => typeof s === 'string' && /^[a-z0-9-]+-\d+\.webp$/.test(s);
+    if (!f || !nomeOk(f.arquivo) || !nomeOk(f.arquivo_pequeno)) return null;
+    const fig = cria('figure', 'ficha-foto');
+    const img = cria('img');
+    img.alt = 'Fotografia do ' + n.nome;
+    img.src = STATIC + 'img/navios/' + f.arquivo;
+    img.srcset = STATIC + 'img/navios/' + f.arquivo_pequeno + ' 600w, ' + STATIC + 'img/navios/' + f.arquivo + ' 1200w';
+    img.sizes = '(max-width: 960px) 100vw, 560px';
+    img.decoding = 'async';
+    if (f.largura && f.altura) { img.width = f.largura; img.height = f.altura; }
+    img.addEventListener('load', () => fig.classList.add('ficha-foto--pronta'), { once: true });
+    img.addEventListener('error', () => fig.remove(), { once: true });
+    fig.appendChild(img);
+    const cap = cria('figcaption');
+    cap.appendChild(document.createTextNode('Foto: ' + (f.autor || 'autor desconhecido') + ' · '));
+    const a = cria('a', null, f.licenca || 'Wikimedia Commons');
+    if (typeof f.fonte === 'string' && f.fonte.startsWith('https://commons.wikimedia.org/')) {
+      a.href = f.fonte; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    }
+    cap.appendChild(a);
+    cap.title = cap.textContent;
+    fig.appendChild(cap);
+    return fig;
+  }
+
+  function renderFicha(n, indice) {
     limpaFilhos(el.ficha);
     const topo = cria('header', 'ficha-topo');
+    const foto = fotoNavio(n, indice);
+    if (foto) topo.appendChild(foto);
     const tags = cria('div', 'ficha-tags');
     [n.marinha, n.tipo, n.guerra].forEach(t => t && tags.appendChild(cria('span', 'tag tag--forte', t)));
     topo.appendChild(tags);
@@ -294,9 +337,9 @@
     gravaUrl();
     el.lista.querySelectorAll('.resultado').forEach(b => b.classList.toggle('resultado--ativo', b.dataset.id === String(id)));
     try {
-      const n = await api('/api/navios/' + id, null, ctrlFicha.signal);
+      const [n, indice] = await Promise.all([api('/api/navios/' + id, null, ctrlFicha.signal), carregaFotos()]);
       mostraAviso('');
-      renderFicha(n);
+      renderFicha(n, indice);
       anuncia('Ficha de ' + n.nome + ' carregada.');
       if (rolar) {
         el.ficha.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });

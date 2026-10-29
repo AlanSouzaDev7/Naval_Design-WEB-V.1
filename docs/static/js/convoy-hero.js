@@ -243,6 +243,82 @@
     },
   };
 
+  /* ═══════════════════ NAVIOS EM 3D (WebGL): os mesmos modelos das outras páginas ═══
+     Cada tipo é montado e fundido numa malha só (ShipEngine.heroModel: uma chamada
+     de desenho por navio), em momentos ociosos. A câmera reproduz a projeção da
+     cena 2D (mesma altura, focal e ponto de fuga), então esteira, espuma e casco
+     coincidem; a névoa é a mesma do horizonte. O quadro 3D é copiado para o canvas
+     do hero entre a esteira e o helicóptero. Sem WebGL, ficam os prismas acima. */
+  const VARIANTS = { destroyer: 1, frigate: 1, carrier: 1, container: 3, tanker: 2, bulker: 2, carCarrier: 2 };
+  const REAL_L = { carrier: 284 };                       // QE: 284 m (o prisma 2D usa 270 m)
+
+  function createShipLayer(onReady) {
+    const SE = window.ShipEngine;
+    if (!window.THREE || !SE || !SE.heroModel) return null;
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas: document.createElement('canvas'), antialias: true, alpha: true, powerPreference: 'low-power' });
+    } catch (e) { return null; }
+    renderer.setClearColor(0x000000, 0);
+    renderer.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)];   // nada abaixo da linha d'água
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0xcde7f2, 260, 9300);
+    scene.add(new THREE.HemisphereLight(0xeaf6ff, 0x5a93ad, 0.82));
+    const sun = new THREE.DirectionalLight(0xfff0c2, 0.9);
+    sun.position.set(SUN_DIR[0], SUN_DIR[1], -SUN_DIR[2]);                // o mesmo sol da cena 2D: à frente e à direita
+    scene.add(sun);
+    const camera = new THREE.PerspectiveCamera();
+    camera.position.set(0, CAM_H, 0);                                     // olha para -z (o comboio segue para +z na cena 2D)
+    const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0.12, side: THREE.DoubleSide });
+
+    const models = {}, queue = [];
+    Object.keys(VARIANTS).forEach(k => { models[k] = []; for (let i = 0; i < VARIANTS[k]; i++) queue.push([k, 17 + i * 7919]); });
+    const total = queue.length;
+    let built = 0, failed = false;
+
+    function buildNext() {
+      if (failed || !queue.length) return;
+      const [kind, seed] = queue.shift();
+      try { models[kind].push(SE.heroModel(kind, seed)); built++; } catch (e) { failed = true; console.warn('[hero] modelo 3D', kind, e); return; }
+      if (queue.length) idle(buildNext); else onReady();
+    }
+    const idle = fn => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 300 }) : setTimeout(fn, 16));
+    idle(buildNext);
+
+    return {
+      get ready() { return !failed && built === total; },
+      resize(W, H, dpr, F, VX, HY) {
+        renderer.setPixelRatio(level() === 0 ? 1 : dpr);
+        renderer.setSize(W, H, false);
+        const n = 20, f = Z_END + 600, k = n / F;
+        camera.projectionMatrix.makePerspective(-VX * k, (W - VX) * k, HY * k, -(H - HY) * k, n, f);
+        camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+      },
+      attach(s) {
+        const list = models[s.kind];
+        const v = list[s.vr % list.length];
+        const m = new THREE.Mesh(v.geo, material);
+        m.rotation.y = Math.PI / 2;                                        // proa (+x do modelo) para longe da câmera
+        m.scale.setScalar(s.L / v.len);
+        m.matrixAutoUpdate = false;
+        scene.add(m);
+        s.mesh = m;
+        s.waterline = v.waterline;
+      },
+      detach(s) { if (s.mesh) { scene.remove(s.mesh); s.mesh = null; } },
+      render(ships) {
+        for (const s of ships) {
+          if (!s.mesh) continue;
+          s.mesh.position.set(s.x, 0, -(s.z + s.L / 2));
+          s.mesh.updateMatrix();
+        }
+        renderer.render(scene, camera);
+        return renderer.domElement;
+      },
+    };
+  }
+
   /* ═════════════════════════════════ CENA ═════════════════════════════════ */
   function createConvoyScene() {
     let ctx = null, cvs = null;
@@ -250,6 +326,7 @@
     let F = 1, VX = 0, HY = 0, SX = 0, SY = 0;          // focal (px), ponto de fuga, sol
     let bg = null, sunSprite = null;
     let ships = [], started = false;
+    let layer = null, layerTried = false, layerA = 0;    // camada 3D e a sua opacidade (entra suave quando fica pronta)
 
     // buffers de projeção (um prisma tem no máximo 9 vértices)
     const PX = new Float32Array(16), PT = new Float32Array(16), PB = new Float32Array(16);
@@ -259,7 +336,8 @@
       const r = seeded((Math.random() * 2147483646) | 0);
       const kind = pick(lane.kinds, r);
       const m = MODELS[kind](r, lane.x < 0);
-      return { kind, lane, x: lane.x, z, L: m.L, B: m.B, parts: m.parts, far: m.far, spawn: z, alpha: 1, ph: Math.random() * 6.28 };
+      return { kind, lane, x: lane.x, z, L: REAL_L[kind] || m.L, B: m.B, parts: m.parts, far: m.far, spawn: z, alpha: 1,
+        ph: Math.random() * 6.28, vr: (Math.random() * 1000) | 0, mesh: null };
     }
 
     function fillLanes() {
@@ -280,7 +358,9 @@
         const s = ships[i];
         s.z += SPEED * dt;
         if (s.z > Z_END) {                               // chegou ao horizonte: volta ao fim da coluna
-          ships[i] = makeShip(s.lane, rnd(40, 70));
+          if (layer) layer.detach(s);
+          const n = ships[i] = makeShip(s.lane, rnd(40, 70));
+          if (layerA > 0) n.z = n.spawn = -n.L - rnd(60, 260);   // em 3D: nasce atrás da câmera e entra pela lateral
           resort = true;
           continue;
         }
@@ -352,11 +432,11 @@
       }
     }
 
-    function drawShip(s) {
+    function drawShip(s, fade) {
       const X = s.x, Z = s.z, beamPx = F * s.B / Z;
-      if (beamPx < 1.2 || s.alpha <= 0.01) return;
+      if (Z < Z_NEAR || beamPx < 1.2 || s.alpha * fade <= 0.01) return;
       const hl = hazeLevel(Z), cx = -X, cz = -Z;          // câmera no referencial do navio
-      ctx.globalAlpha = s.alpha;
+      ctx.globalAlpha = s.alpha * fade;
       if (beamPx < 4) {                                  // quase no horizonte: só o vulto (2 preenchimentos)
         const h = s.far[0], i0 = F / Z, i1 = F / (Z + s.L), y0 = HY + CAM_H * i0, y1 = HY + CAM_H * i1;
         ctx.fillStyle = h.side[1][hl];
@@ -438,6 +518,24 @@
           ctx.beginPath(); ctx.moveTo(VX + x0 * i0, HY + CAM_H * i0); ctx.lineTo(VX + x1 * i1, HY + CAM_H * i1); ctx.stroke();
         }
       }
+      ctx.globalAlpha = 1;
+    }
+
+    /** Espuma em volta do casco 3D: o contorno real do casco na linha d'água, um pouco mais largo; o casco cobre o miolo. */
+    function drawFoam(s) {
+      const Z = s.z, wl = s.waterline, beamPx = F * s.B / Z;
+      if (!wl || Z < Z_NEAR || beamPx < 3 || s.alpha <= 0.01) return;
+      const pad = Math.min(4, s.B * 0.08), n = wl.length;
+      ctx.globalAlpha = s.alpha * 0.42;
+      ctx.fillStyle = '#f2fbff';
+      ctx.beginPath();
+      for (let j = 0; j < n * 2; j++) {                  // estibordo da popa à proa, depois bombordo de volta
+        const p = j < n ? wl[j] : wl[2 * n - 1 - j], sd = j < n ? 1 : -1;
+        const z = Z + (p[0] + 0.5) * s.L, x = s.x + sd * (p[1] * s.L + pad * (0.4 + 0.6 * (p[0] + 0.5)));
+        const iz = F / z, px = VX + x * iz, py = HY + CAM_H * iz;
+        if (j) ctx.lineTo(px, py); else ctx.moveTo(px, py);
+      }
+      ctx.closePath(); ctx.fill();
       ctx.globalAlpha = 1;
     }
 
@@ -635,6 +733,12 @@
         buildBg();
         buildSun();
         if (!started) { fillLanes(); started = true; }
+        if (!layerTried) {
+          layerTried = true;
+          // com movimento reduzido o hero é um quadro parado: redesenha quando os modelos ficam prontos
+          layer = createShipLayer(() => { if (window.RNHero.reduced) window.RNHero.setMode(document.documentElement.getAttribute('data-theme')); });
+        }
+        if (layer) layer.resize(W, H, dpr, F, VX, HY);
       },
       render(c, dt) {
         if (!bg) return;
@@ -649,7 +753,18 @@
         drawSea();
 
         for (let i = 0; i < ships.length; i++) drawWake(ships[i]);
-        for (let i = 0; i < ships.length; i++) drawShip(ships[i]);
+        if (layer && layer.ready) {
+          layerA = Math.min(1, layerA + (dt || 1) / 0.9);   // troca suave dos prismas pelos modelos 3D
+          for (let i = 0; i < ships.length; i++) drawFoam(ships[i]);
+          if (layerA < 1) for (let i = 0; i < ships.length; i++) drawShip(ships[i], 1 - layerA);
+          for (let i = 0; i < ships.length; i++) if (!ships[i].mesh) layer.attach(ships[i]);
+          const img = layer.render(ships);
+          ctx.globalAlpha = layerA;
+          ctx.drawImage(img, 0, 0, W, H);
+          ctx.globalAlpha = 1;
+        } else {
+          for (let i = 0; i < ships.length; i++) drawShip(ships[i], 1);
+        }
 
         drawHeli(dt);
         drawGulls(dt);

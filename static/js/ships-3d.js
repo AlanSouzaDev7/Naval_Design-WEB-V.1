@@ -1004,6 +1004,271 @@
     return group;
   }
 
+  /* ── MERCANTES do comboio (topo da página inicial, modo claro) ──────
+     Navios de carga em escala real (1 unidade = 40 m): porta-contêineres
+     (280 × 40 m), petroleiro Aframax (250 × 44 m), graneleiro Supramax
+     (225 × 32 m) e transportador de veículos PCTC (200 × 32 m). Só aparecem
+     fundidos numa malha (heroModel), então podem ter centenas de peças. */
+  const MERCH = {
+    hulls:  [0x1d3d5e, 0x7a2b24, 0x26292e, 0x2d5a42, 0x34506e],
+    boxes:  [0xc8342b, 0x2a6fb0, 0xe08a2c, 0x2f8f5b, 0x8a96a1, 0xece8dd, 0x1f4e79, 0xd4a93a, 0x7a4a8c, 0x3c8f9e, 0xb5382f],
+    funnel: [0xc43b2e, 0x1e4f8a, 0xe0a020, 0x2d6b4f, 0x26292e],
+    red: 0x9c3328, white: 0xeef1f3, deck: 0x6f6a64, pipe: 0xcfd4d8, steel: 0x3a4048,
+  };
+  const pickR = (list, r) => list[(r() * list.length) | 0];
+  function seededRand(seed) { let s = seed % 2147483646 + 1; return () => ((s = (s * 16807) % 2147483647) / 2147483647); }
+
+  /** Casco mercante: obras vivas vermelhas com uma faixa à mostra (navio leve) e o costado na cor da companhia. */
+  function merchantHull(group, key, o, hullColor) {
+    const hull = loftHull(key, { sections: 72, ...o, color: y => (y < -0.001 ? MERCH.red : hullColor) });
+    add(group, hull.geo, hullMat(0.7, 0.1), 0, WL, 0);
+    hullBand(group, hull, -0.01, 0.06, MERCH.red, 0.02, 0.985);
+    return hull;
+  }
+
+  /** Superestrutura de acomodações (popa): blocos brancos, janelas por convés, asas do passadiço, mastro e radar. */
+  function accommodation(group, x, D, len, h, w, B) {
+    const white = mat(MERCH.white, { r: 0.6, m: 0.1 }), glass = mat(HC.glass, { r: 0.15, m: 0.6 });
+    add(group, taperBox(len, h, w, 1, 0.97), white, x, D + h / 2, 0);
+    add(group, G.box(len * 0.42, 0.03, B * 1.02), white, x + len * 0.29, D + h - 0.015, 0);       // asas do passadiço
+    const decks = Math.max(3, Math.round(h / 0.11));
+    for (let k = 0; k < decks; k++) {
+      const y = D + 0.08 + k * (h - 0.12) / (decks - 1);
+      add(group, G.box(0.005, 0.02, w * 0.84), glass, x + len / 2 + 0.002, y, 0);                // janelas de vante
+      [1, -1].forEach(sd => add(group, G.box(len * 0.8, 0.018, 0.005), glass, x, y, sd * (w / 2 + 0.002)));
+    }
+    add(group, G.box(0.005, 0.028, B * 0.9), glass, x + len * 0.5 + 0.002, D + h - 0.045, 0);        // passadiço
+    add(group, G.cyl(0.007, 0.011, 0.24, 6), white, x - len * 0.15, D + h + 0.12, 0);
+    add(group, G.box(0.012, 0.012, 0.18), mat(MERCH.steel), x - len * 0.15, D + h + 0.17, 0);       // radar
+    add(group, G.box(0.012, 0.008, 0.12), mat(MERCH.steel), x - len * 0.15, D + h + 0.21, 0);
+  }
+
+  /** Chaminé com a cor da companhia, faixa branca e topo preto. */
+  function merchantFunnel(group, x, y0, h, w, d, color) {
+    add(group, taperBox(w, h, d, 0.94, 0.9, -0.01), mat(color, { r: 0.55, m: 0.15 }), x, y0 + h / 2, 0);
+    add(group, G.box(w * 0.97, h * 0.12, d * 0.95), mat(MERCH.white, { r: 0.6 }), x - 0.003, y0 + h * 0.62, 0);
+    add(group, G.box(w * 0.9, 0.025, d * 0.86), mat(HC.black), x - 0.008, y0 + h + 0.006, 0);
+  }
+
+  /** Baleeira de queda livre (laranja) na rampa da popa. */
+  const freeFall = (group, x, y) => add(group, taperBox(0.15, 0.045, 0.055, 0.82, 0.8), mat(HC.rhib, { r: 0.7, m: 0 }), x, y, 0, 0, 0, 0.42);
+
+  function buildContainerShip(r) {
+    const group = new THREE.Group();
+    const hc = pickR(MERCH.hulls, r), fc = pickR(MERCH.funnel, r);
+    const L = 7, B = 1.0;
+    const hull = merchantHull(group, 'cont' + hc, {
+      L, T: 0.33, rake: 0.35, rakeStart: 0.86,
+      half: halfFn(B, 0.88, 0.68, 1.9, 0.1),
+      deck: t => 0.3 + 0.1 * smooth(0.86, 0.9, t),
+      flare: t => 1 + 0.1 * smooth(0.72, 1, t),
+      deckColor: MERCH.deck,
+    }, hc);
+    const D = WL + 0.3;
+
+    // Contêineres: baias de 40 pés, pilhas de duas fileiras, alturas e cores sortidas (mais baixas perto da proa)
+    const CW = 0.061, CH = 0.065, BAY = 0.305, lash = mat(0xd5d9dc, { r: 0.6, m: 0.3 });
+    for (let x = -2.3; x + BAY < 2.55; x += BAY + 0.025) {
+      const t0 = (x + L / 2) / L, t1 = (x + BAY + L / 2) / L;
+      const hw = Math.min(hull.halfAt(t0, 0.3), hull.halfAt(t1, 0.3)) - 0.03;
+      const groups = Math.floor(hw / CW);
+      if (groups < 1) continue;
+      const maxT = x > 1.9 ? 4 : x < -1.9 ? 6 : 8;
+      for (let gI = 0; gI < groups; gI++) {
+        const z = -groups * CW + (gI + 0.5) * CW * 2;
+        const tiers = 3 + ((r() * (maxT - 2)) | 0);
+        for (let k = 0; k < tiers; k++) {
+          add(group, G.box(BAY - 0.008, CH - 0.007, CW * 2 - 0.007), mat(pickR(MERCH.boxes, r), { r: 0.75, m: 0.15 }),
+            x + BAY / 2, D + 0.025 + k * CH + CH / 2, z);
+        }
+      }
+      add(group, G.box(BAY, 0.025, groups * CW * 2), mat(MERCH.deck, { r: 0.8 }), x + BAY / 2, D + 0.012, 0);   // tampa do porão
+      add(group, G.box(0.012, 0.14, groups * CW * 2 + 0.02), lash, x - 0.0125, D + 0.07, 0);                   // ponte de peação
+    }
+
+    accommodation(group, -2.62, D, 0.36, 0.84, 0.76, B);
+    merchantFunnel(group, -3.02, D, 0.92, 0.2, 0.26, fc);
+    freeFall(group, -3.3, D + 0.12);
+    add(group, G.box(0.02, 0.07, 0.62), mat(hc, { r: 0.6 }), 2.62, D + 0.13, 0, 0, 0, 0.25);    // quebra-mar do castelo
+    add(group, G.cyl(0.007, 0.01, 0.26, 6), mat(MERCH.white), 3.12, D + 0.23, 0);             // mastro de proa
+    return group;
+  }
+
+  function buildTanker(r) {
+    const group = new THREE.Group();
+    const hc = pickR([0x26292e, 0x6b2320, 0x1d3d5e], r), deckC = pickR([0x9e3b33, 0x3f6e4d, 0x8c4f36], r), fc = pickR(MERCH.funnel, r);
+    const L = 6.25, B = 1.1;
+    merchantHull(group, 'tank' + hc + deckC, {
+      L, T: 0.36, rake: 0.3, rakeStart: 0.88,
+      half: halfFn(B, 0.9, 0.74, 2.0, 0.08),
+      deck: t => 0.22 + 0.09 * smooth(0.88, 0.92, t),
+      flare: 1.02, deckColor: deckC,
+    }, hc);
+    const D = WL + 0.22, pipe = mat(MERCH.pipe, { r: 0.5, m: 0.3 });
+
+    // Tubulação de carga ao longo do convés, passarela sobre pilares e o manifold a meia-nau com dois guindastes
+    [-0.075, -0.035, 0.035, 0.075].forEach(z => add(group, G.cyl(0.009, 0.009, 4.6, 6), pipe, 0.05, D + 0.02, z, 0, 0, Math.PI / 2));
+    add(group, G.box(4.8, 0.008, 0.035), pipe, 0.05, D + 0.075, 0.16);
+    const posts = [];
+    for (let x = -2.3; x <= 2.4; x += 0.24) posts.push({ p: [x, D + 0.037, 0.16] });
+    group.add(instanced(G.box(0.008, 0.075, 0.008), pipe, posts));
+    add(group, G.box(0.07, 0.04, 0.98), mat(0xd8d9cf, { r: 0.6 }), 0.12, D + 0.03, 0);
+    [0.42, -0.42].forEach(z => {
+      add(group, G.cyl(0.02, 0.025, 0.22, 8), pipe, 0.28, D + 0.11, z);
+      add(group, G.cyl(0.009, 0.012, 0.42, 6), pipe, 0.28 - 0.17, D + 0.27, z * 0.85, 0, 0, 1.0);
+    });
+    const hatches = [];
+    for (let k = 0; k < 12; k++) [0.3, -0.3].forEach(z => hatches.push({ p: [-2.1 + k * 0.38, D + 0.012, z] }));
+    group.add(instanced(G.cyl(0.035, 0.035, 0.025, 10), mat(deckC === 0x3f6e4d ? 0xcfd4d8 : 0xd8d0c0, { r: 0.6 }), hatches));
+
+    accommodation(group, -2.38, D, 0.36, 0.66, 0.84, B);
+    merchantFunnel(group, -2.74, D, 0.8, 0.18, 0.24, fc);
+    freeFall(group, -3.0, D + 0.12);
+    add(group, G.cyl(0.007, 0.01, 0.24, 6), mat(MERCH.white), 2.95, D + 0.21, 0);
+    return group;
+  }
+
+  function buildBulker(r) {
+    const group = new THREE.Group();
+    const hc = pickR(MERCH.hulls, r), hatchC = pickR([0xb94a2f, 0x3c6e91, 0x5b7f4a], r), fc = pickR(MERCH.funnel, r);
+    const L = 5.6, B = 0.8;
+    merchantHull(group, 'bulk' + hc, {
+      L, T: 0.3, rake: 0.3, rakeStart: 0.88,
+      half: halfFn(B, 0.88, 0.74, 2.0, 0.09),
+      deck: t => 0.24 + 0.08 * smooth(0.89, 0.93, t),
+      flare: 1.02, deckColor: 0x7c756a,
+    }, hc);
+    const D = WL + 0.24, crane = mat(0xd8b43a, { r: 0.55, m: 0.25 });
+
+    // Cinco porões com tampas e quatro guindastes entre eles
+    for (let k = 0; k < 5; k++) {
+      const x = -1.62 + k * 0.82;
+      add(group, G.box(0.6, 0.04, 0.6), mat(0x6e675d, { r: 0.8 }), x, D + 0.02, 0);
+      add(group, taperBox(0.56, 0.06, 0.56, 0.97, 0.86), mat(hatchC, { r: 0.6, m: 0.15 }), x, D + 0.07, 0);
+      if (k < 4) {
+        const xc = x + 0.41, sd = k % 2 ? 1 : -1;
+        add(group, G.cyl(0.04, 0.05, 0.26, 10), crane, xc, D + 0.13, 0);
+        add(group, G.box(0.1, 0.07, 0.09), crane, xc, D + 0.3, 0.03 * sd);
+        add(group, G.cyl(0.011, 0.018, 0.78, 6), crane, xc + 0.3, D + 0.42, 0.1 * sd, 0.12 * sd, 0, -1.2);
+      }
+    }
+    accommodation(group, -2.26, D, 0.34, 0.66, 0.66, B);
+    merchantFunnel(group, -2.56, D, 0.78, 0.16, 0.2, fc);
+    freeFall(group, -2.78, D + 0.12);
+    add(group, G.cyl(0.007, 0.01, 0.22, 6), mat(MERCH.white), 2.5, D + 0.19, 0);
+    return group;
+  }
+
+  function buildCarCarrier(r) {
+    const group = new THREE.Group();
+    const col = pickR([MERCH.white, MERCH.white, 0x2f5f8f, 0xb8392f], r), band = pickR([0x1e4f8a, 0xc43b2e, 0x2d6b4f], r);
+    const L = 5.0, B = 0.8, H = 0.78;
+    const hull = merchantHull(group, 'pctc' + col, {
+      L, T: 0.24, rake: 0.1, rakeStart: 0.8,
+      half: halfFn(B, 0.95, 0.8, 2.6, 0.05),
+      deck: t => H - 0.07 * smooth(0.94, 1, t),
+      flare: 1.0, deckColor: 0xc9cdd1,
+    }, col);
+    hullBand(group, hull, 0.52, 0.58, col === MERCH.white ? band : MERCH.white, 0.03, 0.97);
+    const D = WL + H;
+
+    add(group, G.box(0.24, 0.075, B * 0.98), mat(MERCH.white, { r: 0.6 }), 1.98, D + 0.037, 0);       // passadiço na proa
+    add(group, G.box(0.005, 0.026, B * 0.9), mat(HC.glass, { r: 0.15, m: 0.6 }), 2.102, D + 0.04, 0);
+    add(group, G.cyl(0.006, 0.009, 0.2, 6), mat(MERCH.white), 1.9, D + 0.17, 0);
+    merchantFunnel(group, -2.12, D, 0.13, 0.22, 0.16, band);
+    add(group, G.box(0.02, 0.5, 0.34), mat(0x8f979e, { r: 0.7 }), -2.505, WL + 0.3, 0.16, 0, 0, -0.08);  // rampa de popa recolhida
+    // aberturas de ventilação ao longo do costado
+    const vents = [];
+    for (let k = 0; k < 14; k++) {
+      const x = -2.1 + k * 0.3, t = (x + L / 2) / L;
+      [1, -1].forEach(sd => vents.push({ p: [x, WL + 0.68, sd * (hull.halfAt(t, 0.68) + 0.004)] }));
+    }
+    group.add(instanced(G.box(0.07, 0.04, 0.006), mat(0x6f7882, { r: 0.7 }), vents));
+    freeFall(group, -2.3, D + 0.04);
+    return group;
+  }
+
+  /* ── Topo da página inicial: os mesmos navios numa malha só ───────
+     heroGroup devolve o modelo com os materiais de sempre (o modo escuro
+     o fotografa de lado); heroModel funde todas as peças numa geometria com
+     cor por vértice (1 chamada de desenho por navio), já com a linha d'água
+     em y = 0, o centro em x = 0 e sem o que fica debaixo d'água. */
+  const MERCHANTS = { container: buildContainerShip, tanker: buildTanker, bulker: buildBulker, carCarrier: buildCarCarrier };
+  // bocas dos canhões e janelas iluminadas (coordenadas do modelo, antes da escala do grupo)
+  const HERO_POINTS = {
+    destroyer:  { guns: [[2.77, WL + 0.535, 0], [-0.67, WL + 0.76, 0.27]],                         lights: [[0.75, WL + 0.8, 0.34], [0.9, WL + 0.8, 0.34], [1.05, WL + 0.8, 0.33]] },
+    frigate:    { guns: [[2.62, WL + 0.485, 0], [-0.03, WL + 0.66, 0.24]],                         lights: [[0.5, WL + 0.77, 0.27], [0.65, WL + 0.77, 0.26], [0.8, WL + 0.77, 0.25]] },
+    battleship: { guns: [[3.23, WL + 0.517, 0], [1.6, WL + 0.517, 0.28], [-2.08, WL + 0.517, 0]], lights: [[1.55, WL + 0.62, 0.24], [1.7, WL + 0.62, 0.24], [-1.75, WL + 0.45, 0.17]] },
+    carrier:    { guns: [[3.13, WL + 0.73, 0.28], [-3.37, WL + 0.73, 0.62]],                       lights: [[0.6, WL + 1.33, 0.93], [0.8, WL + 1.33, 0.93], [-1.0, WL + 1.25, 0.93]] },
+  };
+
+  function heroGroup(kind, seed = 1) {
+    const group = MERCHANTS[kind] ? MERCHANTS[kind](seededRand(seed)) : buildShip(kind);
+    group.userData.wl = WL * group.scale.y;
+    const pts = HERO_POINTS[kind];
+    if (pts) Object.assign(group.userData, pts);
+    return group;
+  }
+
+  function mergeGroup(group) {
+    group.updateMatrixWorld(true);
+    const wl = group.userData.wl;
+    const pos = [], nor = [], col = [];
+    const m4 = new THREE.Matrix4(), nm = new THREE.Matrix3(), c = new THREE.Color();
+    const v = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()], n = new THREE.Vector3();
+    group.traverse(o => {
+      if (!o.isMesh || o.visible === false) return;
+      const g = o.geometry;
+      if (!g.attributes.normal) g.computeVertexNormals();
+      const P = g.attributes.position, N = g.attributes.normal, CC = g.attributes.color, I = g.index;
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      const total = I ? I.count : P.count;
+      const groups = g.groups.length ? g.groups : [{ start: 0, count: total, materialIndex: 0 }];
+      for (let k = 0; k < (o.isInstancedMesh ? o.count : 1); k++) {
+        if (o.isInstancedMesh) { o.getMatrixAt(k, m4); m4.premultiply(o.matrixWorld); } else m4.copy(o.matrixWorld);
+        nm.getNormalMatrix(m4);
+        for (const gr of groups) {
+          const mt = mats[gr.materialIndex] || mats[0];
+          if (!mt || mt.map || (mt.transparent && mt.opacity < 0.9)) continue;   // números, bandeiras e o disco do rotor ficam de fora
+          const end = Math.min(gr.start + gr.count, total);
+          for (let i = gr.start; i + 2 < end; i += 3) {
+            const ids = I ? [I.getX(i), I.getX(i + 1), I.getX(i + 2)] : [i, i + 1, i + 2];
+            for (let j = 0; j < 3; j++) v[j].fromBufferAttribute(P, ids[j]).applyMatrix4(m4);
+            if (v[0].y < wl - 0.002 && v[1].y < wl - 0.002 && v[2].y < wl - 0.002) continue;   // debaixo d'água
+            for (let j = 0; j < 3; j++) {
+              pos.push(v[j].x, v[j].y - wl, v[j].z);
+              n.fromBufferAttribute(N, ids[j]).applyMatrix3(nm).normalize();
+              nor.push(n.x, n.y, n.z);
+              if (mt.vertexColors && CC) c.fromBufferAttribute(CC, ids[j]); else c.copy(mt.color);
+              col.push(c.r, c.g, c.b);
+            }
+          }
+        }
+      }
+    });
+    let x0 = Infinity, x1 = -Infinity;
+    for (let i = 0; i < pos.length; i += 3) { x0 = Math.min(x0, pos[i]); x1 = Math.max(x1, pos[i]); }
+    const cx = (x0 + x1) / 2;
+    for (let i = 0; i < pos.length; i += 3) pos[i] -= cx;
+    // contorno do casco na linha d'água (meia-boca por faixa de comprimento): a espuma em volta do casco
+    const NB = 28, len = x1 - x0, half = new Array(NB + 1).fill(0);
+    for (let i = 0; i < pos.length; i += 3) {
+      if (Math.abs(pos[i + 1]) > 0.004) continue;
+      const b = Math.round(((pos[i] + len / 2) / len) * NB);
+      half[b] = Math.max(half[b], Math.abs(pos[i + 2]));
+    }
+    for (let b = 1; b < NB; b++) if (!half[b]) half[b] = (half[b - 1] + (half[b + 1] || half[b - 1])) / 2;
+    const waterline = half.map((h, b) => [b / NB - 0.5, h / len]);    // [x, meia-boca] em frações do comprimento
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    geo.computeBoundingSphere();
+    return { geo, len, waterline };
+  }
+
+  const heroModel = (kind, seed) => mergeGroup(heroGroup(kind, seed));
+
   function buildShip(type) {
     switch (type) {
       case 'carrier':
@@ -1292,5 +1557,5 @@
     start();                                          // redesenha as cenas visíveis com o novo visual
   }
 
-  window.ShipEngine = { init, openModal, closeModal, setTheme };
+  window.ShipEngine = { init, openModal, closeModal, setTheme, heroGroup, heroModel };
 })();

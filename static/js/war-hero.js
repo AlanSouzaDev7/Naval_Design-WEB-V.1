@@ -164,8 +164,110 @@
     g.fillStyle = 'rgba(190,215,240,0.38)';                    // espuma na linha d'água
     g.fillRect(X(0.02), wl - Math.max(1, L * 0.004), (0.9) * L, Math.max(1.5, L * 0.006));
 
-    return { c, w, h, wl, pad, muz, mastTop };
+    return { c, w, h, wl, pad, muz, mastTop, beam: [mastTop[0], mastTop[1] * 0.6] };
   }
+
+  /* ── navios em 3D: os mesmos modelos das outras páginas, "fotografados" de lado sob o luar ──
+     Um renderizador WebGL fora da tela desenha cada modelo uma vez por resize (câmera
+     ortográfica, 6° acima do costado, nada abaixo da linha d'água) e a imagem vira o
+     sprite do navio. A frota da direita é fotografada pelo bombordo e espelhada, então
+     o número de casco não sai invertido. Sem WebGL, ficam as silhuetas acima. */
+  const MODEL_OF = { carrier: 'carrier', destroyer: 'destroyer', battleship: 'battleship', cruiser: 'frigate' };
+  const Studio = (function () {
+    const SE = window.ShipEngine;
+    if (!window.THREE || !SE || !SE.heroGroup) return null;
+    let renderer = null, scene, cam, clip;
+    const groups = {};
+    function setup() {
+      renderer = new THREE.WebGLRenderer({ canvas: document.createElement('canvas'), antialias: true, alpha: true });
+      renderer.setClearColor(0x000000, 0);
+      clip = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      renderer.clippingPlanes = [clip];
+      scene = new THREE.Scene();
+      scene.add(new THREE.HemisphereLight(0x6584bb, 0x3c1a0c, 0.5));     // céu de luar, "chão" alaranjado dos incêndios
+      const moon = new THREE.DirectionalLight(0xb8ccf2, 0.72);
+      moon.position.set(-5, 7, 6);
+      scene.add(moon);
+      const fire = new THREE.DirectionalLight(0xff8a3d, 0.26);
+      fire.position.set(4, 0.6, 5);
+      scene.add(fire);
+      cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
+    }
+    return function shoot(kind, L, port, dpr) {
+      try {
+        if (!renderer) setup();
+        const model = MODEL_OF[kind];
+        const g = groups[model] || (groups[model] = SE.heroGroup(model));
+        const wl = g.userData.wl;
+        clip.constant = -wl;
+        scene.add(g);
+        g.updateMatrixWorld(true);
+        const e = 0.1, sd = port ? -1 : 1;
+        cam.position.set(0, wl + Math.sin(e) * 40, sd * Math.cos(e) * 40);
+        cam.lookAt(0, wl, 0);
+        cam.updateMatrixWorld(true);
+        // limites do navio no plano da câmera (só acima da linha d'água)
+        const box = new THREE.Box3().setFromObject(g), v = new THREE.Vector3();
+        let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+        for (let i = 0; i < 8; i++) {
+          v.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : Math.max(box.min.y, wl), i & 4 ? box.max.z : box.min.z).applyMatrix4(cam.matrixWorldInverse);
+          x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y);
+        }
+        const k = L / (x1 - x0), pad = L * 0.04, top = L * 0.02;
+        const w = Math.ceil(L + pad * 2), h = Math.ceil((y1 - y0) * k + top);
+        cam.left = x0 - pad / k; cam.right = x1 + pad / k; cam.top = y1 + top / k; cam.bottom = y0;
+        cam.updateProjectionMatrix();
+        renderer.setPixelRatio(dpr);
+        renderer.setSize(w, h, false);
+        renderer.render(scene, cam);
+        scene.remove(g);
+
+        const c = mk(Math.round(w * dpr), Math.round(h * dpr)), q = c.getContext('2d');
+        if (port) { q.translate(c.width, 0); q.scale(-1, 1); }          // espelha: a proa fica sempre à direita
+        q.drawImage(renderer.domElement, 0, 0, c.width, c.height);
+        q.setTransform(1, 0, 0, 1, 0, 0);
+        // ponto do modelo -> pixel do sprite (CSS) já espelhado
+        const toPx = (p, near) => {                                   // near: traz o ponto para o bordo que a câmera vê
+          v.set(p[0], p[1], near ? sd * Math.abs(p[2]) : p[2]).applyMatrix4(g.matrixWorld).project(cam);
+          const px = (v.x + 1) / 2 * w;
+          return [port ? w - px : px, (1 - v.y) / 2 * h];
+        };
+        const wlPx = toPx([0, wl / g.scale.y, 0])[1];
+        const norm = ([px, py]) => [(px - pad) / L, (py - wlPx) / L];
+        const muz = (g.userData.guns || []).map(p => norm(toPx(p)));
+        const lights = (g.userData.lights || []).map(p => toPx(p, true));
+
+        // topo do mastro: o pixel opaco mais alto (luz de navegação)
+        const data = q.getImageData(0, 0, c.width, c.height).data;
+        let mastTop = [0.5, -0.2];
+        find: for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) {
+          if (data[(y * c.width + x) * 4 + 3] > 140) { mastTop = norm([x / dpr, y / dpr]); break find; }
+        }
+
+        // luar por cima, brilho de incêndio por baixo, janelas acesas e espuma na linha d'água
+        q.scale(dpr, dpr);
+        q.globalCompositeOperation = 'source-atop';
+        const lu = q.createLinearGradient(0, 0, 0, wlPx);
+        lu.addColorStop(0, 'rgba(150,190,240,0.22)'); lu.addColorStop(1, 'rgba(130,170,225,0)');
+        q.fillStyle = lu; q.fillRect(0, 0, w, wlPx);
+        const lo = q.createLinearGradient(0, wlPx - L * 0.06, 0, wlPx);
+        lo.addColorStop(0, 'rgba(255,120,40,0)'); lo.addColorStop(1, 'rgba(255,120,40,0.24)');
+        q.fillStyle = lo; q.fillRect(0, wlPx - L * 0.06, w, L * 0.07);
+        q.globalCompositeOperation = 'source-over';
+        q.fillStyle = '#ffb04a';
+        const lw = Math.max(1.2, L * 0.006);
+        lights.forEach(([x, y]) => q.fillRect(x - lw / 2, y - lw * 0.4, lw, lw * 0.8));
+        q.fillStyle = 'rgba(190,215,240,0.38)';
+        q.fillRect(pad + L * 0.02, wlPx - Math.max(1, L * 0.004), L * 0.92, Math.max(1.5, L * 0.006));
+
+        const beam = [mastTop[0], mastTop[1] * 0.55];
+        return { c, w, h, wl: wlPx, pad, muz: muz.length ? muz : [[0.8, -0.08]], mastTop, beam };
+      } catch (err) {
+        console.warn('[hero] navio 3D', kind, err);
+        return null;
+      }
+    };
+  })();
 
   function createWarScene() {
     const HZ = 0.56;
@@ -222,7 +324,7 @@
 
     /* ── navios ──────────────────────────────────────────────── */
     function makeShip(kind, side, fx, L, dyFrac, rate, dmgMax) {
-      const spr = shipSprite(kind, L);
+      const spr = (Studio && Studio(kind, L, side === 1, dpr)) || shipSprite(kind, L);
       return {
         kind, side, dir: side === 0 ? 1 : -1, x: fx * W, y: H * HZ + dyFrac * H, L, spr,
         rate, cool: rnd(0.4, rate[1]), hits: 0, dmgMax, state: 'ok', sinkT: 0, sinkY: 0, gone: 0,
@@ -505,7 +607,7 @@
       ctx.translate(s.x, s.y + s.bob + s.sinkY);
       ctx.rotate(s.roll);
       ctx.scale(s.dir, 1);
-      ctx.drawImage(s.spr.c, -s.spr.w / 2, -s.spr.wl);
+      ctx.drawImage(s.spr.c, -s.spr.w / 2, -s.spr.wl, s.spr.w, s.spr.h);
       ctx.restore();
 
       // luzes de navegação (esquerda: ciano; direita: vermelho)
@@ -561,7 +663,7 @@
       ctx.globalCompositeOperation = 'lighter';
       ctx.globalAlpha = 0.16;
       near.forEach((s, i) => {
-        const bp = shipPoint(s, s.kind === 'battleship' ? 0.44 : 0.5, s.kind === 'battleship' ? -0.24 : -0.17);
+        const bp = shipPoint(s, s.spr.beam[0], s.spr.beam[1]);
         const ang = -Math.PI / 2 + Math.sin(t * 0.42 + i * 2.1 + s.ph) * 0.65;
         ctx.save();
         ctx.translate(bp.x, bp.y);
