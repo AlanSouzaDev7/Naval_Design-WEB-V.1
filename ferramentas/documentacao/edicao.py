@@ -6,9 +6,9 @@ As páginas das seções 1 a 19 vêm da BASE (o PDF publicado na tag v4.4.0); o 
 cabeçalhos, rodapés e o histórico de versões, e acrescenta as seções novas no fim.
 """
 
-VERSAO = "4.6.0"
-DATA = "28 de outubro de 2026"
-TAG = "v4.6.0"
+VERSAO = "4.7.0"
+DATA = "29 de outubro de 2026"
+TAG = "v4.7.0"
 HOSPEDAGEM = "GitHub Pages + Render + Neon"
 SUBTITULO = "Desempenho, dois temas, consulta segura ao banco e publicação online"
 
@@ -19,7 +19,7 @@ BASE_ARQUIVO = "documentacao/Royal_Navy_Documentacao_Tecnica.pdf"
 ASSUNTO = ("Auditoria, desempenho, paleta, modo escuro, consulta segura ao banco, publicação online e dossiê técnico; "
            "tema claro “Mar em Paz” (v4.1); revisão de segurança e robustez (v4.2); sugestões de navios e painel do "
            "administrador (v4.3); PDFs dos navios para download (v4.4); navegação pelas estrelas, carta celeste e planetas (v4.5); teste de qualidade da página (v4.5.1); página de carregamento do servidor (v4.5.2); rodada de QA (v4.5.3); animações, "
-           "integração das páginas e modelos 3D fiéis aos navios reais (v4.6)")
+           "integração das páginas e modelos 3D fiéis aos navios reais (v4.6); navios 3D no topo da página inicial e foto do navio na ficha (v4.7)")
 
 # (número, título, descrição) — o título tem de ser igual ao do cabeçalho da seção
 SUMARIO = [
@@ -47,11 +47,12 @@ SUMARIO = [
     ("22", "Página de carregamento (v4.5.2)", "o site acorda o servidor do Render sem mostrar a tela de espera dele"),
     ("23", "Rodada de QA (v4.5.3)", "menu no celular, textos e números, URLs e Werkzeug 3.1.9"),
     ("24", "Movimento, integração e modelos 3D fiéis (v4.6)", "animações, degradês, páginas integradas e navios 3D"),
+    ("25", "Navios 3D no topo e foto na ficha (v4.7)", "comboio e batalha em 3D, fotos do acervo e bateria de testes"),
 ]
 
 COMO_LER = (
     "<b>Como ler este documento.</b> As seções 1 a 4 explicam <i>o que é o site e como ele funciona</i>; cada versão grande tem o "
-    "seu dossiê (5, 13 a 15 e 17 a 24, na ordem das versões). As seções 6 e 7 registram <i>o que estava errado e o que foi feito</i>; "
+    "seu dossiê (5, 13 a 15 e 17 a 25, na ordem das versões). As seções 6 e 7 registram <i>o que estava errado e o que foi feito</i>; "
     "a 8 documenta as identidades visuais; as 9 a 12 cobrem verificação, pendências, operação e publicação; a 16 é o glossário. "
     "Todos os números foram medidos ou extraídos do código-fonte — nada é estimativa sem indicação."
 )
@@ -59,6 +60,8 @@ COMO_LER = (
 # Do mais novo para o mais antigo: (versão, texto completo, resumo curto). O primeiro aparece em destaque no
 # sumário; os demais, só pelo resumo curto.
 MUDANCAS = [
+    ("4.7", "os modelos 3D do site no topo da página inicial (comboio e batalha) e a foto de cada navio na ficha da Consulta; "
+            "testes em PC, tablet e celular — seção 25.", "3D no topo e fotos na ficha, seção 25"),
     ("4.6", "animações refinadas, transição entre páginas, degradês em OKLab, páginas internas integradas e os seis navios em 3D "
             "refeitos a partir do perfil real de cada classe — seção 24.", "movimento e modelos 3D, seção 24"),
     ("4.5.3", "rodada de QA com o olhar do usuário: menu no celular, textos dos navios corrigidos, números da página inicial coerentes, "
@@ -93,8 +96,9 @@ HISTORICO = [
     ["<b>4.5.2</b>", "27/10/2026", "tag <font name='Mono'>v4.5.2</font>", "Página de carregamento que acorda o servidor do Render (seção 22)"],
     ["<b>4.5.3</b>", "28/10/2026", "<font name='Mono'>3e760fb</font>", "Rodada de QA, 226 testes (seção 23)"],
     ["<b>4.6.0</b>", "28/10/2026", "<font name='Mono'>d10c608</font>", "Animações, integração das páginas e modelos 3D fiéis (seção 24)"],
+    ["<b>4.7.0</b>", "29/10/2026", "<font name='Mono'>eb3e362</font>", "Navios 3D no topo e foto do navio na ficha (seção 25)"],
 ]
 
 
 # Módulos de secoes/ com as seções novas desta edição, na ordem (ex.: ["secao_20"])
-SECOES_NOVAS = ["secao_20", "secao_21", "secao_22", "secao_23", "secao_24"]
+SECOES_NOVAS = ["secao_20", "secao_21", "secao_22", "secao_23", "secao_24", "secao_25"]

@@ -6,7 +6,7 @@ rumo ao horizonte, águas claras e recifes de coral) e **“Guerra em alto mar�
 PostgreSQL (somente leitura, com camadas de segurança) — e desde a **v4.0** essa consulta está publicada na internet,
 acessível de qualquer aparelho, em **<https://alansouzadev7.github.io/Naval_Design-WEB-V.1/abrir.html>** (a página de carregamento acorda o servidor e entra no site). Na **v4.3** o visitante pode **sugerir navios**
 que ainda não estão no acervo, e um painel restrito permite avaliá-los. A **v4.5** acrescenta a página **Navegação pelas
-Estrelas**, com o céu real calculado no navegador; a **v4.5.1** é o teste de qualidade dessa página, e a **v4.5.2** troca a tela de espera do Render por uma página de carregamento com o tema do site; a **v4.5.3** é uma rodada de QA: menu no celular, textos dos navios acentuados e corrigidos, números da página inicial coerentes, barra final nas URLs e Werkzeug 3.1.9. A **v4.6** refina o movimento sem mudar a identidade: animações com curvas mais fortes, transição suave entre as páginas, degradês em OKLab, páginas internas integradas ao mar da página inicial e os **seis navios 3D refeitos** a partir do perfil real de cada classe.
+Estrelas**, com o céu real calculado no navegador; a **v4.5.1** é o teste de qualidade dessa página, e a **v4.5.2** troca a tela de espera do Render por uma página de carregamento com o tema do site; a **v4.5.3** é uma rodada de QA: menu no celular, textos dos navios acentuados e corrigidos, números da página inicial coerentes, barra final nas URLs e Werkzeug 3.1.9. A **v4.6** refina o movimento sem mudar a identidade: animações com curvas mais fortes, transição suave entre as páginas, degradês em OKLab, páginas internas integradas ao mar da página inicial e os **seis navios 3D refeitos** a partir do perfil real de cada classe. A **v4.7** leva esses modelos 3D para o **topo da página inicial** (o comboio do modo claro e a batalha do modo escuro) e coloca a **foto de cada navio** no topo da ficha da Consulta.
 
 ## Como rodar
 
@@ -151,6 +151,35 @@ Nenhum texto ou dado do conteúdo mudou. Detalhes na seção 24 do PDF.
   Na Frota Atual, cada navio aparece no tamanho relativo real. Fontes: Wikipedia, Navy Lookout, Navypedia, naval-technology,
   GlobalSecurity e History of War. Limites: geometria feita em código, sem texturas fotográficas; onde as fontes divergem (ex.: ângulo
   da rampa, 9° a 13°), valeu a mais bem apoiada.
+
+## Navios 3D no topo e foto na ficha (v4.7)
+
+Detalhes na seção 25 do PDF.
+
+- **Comboio do modo claro em 3D:** os navios do topo deixaram de ser prismas desenhados à mão. As escoltas são os mesmos modelos de
+  `ships-3d.js` (Queen Elizabeth, Type 45 e Type 23) e os mercantes ganharam modelos próprios em escala real: porta-contêineres
+  (280 × 40 m, pilhas coloridas de contêineres de 40 pés), petroleiro Aframax (tubulações, passarela e manifold), graneleiro Supramax
+  (porões e guindastes) e transportador de veículos. Uma camada WebGL fora da tela usa a mesma projeção da cena 2D (altura, focal e
+  ponto de fuga), então esteira, espuma e casco coincidem; a cópia vai para o canvas do hero entre a esteira e o helicóptero.
+  - `ShipEngine.heroModel(tipo)` funde cada modelo numa geometria com cor por vértice (uma chamada de desenho por navio, sem o que
+    fica debaixo d'água); as 12 variantes são montadas em momentos ociosos e entram com esmaecimento no lugar dos prismas.
+  - Os navios novos nascem atrás da câmera e entram pela lateral; a espuma segue o contorno real do casco na linha d'água.
+  - Sem WebGL, o topo continua com os prismas 2D.
+- **Batalha do modo escuro:** Type 45, Dreadnought, Queen Elizabeth e Type 23 "fotografados" de lado sob o luar
+  (`ShipEngine.heroGroup` + câmera ortográfica), um sprite por navio a cada redimensionamento; bocas dos canhões, janelas acesas e
+  topo do mastro saem do próprio modelo.
+- **Foto do navio na ficha da Consulta:** `ferramentas/fotos_navios.py` baixa a imagem principal do artigo de cada navio na
+  Wikipedia em inglês, **só com licença livre no Wikimedia Commons**, e grava WebP de 1200 e 600 px em `static/img/navios/`, com
+  autor, licença e origem em `static/data/fotos-navios.json` (fotos de 69 dos 70 navios, 7,2 MB; o Mariz e Barros D28 fica sem foto de propósito, porque as imagens livres achadas são de um navio homônimo). A ficha mostra a foto no topo, fundida ao
+  degradê (máscara em curva suave e véu nas cores do topo), com o crédito no canto; sem foto, a ficha fica como antes. As imagens
+  ficam no próprio site (`img-src 'self'` na CSP) e o crédito entra por `textContent`.
+
+  ```bash
+  python ferramentas/fotos_navios.py              # baixa só o que falta (respeita o limite da Wikimedia)
+  ```
+
+- **Bateria de testes:** 306 testes automatizados (os de `tests/test_v47.py` conferem fotos, licenças, CSP e o uso dos modelos
+  3D) e uma bateria no navegador com as cinco páginas em computador, tablet e celular, nos dois temas: 32 de 32 verificações aprovadas.
 
 ## Sugestões de navios (v4.3)
 
@@ -305,7 +334,7 @@ Em modo local (`python app.py`) a própria mensagem da página mostra o motivo e
 
 ```bash
 pip install -r requirements-dev.txt
-pytest tests                      # 226 testes: consulta, PDFs, sugestões, painel, CSRF, injeção de SQL, XSS, CSP, limite, privilégios do banco, segredos
+pytest tests                      # 306 testes: consulta, PDFs, sugestões, painel, CSRF, injeção de SQL, XSS, CSP, limite, privilégios do banco, segredos, fotos e 3D do topo
 bandit -r app.py consulta_api.py protecao.py sugestoes.py db build_static.py ferramentas
 pip-audit -r requirements-lock.txt
 ```
@@ -321,7 +350,7 @@ $env:PGHOST="127.0.0.1"; $env:PGPORT="55432"; $env:PGPASSWORD="<senha-aleatoria>
 $env:RN_ENV_FILE="$env:TEMP\rn-teste.env"   # segredos de teste fora do ~/.royalnavy
 python db/seed_teste.py                     # cria a tabela e 84 navios sintéticos (só roda em localhost)
 python db/aplicar.py                        # extensões, view v_navios, papel navios_leitura e verificação
-pytest tests                                # 226 passed
+pytest tests                                # 306 passed
 docker rm -f rn-pg-teste                    # descarta o banco
 ```
 
@@ -448,24 +477,26 @@ static/js/ships-3d.js   motor 3D (cenas sob demanda, loop único; cascos por se�
 static/js/ships-data.js dados dos navios
 static/js/theme-init.js aplica o tema salvo antes da primeira pintura
 static/js/theme.js      botão de tema, transição e desempenho adaptativo
-static/js/convoy-hero.js comboio em perspectiva do hero (modo claro, v4.1)
+static/js/convoy-hero.js comboio em perspectiva do hero (modo claro, v4.1; navios em 3D com os modelos do site, v4.7)
 static/js/calm-sea.js   mergulho, patrulha, recife de coral e medidor (modo claro, v4.1)
-static/js/war-hero.js   batalha naval do hero (modo escuro)
+static/js/war-hero.js   batalha naval do hero (modo escuro; navios reais em 3D, v4.7)
 static/js/deep-sea.js   mergulho, guerra submarina e naufrágios (modo escuro)
 static/js/consulta.js   página de consulta (busca, filtros, ficha; só textContent)
 static/js/astro.js      cálculos astronômicos: tempo sideral, precessão, planetas (NASA/JPL), Lua, projeção (v4.5)
 static/js/navegacao.js  céu do topo, bússola estelar, quadrante, cronômetro, carta celeste e orrery (v4.5)
 static/js/planetas-3d.js planetas em 3D com texturas geradas no navegador (v4.5)
+static/data/fotos-navios.json autor, licença e origem da foto de cada navio da Consulta (v4.7)
+static/img/navios/      fotos dos navios em WebP, 1200 e 600 px (Wikimedia Commons, licenças livres, v4.7)
 static/data/ceu.json    estrelas, 57 estrelas de navegação + Polar e linhas das 88 constelações (d3-celestial, BSD-3)
 consulta_api.py         API de consulta (validação, limite, consultas parametrizadas) e rotas dos PDFs
 pdf_navios.py           gera os PDFs da ficha e da busca (ReportLab, em memória)
 sugestoes.py            sugestões de navios: comparação com o acervo, arquivo JSON (GitHub ou local) e painel /admin
 protecao.py             CSRF, sessão segura e campo-isca dos formulários
-ferramentas/            gerar_hash_admin.py (hash da senha do painel) e documentacao/ (gerador do PDF, v4.5)
+ferramentas/            gerar_hash_admin.py (hash da senha do painel), fotos_navios.py (fotos da Consulta, v4.7) e documentacao/ (gerador do PDF, v4.5)
 config_env.py           onde ficam os segredos (fora do Git e do OneDrive)
 db/                     SQL da busca e do papel de leitura, aplicar.py, seed_teste.py (dados sintéticos de teste) e README do banco
 deploy/                 publicação online (v4.0): render.yaml, raiz TLS, dependências extras
-tests/                  226 testes de funcionamento e segurança
+tests/                  306 testes de funcionamento e segurança
 ```
 
 ## Notas de desempenho
@@ -478,4 +509,5 @@ tests/                  226 testes de funcionamento e segurança
 - Tema claro (v4.1): sprites, fundos, níveis de névoa e cáusticas são pré-renderizados; o mergulho usa um canvas fixo em meia resolução; as faixas de patrulha e de recife ligam e desligam por visibilidade; nos navios do comboio, o nível de detalhe cai com a distância.
 - Página Navegação pelas Estrelas (v4.5.1): o Three.js só é baixado quando os planetas chegam perto da tela; cada canvas anima só quando visível.
 - Navios 3D (v4.6): geometrias dos cascos em cache por tipo; portinholas, canhões e células de mísseis em `InstancedMesh`; o cordame do Victory é um único `LineSegments`; os radares giram no mesmo loop.
+- Topo da página inicial (v4.7): cada navio 3D é uma malha só (até ~8 mil triângulos); 12 variantes montadas em momentos ociosos; na batalha, os navios são sprites renderizados uma vez por redimensionamento.
 - Respeita `prefers-reduced-motion`.
