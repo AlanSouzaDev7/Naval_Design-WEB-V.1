@@ -789,6 +789,7 @@
       if (REDUCED) { if (isLight()) staticDraw(); return; }
       if (want && !raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
       else if (!want && raf) { cancelAnimationFrame(raf); raf = 0; }
+      if (window.scrollY <= 2) Gauge.update(0, false);    // voltou de uma vez ao topo: o medidor some junto com o loop
     }
 
     function remeasure() {

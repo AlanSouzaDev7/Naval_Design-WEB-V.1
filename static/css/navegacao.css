@@ -51,7 +51,7 @@
   background:
     repeating-linear-gradient(0deg, var(--grade) 0 1px, transparent 1px 64px),
     repeating-linear-gradient(90deg, var(--grade) 0 1px, transparent 1px 64px),
-    linear-gradient(180deg, var(--papel) 0%, var(--papel-2) 100%);
+    linear-gradient(180deg in oklab, var(--papel) 0%, var(--papel-2) 100%);
 }
 .page-navegacao main > section { position: relative; padding: 6rem 1.5rem; }
 .page-navegacao .section-title { color: var(--texto); }
@@ -88,15 +88,15 @@
   min-height: 100vh;
   min-height: 100svh;
   display: flex; flex-direction: column; justify-content: center;
-  padding: 120px 1.5rem 2rem;
+  padding: 120px 1.5rem 4.6rem;            /* v4.6: espaço para a borda em onda que leva ao papel de carta */
   overflow: hidden;
   color: #fff;
-  background: linear-gradient(180deg, var(--ceu-topo) 0%, var(--ceu-meio) 62%, var(--ceu-horizonte) 100%);
+  background: linear-gradient(180deg in oklab, var(--ceu-topo) 0%, var(--ceu-meio) 62%, var(--ceu-horizonte) 100%);
 }
 .nav-hero__ceu { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .nav-hero__veu {
   position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(90deg, rgba(4, 8, 20, 0.62) 0%, rgba(4, 8, 20, 0.18) 55%, transparent 80%);
+  background: linear-gradient(90deg in oklab, rgba(4, 8, 20, 0.62) 0%, rgba(4, 8, 20, 0.18) 55%, transparent 80%);
 }
 .nav-hero__conteudo { position: relative; max-width: 640px; margin-left: max(0px, calc((100vw - 1200px) / 2)); }
 .nav-hero .section-tag { color: var(--latao-claro); border-color: rgba(226, 189, 106, 0.55); background: rgba(255, 255, 255, 0.08); }
@@ -128,7 +128,7 @@
 .eras__lista { list-style: none; padding: 0; margin: 3rem auto 0; max-width: 980px; position: relative; }
 .eras__lista::before {
   content: ''; position: absolute; left: 31px; top: 0; bottom: 0; width: 2px;
-  background: linear-gradient(180deg, transparent, var(--latao) 6%, var(--latao) 94%, transparent);
+  background: linear-gradient(180deg in oklab, transparent, var(--latao) 6%, var(--latao) 94%, transparent);
 }
 .era { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 1.6rem; margin-bottom: 3.2rem; }   /* minmax(0,..): o cartão da era não alarga a página em telas estreitas */
 .era__marca { position: relative; }
@@ -179,8 +179,8 @@
 
 /* Controles com cara de latão */
 .page-navegacao input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 26px; background: transparent; cursor: pointer; }
-.page-navegacao input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--latao-escuro), var(--latao-claro)); }
-.page-navegacao input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--latao-escuro), var(--latao-claro)); }
+.page-navegacao input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg in oklab, var(--latao-escuro), var(--latao-claro)); }
+.page-navegacao input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg in oklab, var(--latao-escuro), var(--latao-claro)); }
 .page-navegacao input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; margin-top: -8px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3c8, var(--latao) 70%); border: 2px solid var(--latao-escuro); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); }
 .page-navegacao input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3c8, var(--latao) 70%); border: 2px solid var(--latao-escuro); }
 .page-navegacao input[type="range"]:focus-visible { outline: 2px solid var(--latao); outline-offset: 2px; }
@@ -309,3 +309,35 @@
 @media (prefers-reduced-motion: reduce) {
   .errantes__abas button { transition: none; }
 }
+
+/* v4.6: o rodapé em onda/areia das outras páginas internas não vale aqui (a página tem o próprio papel de carta) */
+:root .page-navegacao .footer.contato-footer { padding-top: 0; background: var(--papel-2); -webkit-mask: none; mask: none; }
+:root .page-navegacao .contato-footer .footer-bottom { color: var(--texto-suave); }
+
+/* v4.6: o céu termina numa onda (a mesma das outras páginas) e o papel de carta aparece por baixo */
+.nav-hero {
+  -webkit-mask: linear-gradient(#000 0 0) top / 100% calc(100% - 44px) no-repeat, var(--wave-mask-topo) bottom / 100% 46px no-repeat;
+          mask: linear-gradient(#000 0 0) top / 100% calc(100% - 44px) no-repeat, var(--wave-mask-topo) bottom / 100% 46px no-repeat;
+}
+.page-navegacao main { margin-top: -46px; padding-top: 46px; }   /* o papel continua por baixo da onda, sem faixa da cor do corpo */
+
+/* v4.6: os blocos sobem ao entrar na tela, como as seções da página inicial.
+   Animação ligada à rolagem (CSS puro); sem suporte ou com movimento reduzido, tudo já aparece no lugar. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .page-navegacao main .section-header,
+    .era__corpo,
+    .carta__painel,
+    .errantes__painel,
+    .planetario__painel,
+    .hoje__cartao,
+    .fontes {
+      animation: navSobe linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+    .era__marca span { animation: navMarca linear both; animation-timeline: view(); animation-range: entry 10% entry 50%; }
+  }
+}
+@keyframes navSobe  { from { opacity: 0; transform: translate3d(0, 28px, 0); } to { opacity: 1; transform: none; } }
+@keyframes navMarca { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: none; } }

@@ -48,7 +48,7 @@
 
 /* Linha do tempo: um fio de luz descendo */
 [data-theme="light"] .timeline::before {
-  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.95) 10%, var(--sun-300) 50%, rgba(255, 255, 255, 0.95) 90%, transparent);
+  background: linear-gradient(180deg in oklab, transparent, rgba(255, 255, 255, 0.95) 10%, var(--sun-300) 50%, rgba(255, 255, 255, 0.95) 90%, transparent);
 }
 
 /* ── Batalhas: cartões claros sobre a água (sem o bloco azul) ── */
@@ -74,9 +74,9 @@
   border-color: rgba(229, 138, 11, 0.5);
   box-shadow: var(--shadow-hover);
 }
-[data-theme="light"] .battle-card::before { background: linear-gradient(90deg, transparent, var(--sea-400), transparent); }
+[data-theme="light"] .battle-card::before { background: linear-gradient(90deg in oklab, transparent, var(--sea-400), transparent); }
 [data-theme="light"] .battle-card.featured {
-  background: linear-gradient(135deg, #fff4cc 0%, rgba(255, 255, 255, 0.94) 62%);
+  background: linear-gradient(135deg in oklab, #fff4cc 0%, rgba(255, 255, 255, 0.94) 62%);
   border-color: rgba(229, 138, 11, 0.45);
 }
 [data-theme="light"] .battle-year { color: var(--sun-700); text-shadow: none; }
@@ -124,9 +124,19 @@
 
 /* Jardins de coral: a areia encosta no rodapé */
 [data-theme="light"] .reef { height: clamp(520px, 92vh, 860px); }
+/* v4.6: a areia desenhada se dissolve na areia do rodapé (sem linha na emenda) */
+[data-theme="light"] .reef::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 110px;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(180deg in oklab, rgba(220, 194, 140, 0) 0%, #dcc28c 100%);
+}
 
 /* ── Rodapé: o leito de areia ─────────────────────────────── */
-[data-theme="light"] .footer { background: linear-gradient(180deg, var(--l-sand) 0%, #d0b27a 100%); }
+[data-theme="light"] .footer { background: linear-gradient(180deg in oklab, var(--l-sand) 0%, #d0b27a 100%); }
 [data-theme="light"] .footer-title { color: var(--navy-900); }
 [data-theme="light"] .footer-tagline,
 [data-theme="light"] .footer-col h5 { color: #8a4300; }
@@ -171,7 +181,7 @@
   height: 3px;
   margin-top: 7px;
   border-radius: 3px;
-  background: linear-gradient(90deg, #9fe3f2, #2ea0cd 60%, #e2c486);
+  background: linear-gradient(90deg in oklab, #9fe3f2, #2ea0cd 60%, #e2c486);
 }
 .calm-gauge__marker {
   position: absolute;

@@ -50,7 +50,7 @@ body.pagina-abrir {
 .abrir__barra { position: relative; height: 6px; border-radius: 999px; overflow: hidden; background: rgba(226, 189, 106, 0.16); border: 1px solid rgba(226, 189, 106, 0.3); }
 .abrir__barra-fill {
   position: absolute; inset: 0; transform-origin: left center; transform: scaleX(0);
-  background: linear-gradient(90deg, var(--latao), var(--latao-claro), #fff1c4);
+  background: linear-gradient(90deg in oklab, var(--latao), var(--latao-claro), #fff1c4);
   transition: transform 0.4s ease;
 }
 .abrir__tempo { margin: 0.5rem 0 1.2rem; font: 600 0.85rem 'Rajdhani', sans-serif; letter-spacing: 0.1em; color: var(--texto-suave); }

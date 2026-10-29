@@ -47,7 +47,7 @@
   --white: #ffffff;
 
   /* Aparência dos quadros 3D enquanto o WebGL ainda não desenhou */
-  --scene-bg: linear-gradient(180deg, #3d9fe4 0%, #86cdf3 26%, #cdeefb 38%, #1fb0c8 42%, #0e8aa8 100%);
+  --scene-bg: linear-gradient(180deg in oklab, #3d9fe4 0%, #86cdf3 26%, #cdeefb 38%, #1fb0c8 42%, #0e8aa8 100%);
 
   --text-primary:   var(--navy-900);
   --text-secondary: #3b5673;
@@ -56,9 +56,9 @@
   --on-dark-secondary: rgba(255, 255, 255, 0.86);
   --on-dark-muted:     rgba(255, 255, 255, 0.64);
 
-  --grad-sun:   linear-gradient(135deg, #fff1a8 0%, #ffd23f 45%, #ffab1f 100%);
-  --grad-sea:   linear-gradient(135deg, var(--sea-400) 0%, var(--sky-500) 100%);
-  --grad-card:  linear-gradient(160deg, #ffffff 0%, var(--sky-50) 100%);
+  --grad-sun:   linear-gradient(135deg in oklab, #fff1a8 0%, #ffd23f 45%, #ffab1f 100%);
+  --grad-sea:   linear-gradient(135deg in oklab, var(--sea-400) 0%, var(--sky-500) 100%);
+  --grad-card:  linear-gradient(160deg in oklab, #ffffff 0%, var(--sky-50) 100%);
 
   --border-soft: 1px solid rgba(26, 125, 187, 0.16);
   --border-sun:  1px solid rgba(229, 138, 11, 0.42);
@@ -73,10 +73,16 @@
   --shadow-xl:    0 30px 80px -20px rgba(10, 42, 74, 0.55);
   --glow-sun:     0 8px 28px -6px rgba(255, 171, 31, 0.65);
 
-  --ease:     cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  /* movimento: ease para cor/hover; ease-out forte para entradas; ease-in-out para o que se move na tela */
+  --ease:        ease;
+  --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-press: 140ms;
+  --dur-ui:    220ms;
 
   /* Onda usada como divisor entre seções (colorida via background) */
+  /* A mesma onda, ao contrário: cheia em cima e com a borda de baixo ondulada (máscara do cabeçalho) */
+  --wave-mask-topo: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 60' preserveAspectRatio='none'%3E%3Cpath d='M0 0H1200V28C1050 58 860 56 600 28S150 58 0 28Z'/%3E%3C/svg%3E");
   --wave-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 60' preserveAspectRatio='none'%3E%3Cpath d='M0 28C150 58 340 0 600 28S1050 58 1200 28V60H0Z'/%3E%3C/svg%3E");
 }
 
@@ -121,7 +127,7 @@ button { font: inherit; }
 ::-webkit-scrollbar       { width: 10px; }
 ::-webkit-scrollbar-track { background: var(--sky-100); }
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, var(--sea-400), var(--sky-500));
+  background: linear-gradient(180deg in oklab, var(--sea-400), var(--sky-500));
   border-radius: 6px;
   border: 2px solid var(--sky-100);
 }
@@ -189,9 +195,9 @@ button { font: inherit; }
   text-transform: uppercase;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease),
-              background-color 0.25s var(--ease), color 0.25s var(--ease),
-              border-color 0.25s var(--ease);
+  transition: transform var(--dur-press) var(--ease-out), box-shadow var(--dur-ui) var(--ease),
+              background-color var(--dur-ui) var(--ease), color var(--dur-ui) var(--ease),
+              border-color var(--dur-ui) var(--ease);
 }
 
 .btn-primary {
@@ -202,7 +208,11 @@ button { font: inherit; }
 }
 
 .btn-primary:hover  { transform: translateY(-2px); box-shadow: 0 14px 32px -8px rgba(255, 171, 31, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.6); }
-.btn-primary:active { transform: translateY(0); }
+.btn-primary:active,
+.btn-outline:active,
+.btn:active,
+.filter-btn:active,
+.btn-view-ship:active { transform: scale(0.97); transition-duration: var(--dur-press); }
 
 .btn-outline {
   color: var(--white);
@@ -230,8 +240,8 @@ button { font: inherit; }
   border-radius: var(--radius-sm);
   cursor: pointer;
   margin-top: 1rem;
-  transition: transform 0.25s var(--ease), background-color 0.25s var(--ease),
-              color 0.25s var(--ease), border-color 0.25s var(--ease);
+  transition: transform var(--dur-press) var(--ease-out), background-color var(--dur-ui) var(--ease),
+              color var(--dur-ui) var(--ease), border-color var(--dur-ui) var(--ease);
 }
 
 .btn-view-ship:hover {
@@ -370,7 +380,7 @@ button { font: inherit; }
   /* reserva espaço para a navbar (topo) e a barra de estatísticas (base):
      em telas baixas o conteúdo empurra a altura em vez de ficar escondido */
   padding: 5.5rem 0 7rem;
-  background: linear-gradient(180deg, #1b7cc6 0%, #4aaee8 46%, #14a4c4 52%, #0a6f9d 100%);
+  background: linear-gradient(180deg in oklab, #1b7cc6 0%, #4aaee8 46%, #14a4c4 52%, #0a6f9d 100%);
 }
 
 #ocean-canvas {
@@ -389,7 +399,7 @@ button { font: inherit; }
   pointer-events: none;
   background:
     radial-gradient(ellipse 60% 48% at 50% 46%, rgba(8, 52, 96, 0.42) 0%, transparent 72%),
-    linear-gradient(180deg, rgba(8, 52, 96, 0.25) 0%, transparent 22%);
+    linear-gradient(180deg in oklab, rgba(8, 52, 96, 0.25) 0%, transparent 22%);
 }
 
 /* Raios de sol estáticos (uma única pintura, sem animação) */
@@ -413,7 +423,7 @@ button { font: inherit; }
 }
 
 @keyframes heroFadeIn {
-  from { opacity: 0; transform: translate3d(0, 34px, 0); }
+  from { opacity: 0; transform: translate3d(0, 24px, 0); }
   to   { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
@@ -430,17 +440,17 @@ button { font: inherit; }
   color: var(--sun-200);
   text-shadow: 0 1px 10px rgba(8, 52, 96, 0.55);
   margin-bottom: 1.5rem;
-  animation: heroFadeIn 1.2s var(--ease-out) 0.2s both;
+  animation: heroFadeIn 0.9s var(--ease-out) 0.1s both;
 }
 
 .hero-subtitle-top .line {
   flex: 1;
   max-width: 80px;
   height: 2px;
-  background: linear-gradient(90deg, transparent, var(--sun-300));
+  background: linear-gradient(90deg in oklab, transparent, var(--sun-300));
 }
 
-.hero-subtitle-top .line:last-child { background: linear-gradient(90deg, var(--sun-300), transparent); }
+.hero-subtitle-top .line:last-child { background: linear-gradient(90deg in oklab, var(--sun-300), transparent); }
 
 .hero-title {
   font-family: 'Cinzel', serif;
@@ -455,7 +465,7 @@ button { font: inherit; }
 .title-line-1 {
   color: var(--white);
   text-shadow: 0 4px 30px rgba(8, 52, 96, 0.45);
-  animation: heroFadeIn 1s var(--ease-out) 0.4s both;
+  animation: heroFadeIn 0.9s var(--ease-out) 0.18s both;
 }
 
 .title-line-2 {
@@ -464,7 +474,7 @@ button { font: inherit; }
   -webkit-text-fill-color: transparent;
   background-clip: text;
   filter: drop-shadow(0 4px 16px rgba(8, 52, 96, 0.4));
-  animation: heroFadeIn 1s var(--ease-out) 0.6s both;
+  animation: heroFadeIn 0.9s var(--ease-out) 0.26s both;
 }
 
 .hero-desc {
@@ -474,7 +484,7 @@ button { font: inherit; }
   text-shadow: 0 1px 14px rgba(8, 52, 96, 0.6);
   margin-bottom: 2.5rem;
   line-height: 1.7;
-  animation: heroFadeIn 1s var(--ease-out) 0.8s both;
+  animation: heroFadeIn 0.9s var(--ease-out) 0.36s both;
 }
 
 .hero-cta {
@@ -482,7 +492,7 @@ button { font: inherit; }
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
-  animation: heroFadeIn 1s var(--ease-out) 1s both;
+  animation: heroFadeIn 0.9s var(--ease-out) 0.44s both;
 }
 
 /* Hero Stats Bar */
@@ -497,7 +507,7 @@ button { font: inherit; }
   background: rgba(255, 255, 255, 0.94);
   border-top: 1px solid rgba(255, 255, 255, 0.9);
   box-shadow: 0 -12px 40px -16px rgba(8, 52, 96, 0.4);
-  animation: heroFadeIn 1s var(--ease-out) 1.2s both;
+  animation: heroFadeIn 0.9s var(--ease-out) 0.56s both;
 }
 
 .stat-item {
@@ -529,7 +539,7 @@ button { font: inherit; }
 .stat-divider {
   width: 1px;
   height: 40px;
-  background: linear-gradient(180deg, transparent, rgba(26, 125, 187, 0.35), transparent);
+  background: linear-gradient(180deg in oklab, transparent, rgba(26, 125, 187, 0.35), transparent);
   flex-shrink: 0;
 }
 
@@ -587,7 +597,7 @@ button { font: inherit; }
    ═══════════════════════════════════════════════════════════════ */
 .history-section {
   padding: 8rem 2rem;
-  background: linear-gradient(180deg, var(--sky-50) 0%, var(--sand-50) 100%);
+  background: linear-gradient(180deg in oklab, var(--sky-50) 0%, var(--sand-50) 100%);
   position: relative;
   overflow: hidden;
 }
@@ -606,7 +616,7 @@ button { font: inherit; }
   transform: translateX(-50%);
   width: 3px;
   border-radius: 3px;
-  background: linear-gradient(180deg, transparent, var(--sky-300) 10%, var(--sea-400) 50%, var(--sky-300) 90%, transparent);
+  background: linear-gradient(180deg in oklab, transparent, var(--sky-300) 10%, var(--sea-400) 50%, var(--sky-300) 90%, transparent);
 }
 
 .timeline-item {
@@ -655,7 +665,7 @@ button { font: inherit; }
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--sea-400), var(--sun-400));
+  background: linear-gradient(90deg in oklab, var(--sea-400), var(--sun-400));
   opacity: 0;
   transition: opacity 0.3s var(--ease);
 }
@@ -697,7 +707,7 @@ button { font: inherit; }
    ═══════════════════════════════════════════════════════════════ */
 .ships-section {
   padding: 8rem 2rem;
-  background: linear-gradient(180deg, var(--sand-50) 0%, var(--sky-100) 100%);
+  background: linear-gradient(180deg in oklab, var(--sand-50) 0%, var(--sky-100) 100%);
   position: relative;
 }
 
@@ -721,8 +731,8 @@ button { font: inherit; }
   border: 1px solid var(--sky-300);
   border-radius: 100px;
   cursor: pointer;
-  transition: color 0.25s var(--ease), background-color 0.25s var(--ease),
-              border-color 0.25s var(--ease), box-shadow 0.25s var(--ease), transform 0.25s var(--ease);
+  transition: color var(--dur-ui) var(--ease), background-color var(--dur-ui) var(--ease),
+              border-color var(--dur-ui) var(--ease), box-shadow var(--dur-ui) var(--ease), transform var(--dur-press) var(--ease-out);
 }
 
 .filter-btn:hover {
@@ -753,22 +763,23 @@ button { font: inherit; }
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-card);
-  transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out),
-              border-color 0.3s var(--ease), opacity 0.35s var(--ease);
+  transition: transform 260ms var(--ease-out), box-shadow 260ms var(--ease-out),
+              border-color var(--dur-ui) var(--ease), opacity 260ms var(--ease);
   position: relative;
 }
 
 .ship-card:hover {
-  transform: translateY(-8px);
+  transform: translateY(-5px);
   border-color: rgba(42, 155, 220, 0.45);
   box-shadow: var(--shadow-hover);
 }
 
 .ship-card.is-dimmed {
   opacity: 0.28;
-  transform: scale(0.965);
+  transform: scale(0.97);
   pointer-events: none;
 }
+.ship-card:active:not(.is-dimmed) { transform: translateY(-3px) scale(0.99); transition-duration: var(--dur-press); }
 
 .ship-3d-wrapper {
   position: relative;
@@ -782,7 +793,7 @@ button { font: inherit; }
   position: absolute;
   bottom: 0; left: 0; right: 0;
   height: 28px;
-  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.9));
+  background: linear-gradient(180deg in oklab, transparent, rgba(255, 255, 255, 0.9));
   pointer-events: none;
 }
 
@@ -858,7 +869,7 @@ button { font: inherit; }
   padding: 10rem 2rem;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(165deg, #0e4d86 0%, #0a6aa0 45%, #0a8a9c 100%);
+  background: linear-gradient(165deg in oklab, #0e4d86 0%, #0a6aa0 45%, #0a8a9c 100%);
 }
 
 .battles-bg {
@@ -912,7 +923,7 @@ button { font: inherit; }
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 3px;
-  background: linear-gradient(90deg, transparent, var(--sky-300), transparent);
+  background: linear-gradient(90deg in oklab, transparent, var(--sky-300), transparent);
   transition: opacity 0.3s var(--ease);
 }
 
@@ -921,7 +932,7 @@ button { font: inherit; }
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 3px;
-  background: linear-gradient(90deg, transparent, var(--sun-300), transparent);
+  background: linear-gradient(90deg in oklab, transparent, var(--sun-300), transparent);
   opacity: 0;
   transition: opacity 0.3s var(--ease);
 }
@@ -942,7 +953,7 @@ button { font: inherit; }
   grid-template-rows: auto auto auto auto;
   gap: 0.15rem 2.5rem;
   align-items: start;
-  background: linear-gradient(135deg, rgba(255, 219, 92, 0.2) 0%, rgba(255, 255, 255, 0.09) 100%);
+  background: linear-gradient(135deg in oklab, rgba(255, 219, 92, 0.2) 0%, rgba(255, 255, 255, 0.09) 100%);
   border-color: rgba(255, 219, 92, 0.5);
 }
 
@@ -1011,7 +1022,7 @@ button { font: inherit; }
    ═══════════════════════════════════════════════════════════════ */
 .fleet-section {
   padding: 8rem 2rem;
-  background: linear-gradient(180deg, var(--sky-50) 0%, var(--white) 100%);
+  background: linear-gradient(180deg in oklab, var(--sky-50) 0%, var(--white) 100%);
 }
 
 .fleet-overview {
@@ -1111,7 +1122,7 @@ button { font: inherit; }
 .fleet-bar-fill {
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, var(--sea-400), var(--sky-500));
+  background: linear-gradient(90deg in oklab, var(--sea-400), var(--sky-500));
   border-radius: 3px;
   transform: scaleX(0);
   transform-origin: left center;
@@ -1146,7 +1157,7 @@ button { font: inherit; }
    ═══════════════════════════════════════════════════════════════ */
 .gallery-section {
   padding: 8rem 2rem;
-  background: linear-gradient(180deg, var(--white) 0%, var(--sky-200) 100%);
+  background: linear-gradient(180deg in oklab, var(--white) 0%, var(--sky-200) 100%);
 }
 
 .gallery-grid {
@@ -1186,7 +1197,7 @@ button { font: inherit; }
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--white);
-  background: linear-gradient(180deg, transparent, rgba(8, 52, 96, 0.72));
+  background: linear-gradient(180deg in oklab, transparent, rgba(8, 52, 96, 0.72));
   pointer-events: none;
 }
 
@@ -1297,14 +1308,14 @@ button { font: inherit; }
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.3s var(--ease), visibility 0s linear 0.3s;
+  transition: opacity 200ms var(--ease), visibility 0s linear 200ms;
 }
 
 .modal-overlay.open {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
-  transition: opacity 0.3s var(--ease), visibility 0s;
+  transition: opacity 260ms var(--ease), visibility 0s;
 }
 
 .modal-container {
@@ -1319,11 +1330,16 @@ button { font: inherit; }
   grid-template-rows: minmax(0, 1fr);   /* a linha respeita o max-height e o painel direito rola */
   position: relative;
   box-shadow: var(--shadow-xl);
-  transform: scale(0.97) translate3d(0, 16px, 0);
-  transition: transform 0.4s var(--ease-out);
+  transform: scale(0.96) translate3d(0, 12px, 0);
+  opacity: 0;
+  transition: transform 180ms var(--ease-out), opacity 160ms var(--ease);
 }
 
-.modal-overlay.open .modal-container { transform: none; }
+.modal-overlay.open .modal-container {
+  transform: none;
+  opacity: 1;
+  transition: transform 340ms var(--ease-out), opacity 220ms var(--ease);
+}
 
 .modal-close {
   position: absolute;
@@ -1483,9 +1499,9 @@ button { font: inherit; }
    transição, para não competir com os estilos de hover dos cards. */
 .reveal {
   opacity: 0;
-  transform: translate3d(0, 28px, 0);
+  transform: translate3d(0, 24px, 0);
   transition: opacity 0.7s var(--ease-out) var(--reveal-delay, 0s),
-              transform 0.7s var(--ease-out) var(--reveal-delay, 0s);
+              transform 0.8s var(--ease-out) var(--reveal-delay, 0s);
 }
 .reveal--left  { transform: translate3d(-32px, 0, 0); }
 .reveal--right { transform: translate3d(32px, 0, 0); }
@@ -1617,7 +1633,7 @@ button { font: inherit; }
   width: 64px;
   height: 32px;
   border-radius: 100px;
-  background: linear-gradient(135deg, #57b8ea 0%, #2a9bdc 100%);
+  background: linear-gradient(135deg in oklab, #57b8ea 0%, #2a9bdc 100%);
   border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow: 0 4px 14px -4px rgba(10, 42, 74, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.45);
   overflow: hidden;
@@ -1645,7 +1661,7 @@ button { font: inherit; }
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #fffbe0, #ffd85e);
+  background: linear-gradient(135deg in oklab, #fffbe0, #ffd85e);
   color: #c56a00;
   box-shadow: 0 2px 8px rgba(10, 42, 74, 0.45);
   transition: transform 0.6s var(--ease-out), background 0.6s var(--ease), color 0.6s var(--ease);
@@ -1663,14 +1679,14 @@ button { font: inherit; }
 
 .theme-toggle[aria-checked="true"] .theme-toggle__knob {
   transform: translateX(32px);
-  background: linear-gradient(135deg, #e9f1ff, #b9cdee);
+  background: linear-gradient(135deg in oklab, #e9f1ff, #b9cdee);
   color: #22406b;
 }
 .theme-toggle[aria-checked="true"] .theme-toggle__icon--sun  { opacity: 0; transform: rotate(60deg) scale(0.6); }
 .theme-toggle[aria-checked="true"] .theme-toggle__icon--moon { opacity: 1; transform: none; }
 
 .theme-toggle[aria-checked="true"] .theme-toggle__track {
-  background: linear-gradient(135deg, #0b1c33 0%, #050b14 100%);
+  background: linear-gradient(135deg in oklab, #0b1c33 0%, #050b14 100%);
   border-color: rgba(255, 138, 61, 0.7);
   box-shadow: 0 0 16px -2px rgba(255, 106, 31, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
@@ -1681,10 +1697,26 @@ button { font: inherit; }
 /* ═══════════════════════════════════════════════════════════════
    TRANSIÇÃO ENTRE TEMAS (View Transitions API + cortina de reserva)
    ═══════════════════════════════════════════════════════════════ */
-::view-transition-old(root),
-::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
-::view-transition-old(root) { z-index: 1; }
-::view-transition-new(root) { z-index: 2; }
+/* Troca de tema: o theme.js revela o novo tema num círculo; aqui só desligamos a animação padrão */
+:root.theme-switching::view-transition-old(root),
+:root.theme-switching::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+:root.theme-switching::view-transition-old(root) { z-index: 1; }
+:root.theme-switching::view-transition-new(root) { z-index: 2; }
+:root.theme-switching .navbar { view-transition-name: none; }
+
+/* Entre páginas (início ↔ estrelas ↔ consulta ↔ contato ↔ sugerir): a barra fica parada
+   e o conteúdo troca com um esmaecimento curto e uma subida pequena, em vez do "pisca" branco.
+   Navegador sem suporte: a navegação continua normal. */
+@view-transition { navigation: auto; }
+.navbar { view-transition-name: barra; }
+::view-transition-old(root) { animation: 160ms var(--ease) both vt-sai; }
+::view-transition-new(root) { animation: 380ms var(--ease-out) both vt-entra; }
+::view-transition-group(barra) { animation-duration: 260ms; animation-timing-function: var(--ease); }
+@keyframes vt-sai   { to   { opacity: 0; } }
+@keyframes vt-entra { from { opacity: 0; transform: translate3d(0, 14px, 0); } }
+@media (prefers-reduced-motion: reduce) {
+  @view-transition { navigation: none; }
+}
 
 .theme-veil {
   position: fixed;
@@ -1784,4 +1816,65 @@ button { font: inherit; }
   .brand-text { font-size: 0.88rem; letter-spacing: 0.06em; }
   .nav-inner { gap: 0.5rem; }
   .nav-menu { margin-left: 0.2rem; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOQUE (v4.6): em telas de toque o :hover "gruda" depois do toque;
+   lá os cards e botões não sobem nem deslizam (o retorno é o :active)
+   ═══════════════════════════════════════════════════════════════ */
+@media (hover: none), (pointer: coarse) {
+  .btn-primary:hover, .btn-outline:hover, .filter-btn:hover, .btn-view-ship:hover,
+  .ship-card:hover, .timeline-card:hover, .battle-card:hover, .fleet-cat:hover,
+  .gallery-item:hover, .footer-col a:hover { transform: none; }
+  .timeline-item:hover .timeline-dot { transform: translate(-50%, -50%); }
+  .modal-close:hover { transform: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PÁGINAS INTERNAS INTEGRADAS (v4.6) — consulta, contato e sugerir
+   O cabeçalho e o rodapé recortam a própria borda em onda (máscara),
+   em vez de pintar uma faixa da cor "de baixo": assim o fundo da página
+   pode ser um degradê contínuo — da água rasa ao leito de areia, como na
+   página inicial — sem emendas de cor.
+   ═══════════════════════════════════════════════════════════════ */
+body.page-consulta,
+body.page-contato {
+  min-height: 100vh;
+  background: linear-gradient(180deg in oklab, var(--sky-50) 0%, #e4f5fc 45%, #c9ecf8 100%);
+}
+:root[data-theme="dark"] body.page-consulta,
+:root[data-theme="dark"] body.page-contato {
+  background: linear-gradient(180deg in oklab, #04101c 0%, #061a2b 50%, #030b13 100%);
+}
+
+.consulta-hero,
+.contato-hero {
+  -webkit-mask: linear-gradient(#000 0 0) top / 100% calc(100% - 44px) no-repeat, var(--wave-mask-topo) bottom / 100% 46px no-repeat;
+          mask: linear-gradient(#000 0 0) top / 100% calc(100% - 44px) no-repeat, var(--wave-mask-topo) bottom / 100% 46px no-repeat;
+}
+.consulta-hero::after,
+.contato-hero::after { display: none; }
+
+/* Rodapé curto: leito de areia (claro) ou fundo do mar (escuro), com a onda recortada no topo */
+.footer.consulta-footer,
+.footer.contato-footer {
+  padding-top: 4.5rem;
+  -webkit-mask: var(--wave-mask) top / 100% 46px no-repeat, linear-gradient(#000 0 0) bottom / 100% calc(100% - 44px) no-repeat;
+          mask: var(--wave-mask) top / 100% 46px no-repeat, linear-gradient(#000 0 0) bottom / 100% calc(100% - 44px) no-repeat;
+}
+.footer.consulta-footer::before,
+.footer.contato-footer::before { display: none; }
+:root[data-theme="light"] .footer.consulta-footer,
+:root[data-theme="light"] .footer.contato-footer { background: linear-gradient(180deg in oklab, #dcc28c 0%, #d0b27a 100%); }
+:root[data-theme="light"] .consulta-footer .footer-bottom,
+:root[data-theme="light"] .contato-footer .footer-bottom { color: #4a5663; }
+
+/* Entrada do cabeçalho: as peças sobem em sequência curta, como no topo da página inicial */
+@media (prefers-reduced-motion: no-preference) {
+  .consulta-hero__inner > *,
+  .contato-hero__inner > * { animation: heroFadeIn 0.8s var(--ease-out) both; }
+  .consulta-hero__inner > :nth-child(2), .contato-hero__inner > :nth-child(2) { animation-delay: 60ms; }
+  .consulta-hero__inner > :nth-child(3), .contato-hero__inner > :nth-child(3) { animation-delay: 120ms; }
+  .consulta-hero__inner > :nth-child(4), .contato-hero__inner > :nth-child(4) { animation-delay: 180ms; }
+  .consulta-hero__inner > :nth-child(n+5) { animation-delay: 240ms; }
 }

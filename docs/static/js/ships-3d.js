@@ -202,429 +202,805 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════
-     SHIP BUILDERS — modelos 3D procedurais
+     SHIP BUILDERS — modelos 3D procedurais (v4.6: cascos reais)
+     Cada navio segue o perfil da classe real (pesquisa em fontes
+     públicas: Wikipedia, Navy Lookout, Navypedia, naval-technology).
+     Eixos: +x = proa, +y = cima, +z = estibordo. Linha d'água em WATER_Y.
      ═══════════════════════════════════════════════════════════════ */
 
-  /* ── PORTA-AVIÕES ───────────────────────────────────────────── */
-  let _carrierHull = null;
-  function carrierHullGeo() {
-    if (_carrierHull) return _carrierHull;
-    const shape = new THREE.Shape();
-    shape.moveTo(-3.5, 0);
-    shape.lineTo(-3.2, 0.5);
-    shape.lineTo(3.0, 0.5);
-    shape.lineTo(3.5, 0.2);
-    shape.lineTo(3.5, -0.5);
-    shape.lineTo(-3.5, -0.5);
-    shape.lineTo(-3.5, 0);
-    _carrierHull = new THREE.ExtrudeGeometry(shape, { depth: 1.4, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 2 });
-    _carrierHull.center();
-    return _carrierHull;
+  const WL = WATER_Y;
+  const HC = {                                   // cores de cada marinha/época
+    rnGrey:   0x8e98a2,  rnGreyDk: 0x6c757f,  nonSkid: 0x4a5159,
+    boot:     0x1b1e22,  antifoul: 0x7a2c24,  radome:  0xd3d8dd,
+    glass:    0x1f3447,  white:    0xe8ebee,  black:   0x15181c,
+    yellow:   0xe2c044,  rhib:     0xd8642a,  jet:     0x6b737d,
+    edGrey:   0x737a83,  teak:     0xb59c74,  boat:    0xdedad0,
+    subBlack: 0x23282e,
+    vicBlack: 0x1d1a17,  ochre:    0xc89a45,  copper:  0xa8673d,  vicRed: 0x8f2a1e,
+    mast:     0x8a6a3e,  sailC:    0xeee5cc,  rigging: 0x2b2118,
+  };
+
+  /** Peça simples: cria a malha, posiciona e adiciona ao grupo. */
+  function add(group, geo, material, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) {
+    const m = new THREE.Mesh(geo, material);
+    m.position.set(x, y, z);
+    m.rotation.set(rx, ry, rz);
+    group.add(m);
+    return m;
   }
 
+  /** Caixa com o topo afinado/deslocado: superestruturas de faces inclinadas (furtivas). */
+  function taperBox(w, h, d, tx = 1, tz = 1, sx = 0) {
+    return cached(_geoCache, `tb${w},${h},${d},${tx},${tz},${sx}`, () => {
+      const g = new THREE.BoxGeometry(w, h, d);
+      const p = g.attributes.position;
+      for (let i = 0; i < p.count; i++) {
+        if (p.getY(i) > 0) { p.setX(i, p.getX(i) * tx + sx); p.setZ(i, p.getZ(i) * tz); }
+      }
+      g.computeVertexNormals();
+      return g;
+    });
+  }
+
+  /** Perfil de meia-boca: popa larga (espelho), meio-navio cheio, proa afinando. */
+  function halfFn(B, sternHalf, bowStart, bowPow, sternLen = 0.12) {
+    return t => {
+      if (t >= bowStart) return (B / 2) * Math.max(0, 1 - Math.pow((t - bowStart) / (1 - bowStart), bowPow));
+      if (t < sternLen) return (B / 2) * (sternHalf + (1 - sternHalf) * Math.pow(t / sternLen, 0.6));
+      return B / 2;
+    };
+  }
+  const smooth = (a, b, t) => { const k = Math.min(1, Math.max(0, (t - a) / (b - a))); return k * k * (3 - 2 * k); };
+
+  const _hullMats = {};
+  function hullMat(r = 0.62, m = 0.18) {
+    const k = r + '|' + m;
+    return _hullMats[k] || (_hullMats[k] = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: r, metalness: m, side: THREE.DoubleSide }));
+  }
+
+  /**
+   * Casco "lofted": seções transversais ao longo do comprimento, ligadas em malha.
+   * o.half(t) meia-boca na linha d'água · o.deck(t) altura do convés · o.flare(t) abertura do costado
+   * o.keel(t) fração do calado na quilha · o.rake inclinação da roda de proa · o.color(y, t) cor por altura.
+   * Devolve { geo, halfAt(t, y), deckAt(t), L }.
+   */
+  function loftHull(key, o) {
+    return cached(_geoCache, 'hull:' + key, () => {
+      const N = o.sections || 64, L = o.L, T = o.T;
+      const fl = typeof o.flare === 'function' ? o.flare : () => (o.flare || 1);
+      const keelF = o.keel || (() => 1);
+      const rake = o.rake || 0, bowStart = o.rakeStart ?? 0.8;
+      const tumble = o.tumble || 0;
+      const col = new THREE.Color();
+      const pos = [], clr = [], idx = [];
+      const R = 13;                                   // pontos por seção
+
+      function profile(t) {
+        const hb = o.half(t), yd = o.deck(t), f = fl(t), kl = -T * keelF(t);
+        const side = [
+          [hb * f, yd],
+          [hb * ((1 + f) / 2 + tumble), yd * 0.5],
+          [hb, 0],
+          [hb * 0.95, kl * 0.45],
+          [hb * 0.66, kl * 0.86],
+          [hb * 0.18, kl * 0.99],
+        ];
+        const ring = side.map(([z, y]) => [z, y]);
+        ring.push([0, kl]);
+        for (let j = side.length - 1; j >= 0; j--) ring.push([-side[j][0], side[j][1]]);
+        return ring;
+      }
+      const xAt = (t, y) => -L / 2 + t * L + rake * y * smooth(bowStart, 1, t);
+
+      for (let i = 0; i < N; i++) {
+        const t = i / (N - 1);
+        profile(t).forEach(([z, y]) => {
+          pos.push(xAt(t, y), y, z);
+          col.setHex(o.color(y, t)); clr.push(col.r, col.g, col.b);
+        });
+      }
+      for (let i = 0; i < N - 1; i++) {
+        for (let j = 0; j < R - 1; j++) {
+          const a = i * R + j, b = a + 1, c = a + R, d = c + 1;
+          idx.push(a, c, b, b, c, d);
+        }
+      }
+      // convés: vértices próprios (aresta viva com o costado)
+      const base = pos.length / 3;
+      col.setHex(o.deckColor);
+      for (let i = 0; i < N; i++) {
+        const t = i / (N - 1), r = profile(t), yd = r[0][1];
+        pos.push(xAt(t, yd), yd, r[0][0], xAt(t, yd), yd, -r[0][0]);
+        clr.push(col.r, col.g, col.b, col.r, col.g, col.b);
+      }
+      for (let i = 0; i < N - 1; i++) {
+        const a = base + i * 2;
+        idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
+      }
+      // espelho de popa
+      const tb = pos.length / 3, r0 = profile(0);
+      const yMid = r0.reduce((s, p) => s + p[1], 0) / r0.length;
+      pos.push(xAt(0, yMid), yMid, 0);
+      col.setHex(o.color(yMid, 0)); clr.push(col.r, col.g, col.b);
+      r0.forEach(([z, y]) => { pos.push(xAt(0, y), y, z); col.setHex(o.color(y, 0)); clr.push(col.r, col.g, col.b); });
+      for (let j = 0; j < R; j++) idx.push(tb, tb + 1 + j, tb + 1 + ((j + 1) % R));
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(clr, 3));
+      geo.setIndex(idx);
+      geo.computeVertexNormals();
+      return {
+        geo, L,
+        deckAt: t => o.deck(t),
+        halfAt: (t, y) => {                           // meia-boca do costado na altura y (acima d'água)
+          const hb = o.half(t), yd = o.deck(t), f = fl(t);
+          const k = Math.max(0, Math.min(1, y / yd));
+          const mid = hb * ((1 + f) / 2 + tumble);
+          return k < 0.5 ? hb + (mid - hb) * (k / 0.5) : mid + (hb * f - mid) * ((k - 0.5) / 0.5);
+        },
+        xAt,
+      };
+    });
+  }
+
+  /** Faixa pintada sobre o costado (tira nítida que segue a curva do casco), nos dois bordos. */
+  function hullBand(group, hull, y0, y1, color, t0 = 0.03, t1 = 0.97, eps = 0.004) {
+    const n = 40, pos = [], idx = [];
+    [1, -1].forEach(sd => {
+      const base = pos.length / 3;
+      for (let i = 0; i <= n; i++) {
+        const t = t0 + (t1 - t0) * (i / n);
+        for (const y of [y0, y1]) pos.push(hull.xAt(t, y), WL + y, sd * (hull.halfAt(t, y) + eps));
+      }
+      for (let i = 0; i < n; i++) { const a = base + i * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+    });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return add(group, g, mat(color, { r: 0.75, m: 0.05, extra: { side: THREE.DoubleSide } }));
+  }
+
+  /** Cor de navio moderno: obras vivas vermelhas, faixa preta na linha d'água, costado cinza. */
+  const modernColor = (grey = HC.rnGrey) => y => (y < -0.035 ? HC.antifoul : y < 0.03 ? HC.boot : grey);
+
+  /** Número de casco (D32, F237) em textura de canvas, pintado nos dois bordos. */
+  function textTexture(txt, color = '#f3f5f7') {
+    return cached(_matCache, 'tx:' + txt + color, () => {
+      const c = document.createElement('canvas');
+      c.width = 256; c.height = 128;
+      const g = c.getContext('2d');
+      g.fillStyle = color;
+      g.font = 'bold 96px Arial, sans-serif';
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(txt, 128, 70);
+      const tex = new THREE.CanvasTexture(c);
+      return new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.8, metalness: 0, depthWrite: false });
+    });
+  }
+  function pennant(group, hull, txt, t, y, h = 0.13) {
+    const z = hull.halfAt(t, y) + 0.014, x = -hull.L / 2 + t * hull.L;
+    const dt = 0.01, slope = (hull.halfAt(t - dt, y) - hull.halfAt(t + dt, y)) / (2 * dt * hull.L);
+    const ry = Math.atan(slope);                      // o plano encosta no costado que afina para a proa
+    const m = textTexture(txt);
+    add(group, G.plane(h * 2, h), m, x, WL + y, z, 0, ry, 0);
+    add(group, G.plane(h * 2, h), m, x, WL + y, -z, 0, Math.PI - ry, 0);
+  }
+
+  /** Radar que gira: o laço de animação gira tudo o que estiver em ship.userData.spin. */
+  function spinner(group, obj, vel) {
+    obj.userData.vel = vel;
+    (group.userData.spin || (group.userData.spin = [])).push(obj);
+    return obj;
+  }
+
+  /** Canhão Mk 8 de 4,5" com escudo furtivo (Type 45 e Type 23). */
+  function mk8Gun(group, x, y, s = 1) {
+    const g = new THREE.Group();
+    add(g, G.cyl(0.12 * s, 0.14 * s, 0.05, 12), mat(HC.rnGreyDk, { r: 0.5 }), 0, 0.025, 0);
+    add(g, taperBox(0.34 * s, 0.13 * s, 0.25 * s, 0.62, 0.72, -0.03 * s), mat(HC.rnGrey, { r: 0.5, m: 0.3 }), -0.02 * s, 0.11 * s, 0);
+    add(g, G.cyl(0.014 * s, 0.02 * s, 0.5 * s, 8), mat(0x3a4048, { r: 0.4, m: 0.5 }), 0.37 * s, 0.11 * s, 0, 0, 0, -(Math.PI / 2 - 0.06));
+    g.position.set(x, y, 0);
+    group.add(g);
+  }
+
+  /** Phalanx CIWS: base, cúpula branca do radar e o canhão rotativo. */
+  function phalanx(group, x, y, z, ry = 0) {
+    const g = new THREE.Group();
+    add(g, G.cyl(0.045, 0.05, 0.06, 10), mat(HC.rnGreyDk), 0, 0.03, 0);
+    add(g, G.cyl(0.04, 0.04, 0.07, 10), mat(HC.white, { r: 0.5 }), 0, 0.1, 0);
+    add(g, G.sphere(0.04, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat(HC.white, { r: 0.5 }), 0, 0.135, 0);
+    add(g, G.cyl(0.008, 0.01, 0.12, 6), mat(0x30353c), 0.08, 0.07, 0, 0, 0, Math.PI / 2);
+    g.position.set(x, y, z);
+    g.rotation.y = ry;
+    group.add(g);
+  }
+
+  /** Grade de células de lançamento vertical (Sylver / Sea Ceptor). */
+  function vlsBlock(group, x, y, w, d, nx, nz, color = HC.rnGreyDk) {
+    add(group, G.box(w, 0.05, d), mat(color, { r: 0.7 }), x, y + 0.025, 0);
+    const cells = [];
+    for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) {
+      cells.push({ p: [x - w / 2 + (i + 0.5) * (w / nx), y + 0.052, -d / 2 + (j + 0.5) * (d / nz)] });
+    }
+    group.add(instanced(G.box((w / nx) * 0.78, 0.006, (d / nz) * 0.78), mat(0x3b4148, { r: 0.8 }), cells));
+  }
+
+  /** Marcações do convoo: círculo de pouso e linha de aproximação. */
+  function helideck(group, x, y, r) {
+    add(group, cached(_geoCache, `ring${r}`, () => new THREE.RingGeometry(r * 0.82, r * 0.9, 28)), mat(HC.white, { r: 0.9, m: 0, extra: { side: THREE.DoubleSide } }), x, y + 0.004, 0, -Math.PI / 2);
+    add(group, G.box(r * 2.4, 0.004, 0.018), mat(HC.white, { r: 0.9, m: 0 }), x - r * 0.2, y + 0.004, 0);
+  }
+
+  /** F-35B estacionado (fuselagem, asas trapezoidais, dois estabilizadores). */
+  function f35(group, x, y, z, ry) {
+    const g = new THREE.Group();
+    const m = mat(HC.jet, { r: 0.55, m: 0.35 });
+    add(g, taperBox(0.30, 0.04, 0.06, 0.9, 0.7), m, 0, 0.02, 0);
+    add(g, G.cone(0.028, 0.08, 6), m, 0.19, 0.02, 0, 0, 0, -Math.PI / 2);
+    const wing = cached(_geoCache, 'f35wing', () => {
+      const s = new THREE.Shape();
+      s.moveTo(0.06, 0); s.lineTo(-0.06, 0.11); s.lineTo(-0.1, 0.11); s.lineTo(-0.08, 0); s.lineTo(-0.1, -0.11); s.lineTo(-0.06, -0.11); s.closePath();
+      const g2 = new THREE.ShapeGeometry(s); g2.rotateX(Math.PI / 2); return g2;
+    });
+    add(g, wing, mat(HC.jet, { r: 0.55, m: 0.35, extra: { side: THREE.DoubleSide } }), 0, 0.022, 0);
+    add(g, G.box(0.05, 0.05, 0.005), m, -0.12, 0.05, 0.03, 0.35);
+    add(g, G.box(0.05, 0.05, 0.005), m, -0.12, 0.05, -0.03, -0.35);
+    add(g, G.box(0.05, 0.018, 0.04), mat(0x2a4a63, { r: 0.1, m: 0.6 }), 0.09, 0.045, 0);   // canopy
+    g.position.set(x, y, z);
+    g.rotation.y = ry;
+    group.add(g);
+  }
+
+  /** Helicóptero Merlin: fuselagem, cauda e disco do rotor. */
+  function merlin(group, x, y, z, ry) {
+    const g = new THREE.Group();
+    const m = mat(0x5f6670, { r: 0.6, m: 0.3 });
+    add(g, taperBox(0.26, 0.07, 0.07, 0.85, 0.8), m, 0, 0.04, 0);
+    add(g, G.box(0.16, 0.025, 0.025), m, -0.2, 0.07, 0);
+    add(g, G.box(0.03, 0.06, 0.005), m, -0.28, 0.09, 0);
+    add(g, G.cyl(0.19, 0.19, 0.003, 20), mat(0x22262b, { r: 0.8, op: 0.45 }), 0.01, 0.1, 0);
+    g.position.set(x, y, z);
+    g.rotation.y = ry;
+    group.add(g);
+  }
+
+  /* ── PORTA-AVIÕES: HMS Queen Elizabeth (R08) ─────────────────────
+     284 m · convés de voo de 73 m · duas ilhas a estibordo (vante: navegação
+     e radar S1850M; ré: controle de voo e radar Type 997 Artisan) · rampa de
+     12° na proa, a bombordo · dois elevadores na borda de estibordo. */
   function buildCarrier() {
     const group = new THREE.Group();
+    const hull = loftHull('qe', {
+      L: 7.0, T: 0.3, rake: 0.55, rakeStart: 0.72,
+      half: halfFn(1.0, 0.86, 0.6, 1.8),
+      deck: () => 0.5, flare: t => 1.32 - 0.1 * smooth(0.85, 1, t),
+      color: modernColor(), deckColor: HC.rnGreyDk,
+    });
+    add(group, hull.geo, hullMat(), 0, WL, 0);
 
-    const hull = new THREE.Mesh(carrierHullGeo(), mat(C.hull_carrier));
-    hull.castShadow = true;
-    hull.position.y = 0.1;
-    group.add(hull);
+    // Convés de voo (contorno real: proa cortada em diagonal a estibordo, rampa a bombordo)
+    const FD = WL + 0.66;                                            // topo do convés de voo
+    const deckGeo = cached(_geoCache, 'qeDeck', () => {
+      const s = new THREE.Shape();
+      const P = [[-3.55, -0.78], [2.75, -0.82], [3.62, -0.6], [3.66, 0.12], [3.2, 0.36], [2.3, 0.62], [1.45, 0.94],
+                 [-1.55, 0.94], [-2.6, 0.88], [-3.55, 0.82]];
+      s.moveTo(P[0][0], P[0][1]); P.slice(1).forEach(p => s.lineTo(p[0], p[1])); s.closePath();
+      const g = new THREE.ExtrudeGeometry(s, { depth: 0.2, bevelEnabled: false });
+      g.rotateX(Math.PI / 2);
+      return g;
+    });
+    add(group, deckGeo, [mat(HC.nonSkid, { r: 0.85 }), mat(HC.rnGrey, { r: 0.6, m: 0.2 })], 0, FD, 0);
 
-    const deck = new THREE.Mesh(G.box(7.5, 0.08, 1.6), mat(C.deck, { r: 0.8 }));
-    deck.position.set(0, 0.7, 0);
-    deck.castShadow = true;
-    group.add(deck);
+    // Rampa de salto (ski-jump) de 12°
+    const ramp = cached(_geoCache, 'qeRamp', () => {
+      const s = new THREE.Shape();
+      s.moveTo(2.55, 0); s.quadraticCurveTo(3.25, 0.01, 3.64, 0.17); s.lineTo(3.64, 0); s.closePath();
+      return new THREE.ExtrudeGeometry(s, { depth: 0.72, bevelEnabled: false });
+    });
+    add(group, ramp, [mat(HC.rnGrey, { r: 0.55, m: 0.2 }), mat(0x5b636c, { r: 0.85 })], 0, FD, -0.6);
+    add(group, G.box(0.02, 0.02, 0.72), mat(HC.yellow, { r: 0.8, m: 0 }), 3.64, FD + 0.16, -0.24);   // borda da rampa
 
-    const ramp = new THREE.Mesh(G.box(0.8, 0.04, 1.6), mat(C.deck));
-    ramp.position.set(-3.35, 0.72, 0);
-    ramp.rotation.z = 0.18;
-    group.add(ramp);
+    // Marcações: linha de decolagem até a rampa e pontos de pouso a bombordo
+    add(group, G.box(6.0, 0.004, 0.02), mat(HC.white, { r: 0.9, m: 0 }), -0.5, FD + 0.002, -0.25);
+    add(group, G.box(6.0, 0.004, 0.012), mat(HC.yellow, { r: 0.9, m: 0 }), -0.5, FD + 0.002, 0.3);
+    const spots = [];
+    for (let k = 0; k < 6; k++) spots.push({ p: [-3.1 + k * 0.62, FD + 0.003, -0.48], rx: -Math.PI / 2 });
+    group.add(instanced(cached(_geoCache, 'spot', () => new THREE.RingGeometry(0.1, 0.12, 20)), mat(HC.white, { r: 0.9, m: 0, extra: { side: THREE.DoubleSide } }), spots));
 
-    const island = new THREE.Mesh(G.box(1.0, 0.9, 0.5), mat(C.steel, { r: 0.5, m: 0.4 }));
-    island.position.set(1.8, 1.15, -0.55);
-    island.castShadow = true;
-    group.add(island);
+    // Elevadores na borda de estibordo (um entre as ilhas, outro à ré)
+    [-0.12, -2.2].forEach(x => add(group, G.box(0.66, 0.006, 0.36), mat(0x5a626b, { r: 0.8 }), x, FD + 0.003, 0.74));
 
-    for (let i = 0; i < 3; i++) {
-      const lvl = new THREE.Mesh(G.box(0.9 - i * 0.12, 0.18, 0.45 - i * 0.06), mat(C.steel_dark, { r: 0.5 }));
-      lvl.position.set(1.8, 1.6 + i * 0.2, -0.55);
-      group.add(lvl);
-    }
+    // Ilha de vante (navegação)
+    const island = (x, h) => {
+      add(group, taperBox(0.74, h, 0.3, 0.9, 0.78), mat(HC.rnGrey, { r: 0.5, m: 0.25 }), x, FD + h / 2, 0.76);
+      add(group, taperBox(0.6, 0.15, 0.34, 0.92, 0.9), mat(HC.rnGrey, { r: 0.5, m: 0.25 }), x + 0.02, FD + h + 0.075, 0.75);
+      add(group, G.box(0.6, 0.05, 0.345), mat(HC.glass, { r: 0.1, m: 0.7 }), x + 0.02, FD + h + 0.09, 0.75);
+      add(group, taperBox(0.2, 0.16, 0.2, 0.85, 0.85), mat(HC.rnGreyDk), x - 0.25, FD + h + 0.08, 0.78);   // chaminé
+      add(group, G.box(0.17, 0.02, 0.17), mat(HC.black), x - 0.25, FD + h + 0.165, 0.78);
+    };
+    island(0.72, 0.6);
+    island(-0.98, 0.52);
+    // controle de voo (Flyco): vidraça projetada sobre o convés, na ilha de ré
+    add(group, taperBox(0.34, 0.1, 0.12, 1, 1.3), mat(HC.glass, { r: 0.1, m: 0.7 }), -0.98, FD + 0.62, 0.56);
 
-    const mast = new THREE.Mesh(G.cyl(0.02, 0.03, 0.9, 6), mat(C.steel_dark));
-    mast.position.set(1.8, 2.3, -0.55);
-    group.add(mast);
+    // Mastros e radares que giram
+    add(group, taperBox(0.12, 0.34, 0.12, 0.5, 0.5), mat(HC.rnGrey), 0.72, FD + 0.92, 0.76);
+    const s1850 = new THREE.Group();
+    add(s1850, G.box(0.05, 0.13, 0.36), mat(HC.rnGreyDk, { r: 0.5, m: 0.4 }));
+    s1850.position.set(0.72, FD + 1.15, 0.76);
+    group.add(spinner(group, s1850, 1.6));
+    add(group, G.cyl(0.012, 0.016, 0.42, 6), mat(HC.rnGreyDk), -0.98, FD + 0.86, 0.76);
+    const artisan = new THREE.Group();
+    add(artisan, G.box(0.04, 0.11, 0.24), mat(HC.rnGreyDk, { r: 0.5, m: 0.4 }));
+    artisan.position.set(-0.98, FD + 1.04, 0.76);
+    group.add(spinner(group, artisan, 3.2));
 
-    const radar = new THREE.Mesh(G.cyl(0.2, 0.2, 0.03, 8), mat(C.steel, { m: 0.8 }));
-    radar.position.set(1.8, 2.8, -0.55);
-    group.add(radar);
+    // Phalanx: proa, popa e ilha
+    phalanx(group, 3.05, FD, 0.28);
+    phalanx(group, -3.45, FD, 0.62);
+    phalanx(group, -3.45, FD, -0.6);
 
-    const line = new THREE.Mesh(G.box(6.5, 0.005, 0.04), mat(0xffffff, { r: 1, m: 0 }));
-    line.position.set(0, 0.745, 0);
-    group.add(line);
-
-    // Luzes de borda do convés — 26 esferas em 1 draw call
-    const lights = [];
-    for (let k = 0; k <= 12; k++) {
-      const x = -3 + k * 0.5;
-      lights.push({ p: [x, 0.745, 0.76] }, { p: [x, 0.745, -0.76] });
-    }
-    group.add(instanced(G.sphere(0.025, 4, 4), mat(0x2f80e0, { r: 0.2, m: 0.8 }), lights));
-
-    const wave = new THREE.Mesh(G.cone(0.15, 0.6, 6), mat(0xe8fbff, { r: 0.1, op: 0.7 }));
-    wave.rotation.z = -Math.PI / 2;
-    wave.position.set(-3.7, 0.2, 0);
-    group.add(wave);
+    // Ala aérea: F-35B estacionados à ré e um na corrida para a rampa; Merlin a bombordo
+    [[-2.95, 0.55], [-2.6, 0.55], [-2.25, 0.55], [-1.9, 0.55]].forEach(([x, z]) => f35(group, x, FD, z, 0.75));
+    f35(group, 1.3, FD, -0.25, 0);
+    merlin(group, -1.25, FD, -0.45, 0.4);
 
     group.scale.setScalar(0.95);
     return group;
   }
 
-  /* ── DESTRÓIER ──────────────────────────────────────────────── */
+  /* ── DESTRÓIER: HMS Daring (D32), Type 45 ───────────────────────
+     152 m · canhão Mk 8 · 48 células Sylver · mastro de vante em pirâmide com a
+     esfera do radar SAMPSON · mastro de ré com o S1850M · duas chaminés · hangar
+     e convoo para Merlin/Wildcat · Phalanx nos dois bordos. */
   function buildDestroyer() {
     const group = new THREE.Group();
+    const hull = loftHull('t45', {
+      L: 6.4, T: 0.24, rake: 0.55,
+      half: halfFn(0.86, 0.8, 0.55, 1.7),
+      deck: t => 0.27 + 0.1 * smooth(0.12, 0.2, t) + 0.04 * smooth(0.75, 1, t),
+      flare: 1.14, color: modernColor(), deckColor: HC.nonSkid,
+    });
+    add(group, hull.geo, hullMat(), 0, WL, 0);
+    const D = WL + 0.37;                                       // convés principal
+    const G1 = mat(HC.rnGrey, { r: 0.5, m: 0.25 });
 
-    const hull = new THREE.Mesh(G.box(6.0, 0.8, 0.9), mat(C.hull_destroyer));
-    hull.castShadow = true;
-    group.add(hull);
+    mk8Gun(group, 2.15, D + 0.04);
+    vlsBlock(group, 1.58, D, 0.44, 0.5, 6, 8);
 
-    const bow = new THREE.Mesh(G.cyl(0, 0.45, 0.9, 4), mat(C.hull_destroyer));
-    bow.rotation.z = Math.PI / 2;
-    bow.position.set(3.2, 0, 0);
-    group.add(bow);
+    // Bloco da ponte e superestrutura contínua até o hangar (faces inclinadas)
+    add(group, taperBox(1.05, 0.36, 0.74, 0.94, 0.86), G1, 0.82, D + 0.18, 0);
+    add(group, taperBox(0.62, 0.15, 0.66, 0.86, 0.88, -0.02), G1, 0.98, D + 0.43, 0);
+    add(group, G.box(0.03, 0.055, 0.56), mat(HC.glass, { r: 0.1, m: 0.7 }), 1.27, D + 0.44, 0, 0, 0, -0.45);
+    add(group, taperBox(1.55, 0.32, 0.72, 0.97, 0.88), G1, -0.47, D + 0.16, 0);
+    add(group, taperBox(0.74, 0.34, 0.72, 1, 0.9), G1, -1.62, D + 0.17, 0);         // hangar
+    add(group, G.box(0.01, 0.26, 0.42), mat(HC.rnGreyDk, { r: 0.7 }), -1.995, D + 0.14, 0);
 
-    const deck = new THREE.Mesh(G.box(5.8, 0.06, 0.85), mat(C.deck));
-    deck.position.y = 0.43;
-    group.add(deck);
+    // Mastro de vante (pirâmide) + SAMPSON
+    add(group, taperBox(0.4, 0.78, 0.4, 0.34, 0.34), G1, 0.6, D + 0.5 + 0.39, 0);
+    add(group, G.sphere(0.155, 18, 12), mat(HC.radome, { r: 0.45, m: 0.1 }), 0.6, D + 1.42, 0);
+    add(group, G.cyl(0.01, 0.014, 0.32, 6), mat(HC.rnGreyDk), 0.6, D + 1.72, 0);
+    add(group, G.box(0.02, 0.02, 0.2), mat(HC.rnGreyDk), 0.6, D + 1.78, 0);
 
-    const super1 = new THREE.Mesh(G.box(1.4, 0.7, 0.65), mat(C.steel, { r: 0.4, m: 0.5 }));
-    super1.position.set(0.8, 0.9, 0);
-    group.add(super1);
+    // Chaminés (antes e depois do mastro de ré) e mastro de ré com o S1850M
+    [[-0.05, 0.3], [-1.0, 0.26]].forEach(([x, w]) => {
+      add(group, taperBox(w, 0.3, 0.32, 0.86, 0.82, -0.03), G1, x, D + 0.32 + 0.15, 0);
+      add(group, G.box(w * 0.82, 0.025, 0.25), mat(HC.black), x - 0.03, D + 0.635, 0);
+    });
+    add(group, taperBox(0.22, 0.44, 0.24, 0.56, 0.56), G1, -0.55, D + 0.32 + 0.22, 0);
+    const s1850 = new THREE.Group();
+    add(s1850, G.box(0.05, 0.16, 0.42), mat(HC.rnGreyDk, { r: 0.5, m: 0.4 }));
+    s1850.position.set(-0.55, D + 0.88, 0);
+    group.add(spinner(group, s1850, 1.4));
 
-    const bridge = new THREE.Mesh(G.box(0.9, 0.35, 0.6), mat(C.steel_dark, { r: 0.35, m: 0.5 }));
-    bridge.position.set(0.8, 1.3, 0);
-    group.add(bridge);
+    // Phalanx a meia-nau (um por bordo), botes (RHIB laranja) nos recessos
+    phalanx(group, -0.75, D + 0.32, 0.27);
+    phalanx(group, -0.75, D + 0.32, -0.27, Math.PI);
+    [0.36, -0.36].forEach(z => add(group, taperBox(0.26, 0.05, 0.08, 0.9, 0.8), mat(HC.rhib, { r: 0.7, m: 0 }), -0.15, D + 0.08, z));
 
-    const windows = new THREE.Mesh(G.box(0.85, 0.06, 0.02), mat(C.glass, { r: 0.05, m: 0.9 }));
-    windows.position.set(0.8, 1.35, 0.32);
-    group.add(windows);
+    // Convoo (mais baixo) com marcações
+    helideck(group, -2.6, WL + 0.27, 0.32);
+    pennant(group, hull, 'D32', 0.88, 0.2);
 
-    const super2 = new THREE.Mesh(G.box(1.0, 0.5, 0.6), mat(C.steel, { r: 0.4, m: 0.5 }));
-    super2.position.set(-1.0, 0.76, 0);
-    group.add(super2);
-
-    const funnel = new THREE.Mesh(G.cyl(0.12, 0.16, 0.55, 8), mat(0x2a2f3c));
-    funnel.position.set(-0.3, 1.35, 0);
-    group.add(funnel);
-
-    const gun = new THREE.Group();
-    gun.add(new THREE.Mesh(G.cyl(0.14, 0.18, 0.2, 8), mat(C.steel_dark)));
-    const barrel = new THREE.Mesh(G.cyl(0.035, 0.05, 0.9, 6), mat(0x232a38));
-    barrel.rotation.z = Math.PI / 2;
-    barrel.position.x = 0.45;
-    gun.add(barrel);
-    gun.position.set(2.2, 0.6, 0);
-    group.add(gun);
-
-    const vls = new THREE.Mesh(G.box(0.6, 0.12, 0.55), mat(C.deck_dark, { r: 0.9 }));
-    vls.position.set(1.5, 0.5, 0);
-    group.add(vls);
-
-    const mast = new THREE.Mesh(G.cyl(0.02, 0.035, 1.5, 6), mat(C.steel_dark));
-    mast.position.set(0.5, 2.0, 0);
-    group.add(mast);
-
-    const radar = new THREE.Mesh(G.box(0.35, 0.04, 0.28), mat(C.steel, { m: 0.8 }));
-    radar.position.set(0.5, 2.8, 0);
-    radar.rotation.y = 0.3;
-    group.add(radar);
-
-    const hpad = new THREE.Mesh(G.cyl(0.38, 0.38, 0.03, 12), mat(C.deck_dark, { r: 0.9 }));
-    hpad.position.set(-2.5, 0.47, 0);
-    group.add(hpad);
-
-    const hmark = new THREE.Mesh(G.box(0.4, 0.005, 0.04), mat(0xffffff, { r: 1 }));
-    hmark.position.set(-2.5, 0.50, 0);
-    group.add(hmark);
-
-    group.scale.setScalar(0.9);
+    group.scale.setScalar(1.0);
     return group;
   }
 
-  /* ── SUBMARINO ──────────────────────────────────────────────── */
+  /* ── SUBMARINO: HMS Astute (S119) ───────────────────────────────
+     97 m × 11,3 m · torre (vela) bem a vante · lemes de profundidade no casco,
+     a vante · popa em cruz com placas nas pontas · propulsor pump-jet com duto ·
+     casco preto revestido de placas acústicas. */
+  let _tileTex = null;
+  function tileTexture() {
+    if (_tileTex) return _tileTex;
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d');
+    g.fillStyle = '#3a424c'; g.fillRect(0, 0, 64, 64);
+    g.strokeStyle = 'rgba(0,0,0,0.55)'; g.lineWidth = 2;
+    for (let i = 0; i <= 64; i += 16) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 64); g.stroke(); g.beginPath(); g.moveTo(0, i); g.lineTo(64, i); g.stroke(); }
+    _tileTex = new THREE.CanvasTexture(c);
+    _tileTex.wrapS = _tileTex.wrapT = THREE.RepeatWrapping;
+    _tileTex.repeat.set(10, 26);
+    return _tileTex;
+  }
+
   function buildSubmarine() {
     const group = new THREE.Group();
+    const R = 0.37, Y = WL + 0.14;                            // navegando na superfície
+    const skin = cached(_matCache, 'subSkin', () => new THREE.MeshStandardMaterial({ color: 0x9aa3ad, map: tileTexture(), roughness: 0.85, metalness: 0.15 }));
+    const dark = mat(HC.subBlack, { r: 0.8, m: 0.2 });
 
-    const body = new THREE.Mesh(G.cyl(0.55, 0.55, 6.0, 16), mat(C.hull_sub, { r: 0.3, m: 0.6 }));
-    body.rotation.z = Math.PI / 2;
-    body.castShadow = true;
-    group.add(body);
+    const body = cached(_geoCache, 'astuteHull', () => {
+      const prof = [[0, -3.2], [0.1, -3.12], [0.17, -2.95], [0.25, -2.6], [0.32, -2.1], [0.36, -1.5], [R, -0.9],
+                    [R, 2.3], [0.36, 2.6], [0.33, 2.82], [0.27, 3.0], [0.18, 3.13], [0.08, 3.19], [0, 3.2]];
+      const g = new THREE.LatheGeometry(prof.map(([r, x]) => new THREE.Vector2(r, x)), 32);
+      g.rotateZ(-Math.PI / 2);
+      return g;
+    });
+    add(group, body, skin, 0, Y, 0);
 
-    const bowDome = new THREE.Mesh(G.sphere(0.55, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat(C.hull_sub, { r: 0.25, m: 0.5 }));
-    bowDome.rotation.z = -Math.PI / 2;
-    bowDome.position.x = 3.0;
-    group.add(bowDome);
+    // Casco de proteção (casing) chato em cima
+    add(group, G.box(4.3, 0.025, 0.24), dark, 0.25, Y + R - 0.008, 0);
 
-    const sternCone = new THREE.Mesh(G.cone(0.55, 1.4, 12), mat(C.hull_sub, { r: 0.3 }));
-    sternCone.rotation.z = Math.PI / 2;
-    sternCone.position.x = -3.35;
-    group.add(sternCone);
+    // Torre: bordo de ataque arredondado e filete na base
+    const fin = cached(_geoCache, 'astuteFin', () => {
+      const s = new THREE.Shape();
+      s.moveTo(0.7, 0); s.lineTo(0.82, 0.52); s.lineTo(1.5, 0.56);
+      s.quadraticCurveTo(1.68, 0.5, 1.7, 0.2); s.quadraticCurveTo(1.74, 0.02, 1.98, 0); s.closePath();
+      const g = new THREE.ExtrudeGeometry(s, { depth: 0.1, bevelEnabled: true, bevelThickness: 0.035, bevelSize: 0.03, bevelSegments: 3 });
+      g.translate(0, 0, -0.05);
+      return g;
+    });
+    add(group, fin, dark, 0, Y + R - 0.03, 0);
+    // mastros optrônicos e de comunicações
+    [[1.15, 0.26], [1.3, 0.2], [1.42, 0.16]].forEach(([x, h]) => add(group, G.cyl(0.018, 0.022, h, 8), mat(0x30363d, { r: 0.6 }), x, Y + R + 0.53 + h / 2, 0));
 
-    const sail = new THREE.Mesh(G.box(0.6, 0.9, 0.3), mat(C.hull_sub, { r: 0.3, m: 0.5 }));
-    sail.position.set(0.5, 0.7, 0);
-    group.add(sail);
+    // Lemes de profundidade de vante (no casco)
+    [1, -1].forEach(sd => add(group, taperBox(0.3, 0.02, 0.22, 0.6, 1), dark, 2.35, Y + 0.12, sd * (R + 0.1)));
 
-    const sailTop = new THREE.Mesh(G.box(0.5, 0.15, 0.28), mat(C.steel_dark, { r: 0.4 }));
-    sailTop.position.set(0.5, 1.2, 0);
-    group.add(sailTop);
+    // Popa em cruz com placas nas pontas
+    const fins = [];
+    add(group, taperBox(0.4, 0.28, 0.035, 0.55, 1, -0.06), dark, -2.55, Y + 0.33, 0);
+    add(group, taperBox(0.4, 0.28, 0.035, 0.55, 1, -0.06), dark, -2.55, Y - 0.33, 0, Math.PI);
+    [1, -1].forEach(sd => {
+      add(group, G.box(0.36, 0.03, 0.26), dark, -2.55, Y, sd * 0.33);
+      fins.push({ p: [-2.58, Y, sd * 0.46] });
+    });
+    group.add(instanced(G.box(0.22, 0.12, 0.02), mat(HC.subBlack, { r: 0.78 }), fins));
 
-    const scope = new THREE.Mesh(G.cyl(0.025, 0.025, 0.7, 5), mat(C.steel_dark));
-    scope.position.set(0.55, 1.65, 0.05);
-    group.add(scope);
+    // Pump-jet: duto aberto e cubo
+    add(group, cached(_geoCache, 'pumpjet', () => new THREE.CylinderGeometry(0.17, 0.15, 0.26, 24, 1, true)), mat(HC.subBlack, { r: 0.7, m: 0.3, extra: { side: THREE.DoubleSide } }), -3.08, Y, 0, 0, 0, Math.PI / 2);
+    add(group, G.cone(0.06, 0.16, 12), mat(0x3a3f45, { r: 0.4, m: 0.6 }), -3.22, Y, 0, 0, 0, Math.PI / 2);
 
-    const scopeHead = new THREE.Mesh(G.box(0.06, 0.12, 0.06), mat(C.glass, { r: 0.1, m: 0.9 }));
-    scopeHead.position.set(0.55, 2.0, 0.05);
-    group.add(scopeHead);
-
-    // Tubos de torpedo (4)
-    const tubes = [];
-    for (let i = -1; i <= 1; i += 2) {
-      for (let j = 0; j < 2; j++) tubes.push({ p: [3.1, i * 0.18, j * 0.22 - 0.11], rz: Math.PI / 2 });
-    }
-    group.add(instanced(G.cyl(0.055, 0.055, 0.3, 8), mat(0x1a2230, { m: 0.8 }), tubes));
-
-    // Lemes de mergulho (proa) e de popa
-    const diving = [], rudders = [], hplanes = [];
-    for (let side = -1; side <= 1; side += 2) {
-      diving.push({ p: [2.0, 0, side * 0.65] });
-      rudders.push({ p: [-3.5, side * 0.35, 0] });
-      hplanes.push({ p: [-3.4, 0, side * 0.55] });
-    }
-    // (material distinto do cone de popa: não misturar InstancedMesh e Mesh no mesmo material)
-    group.add(instanced(G.box(0.55, 0.04, 0.15), mat(C.hull_sub, { r: 0.32 }), diving));
-    group.add(instanced(G.box(0.06, 0.5, 0.08), mat(C.hull_sub), rudders));
-    group.add(instanced(G.box(0.5, 0.05, 0.12), mat(C.hull_sub), hplanes));
-
-    // Hélice
-    const blades = [];
-    for (let b = 0; b < 4; b++) {
-      const a = (b / 4) * Math.PI * 2;
-      blades.push({ p: [-3.8, Math.sin(a) * 0.2, Math.cos(a) * 0.2], rx: a });
-    }
-    group.add(instanced(G.box(0.08, 0.32, 0.03), mat(C.brass, { r: 0.2, m: 0.7 }), blades));
-
-    group.position.y = 0.1;
-    group.scale.setScalar(0.85);
+    group.scale.setScalar(0.95);
     return group;
   }
 
-  /* ── GALEÃO (HMS Victory) ───────────────────────────────────── */
+  /* ── NAU: HMS Victory (1765), configuração de Trafalgar ────────
+     104 canhões em três cobertas · costado preto com faixas ocre ao longo de
+     cada fila de portinholas (o "xadrez de Nelson") · fundo forrado de cobre ·
+     castelo de popa com galerias · três mastros com velas redondas, gurupés com
+     bujarronas e a vela de ré (spanker) · White Ensign na popa. */
+  function sailGeo(wTop, wBot, h, bulge) {
+    return cached(_geoCache, `sail${wTop},${wBot},${h},${bulge}`, () => {
+      const g = new THREE.PlaneGeometry(1, 1, 6, 4);
+      const p = g.attributes.position;
+      for (let i = 0; i < p.count; i++) {
+        const u = p.getX(i) + 0.5, v = p.getY(i) + 0.5;              // u: largura, v: altura (1 = topo)
+        const w = wBot + (wTop - wBot) * v;
+        p.setXYZ(i, Math.sin(Math.PI * u) * Math.sin(Math.PI * (0.15 + 0.7 * (1 - v))) * bulge, (v - 1) * h, (u - 0.5) * w);
+      }
+      g.computeVertexNormals();
+      return g;
+    });
+  }
+
+  function ensignTexture() {
+    return cached(_matCache, 'ensign', () => {
+      const c = document.createElement('canvas');
+      c.width = 120; c.height = 60;
+      const g = c.getContext('2d');
+      g.fillStyle = '#f4f2ee'; g.fillRect(0, 0, 120, 60);
+      g.fillStyle = '#c8202a'; g.fillRect(0, 25, 120, 10); g.fillRect(55, 0, 10, 60);
+      // cantão com a Union Flag
+      g.fillStyle = '#1d2f6b'; g.fillRect(0, 0, 54, 26);
+      g.strokeStyle = '#fff'; g.lineWidth = 5;
+      g.beginPath(); g.moveTo(0, 0); g.lineTo(54, 26); g.moveTo(54, 0); g.lineTo(0, 26); g.stroke();
+      g.strokeStyle = '#c8202a'; g.lineWidth = 2;
+      g.beginPath(); g.moveTo(0, 0); g.lineTo(54, 26); g.moveTo(54, 0); g.lineTo(0, 26); g.stroke();
+      g.fillStyle = '#fff'; g.fillRect(0, 9, 54, 8); g.fillRect(22, 0, 10, 26);
+      g.fillStyle = '#c8202a'; g.fillRect(0, 11, 54, 4); g.fillRect(25, 0, 4, 26);
+      return new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(c), roughness: 0.9, metalness: 0, side: THREE.DoubleSide });
+    });
+  }
+
+  function sternTexture() {
+    return cached(_matCache, 'vicStern', () => {
+      const c = document.createElement('canvas');
+      c.width = 128; c.height = 96;
+      const g = c.getContext('2d');
+      g.fillStyle = '#c89a45'; g.fillRect(0, 0, 128, 96);
+      g.fillStyle = '#1d1a17';
+      for (let row = 0; row < 3; row++) for (let k = 0; k < 7; k++) g.fillRect(8 + k * 16.5, 10 + row * 28, 10, 16);
+      g.fillRect(0, 34, 128, 3); g.fillRect(0, 62, 128, 3);
+      return new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(c), roughness: 0.85, metalness: 0, side: THREE.DoubleSide });
+    });
+  }
+
   function buildGalleon() {
-    const group = new THREE.Group();
+    const ship = new THREE.Group();
+    const L = 5.0;
+    // faixas: copper abaixo d'água; preto; ocre em cada fila de portinholas
+    const ROWS = [0.15, 0.31, 0.47];                          // altura (acima d'água) do centro de cada fila
+    const vColor = y => (y < -0.02 ? HC.copper : HC.vicBlack);
+    const deck = t => 0.6 + 0.09 * Math.pow(2 * t - 1, 2) + 0.2 * (1 - smooth(0.24, 0.3, t)) + 0.1 * (1 - smooth(0.1, 0.14, t)) + 0.08 * smooth(0.84, 0.88, t);
+    const hull = loftHull('victory', {
+      L, T: 0.72, rake: 0.42, rakeStart: 0.7, tumble: 0.06,
+      half: halfFn(1.36, 0.74, 0.72, 2.2, 0.1),
+      keel: t => 1 - 0.25 * smooth(0.85, 1, t),
+      deck, flare: 0.8, color: vColor, deckColor: 0xa98a5c,
+    });
+    add(ship, hull.geo, hullMat(0.8, 0.05), 0, WL, 0);
+    // o "xadrez de Nelson": uma faixa ocre ao longo de cada fila de portinholas
+    ROWS.forEach(y => hullBand(ship, hull, y - 0.045, y + 0.045, HC.ochre, 0.1, 0.9));
 
-    const hull = new THREE.Mesh(G.box(5.2, 1.1, 1.3), mat(C.hull_galleon, { r: 0.85, m: 0.05 }));
-    hull.castShadow = true;
-    group.add(hull);
+    // Portinholas abertas (quadrados escuros) e bocas de fogo: 15 + 14 + 15 por bordo
+    const ports = [], guns = [];
+    ROWS.forEach((y, r) => {
+      const n = r === 1 ? 14 : 15;
+      for (let k = 0; k < n; k++) {
+        const t = 0.17 + (k + (r === 1 ? 0.5 : 0)) * (0.66 / 14);
+        const x = -L / 2 + t * L, z = hull.halfAt(t, y);
+        ports.push({ p: [x, WL + y, z + 0.008] }, { p: [x, WL + y, -z - 0.008], ry: Math.PI });
+        guns.push({ p: [x, WL + y, z + 0.03], rx: Math.PI / 2 }, { p: [x, WL + y, -z - 0.03], rx: Math.PI / 2 });
+      }
+    });
+    ship.add(instanced(G.plane(0.06, 0.055), mat(0x0d0b09, { r: 1, m: 0, extra: { side: THREE.DoubleSide } }), ports));
+    ship.add(instanced(G.cyl(0.011, 0.013, 0.07, 6), mat(0x2b2b2b, { r: 0.5, m: 0.6 }), guns));
 
-    const bottom = new THREE.Mesh(G.cyl(0.5, 0.3, 5.2, 8), mat(C.wood_dark, { r: 0.9 }));
-    bottom.rotation.z = Math.PI / 2;
-    bottom.position.y = -0.5;
-    group.add(bottom);
+    // Popa: galerias envidraçadas em ocre; lanternas
+    add(ship, G.plane(1.0, 0.62), sternTexture(), -L / 2 - 0.02, WL + 0.86, 0, 0, -Math.PI / 2, 0);
+    [-0.25, 0, 0.25].forEach(z => add(ship, G.sphere(0.035, 8, 6), mat(HC.ochre, { r: 0.4, m: 0.5 }), -L / 2 - 0.05, WL + 1.3, z));
+    // Proa: beque com figura de proa
+    add(ship, taperBox(0.3, 0.12, 0.22, 0.6, 0.6), mat(HC.vicBlack, { r: 0.8 }), L / 2 + 0.05, WL + 0.62, 0);
+    add(ship, G.sphere(0.06, 8, 6), mat(HC.ochre, { r: 0.5, m: 0.3 }), L / 2 + 0.2, WL + 0.6, 0);
 
-    const bow = new THREE.Mesh(G.cone(0.65, 1.0, 5), mat(C.hull_galleon, { r: 0.85 }));
-    bow.rotation.z = -Math.PI / 2;
-    bow.position.set(2.9, 0.1, 0);
-    group.add(bow);
-
-    const stern = new THREE.Mesh(G.box(1.0, 1.4, 1.25), mat(C.hull_galleon, { r: 0.9 }));
-    stern.position.set(-2.2, 0.7, 0);
-    group.add(stern);
-
-    const fore = new THREE.Mesh(G.box(0.8, 0.7, 1.1), mat(C.hull_galleon, { r: 0.9 }));
-    fore.position.set(2.1, 0.5, 0);
-    group.add(fore);
-
-    const deck = new THREE.Mesh(G.box(5.0, 0.07, 1.2), mat(0x8a6238, { r: 0.95 }));
-    deck.position.y = 0.57;
-    group.add(deck);
-
-    // Portinholas (16) e canhões (8): 2 draw calls no total
-    const ports = [], cannons = [];
-    for (let k = 0; k < 8; k++) {
-      const x = -1.8 + k * 0.5;
-      ports.push({ p: [x, 0.1, 0.67] }, { p: [x, 0.1, -0.67] });
-    }
-    for (let k = 0; k < 4; k++) {
-      const x = -1.5 + k * 0.8;
-      cannons.push({ p: [x, 0.1, 0.7], rz: Math.PI / 2 }, { p: [x, 0.1, -0.7], rz: Math.PI / 2 });
-    }
-    group.add(instanced(G.box(0.12, 0.09, 0.04), mat(0x2a1400), ports));
-    group.add(instanced(G.cyl(0.045, 0.06, 0.35, 6), mat(C.brass, { r: 0.3, m: 0.6 }), cannons));
-
-    const masts = [
-      { x: 1.3,  height: 3.2 },
-      { x: 0.0,  height: 3.8 },
-      { x: -1.5, height: 2.8 },
-    ];
-    const ropeMat = mat(C.rope, { r: 0.95 });
-    const sailMat = mat(C.canvas_sail, { r: 0.95, m: 0, extra: { side: THREE.DoubleSide } });
-
-    masts.forEach(({ x, height }) => {
-      const mast = new THREE.Mesh(G.cyl(0.04, 0.06, height, 6), ropeMat);
-      mast.position.set(x, height / 2 + 0.6, 0);
-      group.add(mast);
-
-      [0.45, 0.7, 0.88].forEach(frac => {
-        const yard = new THREE.Mesh(G.cyl(0.02, 0.025, height * 0.7 * (1 - frac * 0.3), 5), ropeMat);
-        yard.rotation.z = Math.PI / 2;
-        yard.position.set(x, height * frac + 0.6, 0);
-        group.add(yard);
-
-        const sail = new THREE.Mesh(G.plane(height * 0.65 * (1 - frac * 0.25), height * 0.28), sailMat);
-        sail.position.set(x, height * (frac - 0.06) + 0.6, 0);
-        group.add(sail);
+    // Mastros: alturas acima d'água ~62 m (grande), ~56 m (traquete), ~44 m (mezena)
+    const woodM = mat(HC.mast, { r: 0.85, m: 0.05 });
+    const sailM = mat(HC.sailC, { r: 0.95, m: 0, extra: { side: THREE.DoubleSide } });
+    const lines = [];
+    const MASTS = [{ x: 1.45, H: 4.9, t: 0.79 }, { x: 0.15, H: 5.45, t: 0.53 }, { x: -1.35, H: 3.85, t: 0.23 }];
+    MASTS.forEach(({ x, H, t }, mi) => {
+      const y0 = WL + deck(t);
+      const top = y => WL + y;
+      // mastro real, mastaréu e mastaréu do joanete
+      add(ship, G.cyl(0.045, 0.06, H * 0.5 - deck(t), 8), woodM, x, (y0 + top(H * 0.5)) / 2, 0);
+      add(ship, G.cyl(0.03, 0.04, H * 0.3, 8), woodM, x, top(H * 0.62), 0);
+      add(ship, G.cyl(0.015, 0.025, H * 0.24, 6), woodM, x, top(H * 0.87), 0);
+      add(ship, G.box(0.26, 0.025, 0.34), woodM, x, top(H * 0.48), 0);            // cesto da gávea
+      add(ship, G.box(0.14, 0.015, 0.22), woodM, x, top(H * 0.76), 0);            // vaus
+      // vergas e velas: grande (curso), gávea, joanete e sobrejoanete
+      const yards = [[0.42, 0.5], [0.66, 0.42], [0.84, 0.29], [0.95, 0.2]];
+      yards.forEach(([f, wf], k) => {
+        const w = H * wf * (mi === 2 ? 0.78 : 1);
+        add(ship, G.cyl(0.012, 0.018, w, 6), woodM, x, top(H * f), 0, Math.PI / 2, 0, 0);
+        if (mi === 2 && k === 0) return;                    // a mezena não arma vela grande (tem a spanker)
+        const below = k === 0 ? deck(t) + 0.35 : H * yards[k - 1][0] + 0.03;
+        const h = H * f - below - 0.02;
+        add(ship, sailGeo(w * 0.94, w * (k === 0 ? 1.05 : 1.08), h, 0.12 + 0.02 * k), sailM, x + 0.04, top(H * f) - 0.01, 0);
       });
+      // ovéns (enxárcias) até as mesas de enxárcia nos costados
+      for (let k = 0; k < 5; k++) {
+        const xx = x - 0.14 + k * 0.07, z = hull.halfAt(t, deck(t)) + 0.04;
+        lines.push(x, top(H * 0.47), 0.15, xx, y0, z, x, top(H * 0.47), -0.15, xx, y0, -z);
+      }
+      lines.push(x, top(H * 0.75), 0.1, x - 0.05, top(H * 0.48), 0.17, x, top(H * 0.75), -0.1, x - 0.05, top(H * 0.48), -0.17);
+      // brandais para ré
+      lines.push(x, top(H * 0.96), 0, x - 0.55, y0, hull.halfAt(t, deck(t)), x, top(H * 0.96), 0, x - 0.55, y0, -hull.halfAt(t, deck(t)));
     });
 
-    const bowsprit = new THREE.Mesh(G.cyl(0.025, 0.04, 2.5, 5), ropeMat);
-    bowsprit.rotation.z = -Math.PI / 5;
-    bowsprit.position.set(3.2, 1.4, 0);
-    group.add(bowsprit);
+    // Gurupés e pau da bujarrona
+    const bsA = 0.4, bsX = L / 2 - 0.15, bsY = WL + 0.72;
+    add(ship, G.cyl(0.03, 0.05, 1.7, 8), woodM, bsX + Math.cos(bsA) * 0.85, bsY + Math.sin(bsA) * 0.85, 0, 0, 0, -(Math.PI / 2 - bsA));
+    add(ship, G.cyl(0.015, 0.025, 1.1, 6), woodM, bsX + Math.cos(bsA) * 2.1, bsY + Math.sin(bsA) * 2.1, 0, 0, 0, -(Math.PI / 2 - bsA));
+    const tip = [bsX + Math.cos(bsA) * 2.6, bsY + Math.sin(bsA) * 2.6];
+    // estais: traquete -> gurupés; grande -> traquete; mezena -> grande
+    const F = MASTS[0], M = MASTS[1], Z = MASTS[2];
+    lines.push(F.x, WL + F.H * 0.48, 0, bsX + Math.cos(bsA) * 1.5, bsY + Math.sin(bsA) * 1.5, 0);
+    lines.push(F.x, WL + F.H * 0.95, 0, tip[0], tip[1], 0);
+    lines.push(M.x, WL + M.H * 0.48, 0, F.x, WL + deck(F.t) + 0.2, 0);
+    lines.push(M.x, WL + M.H * 0.95, 0, F.x, WL + F.H * 0.76, 0);
+    lines.push(Z.x, WL + Z.H * 0.48, 0, M.x, WL + deck(M.t) + 0.3, 0);
+    lines.push(Z.x, WL + Z.H * 0.95, 0, M.x, WL + M.H * 0.6, 0);
 
-    const flag = new THREE.Mesh(G.plane(0.5, 0.32), mat(C.flag, { r: 0.9, m: 0, extra: { side: THREE.DoubleSide } }));
-    flag.position.set(0, 4.5, 0.05);
-    group.add(flag);
+    // Bujarronas (triangulares) do gurupés até o traquete
+    const jib = cached(_geoCache, 'vicJibs', () => {
+      const p = [];
+      [[1.2, 0.75], [1.8, 0.86], [2.5, 0.94]].forEach(([d, f]) => {
+        const ax = bsX + Math.cos(bsA) * d, ay = bsY + Math.sin(bsA) * d;
+        p.push(ax, ay, 0, F.x + 0.05, WL + F.H * f * 0.62 + 0.4, 0, F.x + 0.35 + d * 0.25, WL + deck(F.t) + 0.35 + d * 0.12, 0);
+      });
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
+      g.computeVertexNormals();
+      return g;
+    });
+    add(ship, jib, sailM);
 
-    group.scale.setScalar(0.85);
+    // Spanker (vela latina de ré) na mezena, com carangueja e retranca
+    const sp = cached(_geoCache, 'vicSpanker', () => {
+      const y0 = WL + deck(Z.t) + 0.32, y1 = WL + Z.H * 0.5;
+      const p = [Z.x, y0, 0, Z.x - 1.2, y0 + 0.05, 0, Z.x, y1, 0, Z.x - 1.2, y0 + 0.05, 0, Z.x - 0.85, y1 + 0.35, 0, Z.x, y1, 0];
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
+      g.computeVertexNormals();
+      return g;
+    });
+    add(ship, sp, sailM);
+    lines.push(Z.x, WL + Z.H * 0.5, 0, Z.x - 0.85, WL + Z.H * 0.5 + 0.35, 0, Z.x, WL + deck(Z.t) + 0.32, 0, Z.x - 1.2, WL + deck(Z.t) + 0.37, 0);
+
+    // Cordame: um único desenho de linhas para todos os cabos
+    const rig = new THREE.BufferGeometry();
+    rig.setAttribute('position', new THREE.Float32BufferAttribute(lines, 3));
+    ship.add(new THREE.LineSegments(rig, cached(_matCache, 'rigging', () => new THREE.LineBasicMaterial({ color: HC.rigging, transparent: true, opacity: 0.75 }))));
+
+    // White Ensign no pique da carangueja
+    add(ship, G.plane(0.5, 0.25), ensignTexture(), Z.x - 0.95, WL + Z.H * 0.5 + 0.22, 0);
+
+    // centraliza (o gurupés estende o navio para vante) e reduz: os mastros são altos
+    ship.position.x = -1.0;
+    const group = new THREE.Group();
+    group.add(ship);
+    group.scale.setScalar(0.64);
+    group.position.y = 0;
     return group;
   }
 
-  /* ── COURAÇADO (Dreadnought) ────────────────────────────────── */
+  /* ── COURAÇADO: HMS Dreadnought (1906) ──────────────────────────
+     160,6 m × 25 m · cinco torres duplas de 12": A (vante), P e Q (alas, junto à
+     superestrutura de vante), X e Y (ré) · mastro tripé logo atrás da chaminé de
+     vante · duas chaminés · mastro de controle de torpedos entre X e Y · convés
+     de madeira · redes antitorpedo nos costados · proa de aríete. */
+  function dnTurret(group, x, y, z, dir) {
+    const g = new THREE.Group();
+    add(g, G.cyl(0.19, 0.2, 0.08, 16), mat(HC.edGrey, { r: 0.55, m: 0.3 }), 0, 0.04, 0);
+    add(g, taperBox(0.44, 0.17, 0.4, 0.86, 0.9, -0.03), mat(0x6b727b, { r: 0.5, m: 0.35 }), -0.02, 0.165, 0);
+    [-0.075, 0.075].forEach(oz => add(g, G.cyl(0.018, 0.026, 0.72, 8), mat(0x2a2d31, { r: 0.4, m: 0.6 }), 0.52, 0.15, oz, 0, 0, -(Math.PI / 2 - 0.02)));
+    [-0.1, 0.1].forEach(oz => add(g, G.cyl(0.007, 0.009, 0.16, 6), mat(0x2a2d31), 0.02, 0.27, oz, 0, 0, Math.PI / 2));   // 12-pdr no teto
+    g.position.set(x, y, z);
+    g.rotation.y = dir;
+    group.add(g);
+  }
+
   function buildBattleship() {
     const group = new THREE.Group();
+    const hull = loftHull('dread', {
+      L: 6.8, T: 0.38, rake: -0.32, rakeStart: 0.9,
+      half: halfFn(1.06, 0.42, 0.62, 1.6, 0.16),
+      deck: t => 0.25 + 0.11 * smooth(0.26, 0.3, t) + 0.03 * smooth(0.85, 1, t),
+      flare: 1.0, color: modernColor(HC.edGrey), deckColor: HC.teak,
+    });
+    add(group, hull.geo, hullMat(0.6, 0.2), 0, WL, 0);
+    const D = WL + 0.36, Dq = WL + 0.25;                      // castelo / tombadilho
+    const grey = mat(HC.edGrey, { r: 0.55, m: 0.3 });
 
-    const hull = new THREE.Mesh(G.box(7.0, 1.0, 1.3), mat(C.hull_battle, { r: 0.55, m: 0.35 }));
-    hull.castShadow = true;
-    group.add(hull);
+    dnTurret(group, 2.35, D, 0, 0);
+    dnTurret(group, 0.72, D, 0.37, 0.1);
+    dnTurret(group, 0.72, D, -0.37, -0.1);
+    dnTurret(group, -1.2, D, 0, Math.PI);
+    dnTurret(group, -2.55, Dq, 0, Math.PI);
 
-    const bow = new THREE.Mesh(G.cone(0.65, 1.2, 5), mat(C.hull_battle, { r: 0.55 }));
-    bow.rotation.z = -Math.PI / 2;
-    bow.position.set(3.7, 0.1, 0);
-    group.add(bow);
+    // Torre de comando, ponte e casa de navegação
+    add(group, G.cyl(0.11, 0.12, 0.24, 12), grey, 1.82, D + 0.12, 0);
+    add(group, taperBox(0.36, 0.2, 0.46, 0.95, 0.9), grey, 1.62, D + 0.1, 0);
+    add(group, G.box(0.3, 0.025, 0.86), mat(0x5c636b, { r: 0.6 }), 1.66, D + 0.42, 0);
+    add(group, G.box(0.16, 0.12, 0.26), grey, 1.62, D + 0.5, 0);
 
-    const belt = new THREE.Mesh(G.box(6.5, 0.3, 1.32), mat(0x566070, { r: 0.6, m: 0.4 }));
-    belt.position.y = 0.2;
-    group.add(belt);
-
-    const deck = new THREE.Mesh(G.box(6.8, 0.08, 1.25), mat(0x7a7a86, { r: 0.7 }));
-    deck.position.y = 0.54;
-    group.add(deck);
-
-    const ct = new THREE.Mesh(G.cyl(0.3, 0.35, 0.9, 8), mat(C.steel_dark, { r: 0.45, m: 0.5 }));
-    ct.position.set(0.5, 1.15, 0);
-    group.add(ct);
-
-    const slit = new THREE.Mesh(G.box(0.62, 0.04, 0.04), mat(C.glass, { r: 0.05, m: 0.9 }));
-    slit.position.set(0.5, 1.35, 0.33);
-    group.add(slit);
-
-    // 5 torres de canhões gêmeos
-    [-2.8, -1.4, 0.2, 1.6, 2.8].forEach(x => {
-      const turret = new THREE.Group();
-      turret.add(new THREE.Mesh(G.cyl(0.28, 0.32, 0.26, 10), mat(C.steel_dark, { r: 0.4, m: 0.5 })));
-
-      const house = new THREE.Mesh(G.box(0.6, 0.24, 0.5), mat(0x4a4a5c, { r: 0.45, m: 0.4 }));
-      house.position.y = 0.22;
-      turret.add(house);
-
-      [-0.1, 0.1].forEach(oz => {
-        const barrel = new THREE.Mesh(G.cyl(0.04, 0.055, 1.1, 6), mat(0x22222c, { m: 0.7 }));
-        barrel.rotation.z = Math.PI / 2;
-        barrel.position.set(0.55, 0.22, oz);
-        turret.add(barrel);
-      });
-
-      turret.position.set(x, 0.66, 0);
-      group.add(turret);
+    // Chaminés (ovais) com faixa preta no topo
+    [1.32, 0.12].forEach(x => {
+      const f = add(group, G.cyl(0.13, 0.14, 0.82, 16), grey, x, D + 0.41, 0);
+      f.scale.set(1, 1, 0.78);
+      const c = add(group, G.cyl(0.133, 0.133, 0.07, 16), mat(HC.black), x, D + 0.79, 0);
+      c.scale.set(1, 1, 0.78);
     });
 
-    [0.0, -0.8].forEach(x => {
-      const funnel = new THREE.Mesh(G.cyl(0.18, 0.22, 0.9, 8), mat(0x2c2c34));
-      funnel.position.set(x, 1.4, 0);
-      group.add(funnel);
+    // Mastro tripé atrás da chaminé de vante, com o cesto de direção de tiro
+    const leg = mat(0x5f666e, { r: 0.6, m: 0.3 });
+    add(group, G.cyl(0.025, 0.03, 1.7, 8), leg, 0.98, D + 0.85, 0);
+    [0.2, -0.2].forEach(z => add(group, G.cyl(0.016, 0.02, 1.62, 6), leg, 0.84, D + 0.8, z * 0.5, -z, 0, -0.17));
+    add(group, G.box(0.28, 0.14, 0.24), grey, 0.98, D + 1.72, 0);
+    add(group, G.cyl(0.012, 0.016, 0.7, 6), leg, 0.98, D + 2.14, 0);
+    add(group, G.box(0.02, 0.015, 0.36), leg, 0.98, D + 2.0, 0);
 
-      const top = new THREE.Mesh(G.cyl(0.18, 0.18, 0.1, 8), mat(0x0c0c10));
-      top.position.set(x, 1.9, 0);
-      group.add(top);
-    });
+    // Botes nos picadeiros entre as chaminés e o mastro grande, com o pau de carga
+    [[-0.32, 0.18], [-0.32, -0.18], [-0.66, 0]].forEach(([x, z]) => add(group, taperBox(0.38, 0.07, 0.13, 1.08, 1.18), mat(HC.boat, { r: 0.7, m: 0 }), x, D + 0.1, z));
+    add(group, G.cyl(0.02, 0.025, 1.3, 8), leg, -0.5, D + 0.65, 0);
+    add(group, G.cyl(0.01, 0.012, 0.9, 6), leg, -0.25, D + 0.62, 0, 0, 0, 0.9);
+    add(group, G.box(0.02, 0.015, 0.4), leg, -0.5, D + 1.1, 0);
 
-    const mast1 = new THREE.Mesh(G.cyl(0.03, 0.04, 2.2, 6), mat(C.steel_dark));
-    mast1.position.set(1.5, 1.75, 0);
-    group.add(mast1);
+    // Superestrutura de ré e o tripé baixo de controle de torpedos entre X e Y
+    add(group, taperBox(0.3, 0.16, 0.34, 0.9, 0.9), grey, -1.75, D + 0.08, 0);
+    add(group, G.cyl(0.018, 0.022, 0.7, 6), leg, -1.75, D + 0.5, 0);
+    [0.12, -0.12].forEach(z => add(group, G.cyl(0.012, 0.015, 0.68, 6), leg, -1.81, D + 0.48, z * 0.5, -z, 0, -0.17));
+    add(group, G.box(0.16, 0.08, 0.16), grey, -1.75, D + 0.86, 0);
 
-    const top1 = new THREE.Mesh(G.cyl(0.2, 0.2, 0.12, 10), mat(C.steel_dark));
-    top1.position.set(1.5, 2.5, 0);
-    group.add(top1);
+    // Canhões de 12-pdr antitorpedeiro no convés e prateleiras das redes antitorpedo
+    const atg = [];
+    [2.9, 1.95, -0.05, -0.85, -2.1, -2.95].forEach(x => [1, -1].forEach(sd => {
+      const t = (x + 3.4) / 6.8;
+      atg.push({ p: [x, (t > 0.3 ? D : Dq) + 0.03, sd * (hull.halfAt(t, 0.3) - 0.06)], ry: sd > 0 ? -Math.PI / 2 : Math.PI / 2, rz: Math.PI / 2 });
+    }));
+    group.add(instanced(G.cyl(0.007, 0.009, 0.14, 6), mat(0x2a2d31, { r: 0.5, m: 0.5 }), atg));
+    [1, -1].forEach(sd => add(group, G.box(4.6, 0.03, 0.035), mat(0x3a3e43, { r: 0.8 }), -0.1, WL + 0.2, sd * (hull.halfAt(0.48, 0.2) + 0.015)));
 
-    const mast1top = new THREE.Mesh(G.cyl(0.015, 0.02, 1.2, 5), mat(C.steel_dark));
-    mast1top.position.set(1.5, 3.3, 0);
-    group.add(mast1top);
+    // White Ensign no pau da bandeira, na popa
+    add(group, G.cyl(0.006, 0.008, 0.4, 5), leg, -3.33, Dq + 0.2, 0);
+    add(group, G.plane(0.32, 0.16), ensignTexture(), -3.5, Dq + 0.33, 0);
 
-    group.scale.setScalar(0.82);
+    group.scale.setScalar(0.95);
     return group;
   }
 
-  /* ── FRAGATA (Type 23) ──────────────────────────────────────── */
+  /* ── FRAGATA: HMS Westminster (F237), Type 23 ───────────────────
+     133 m · casco e superestrutura com faces inclinadas (assinatura radar baixa) ·
+     canhão Mk 8 · silo de 32 células (Sea Wolf → Sea Ceptor) · lançadores Harpoon ·
+     mastro de vante com o radar Type 997 Artisan · chaminé inclinada · hangar e
+     convoo para Merlin/Wildcat. */
   function buildFrigate() {
     const group = new THREE.Group();
+    const hull = loftHull('t23', {
+      L: 6.0, T: 0.22, rake: 0.5,
+      half: halfFn(0.72, 0.74, 0.55, 1.7),
+      deck: t => 0.25 + 0.08 * smooth(0.17, 0.24, t) + 0.04 * smooth(0.78, 1, t),
+      flare: 1.15, color: modernColor(), deckColor: HC.nonSkid,
+    });
+    add(group, hull.geo, hullMat(), 0, WL, 0);
+    const D = WL + 0.33;
+    const G1 = mat(HC.rnGrey, { r: 0.5, m: 0.25 });
 
-    const hull = new THREE.Mesh(G.box(5.5, 0.85, 0.95), mat(C.hull_frigate, { r: 0.55 }));
-    hull.castShadow = true;
-    group.add(hull);
+    mk8Gun(group, 2.05, D + 0.04, 0.92);
+    vlsBlock(group, 1.55, D, 0.3, 0.38, 4, 8);
+    // Harpoon: dois lançadores quádruplos cruzados no convés
+    [[1.18, 0.5], [1.06, -0.5]].forEach(([x, ry]) => {
+      const h = new THREE.Group();
+      for (let k = 0; k < 4; k++) add(h, G.box(0.3, 0.045, 0.045), mat(0x7b858f, { r: 0.6 }), 0, 0.03 + (k > 1 ? 0.05 : 0), (k % 2 ? 0.026 : -0.026));
+      h.position.set(x, D + 0.02, 0);
+      h.rotation.set(0, ry, 0.12);
+      group.add(h);
+    });
 
-    const bow = new THREE.Mesh(G.cone(0.48, 0.8, 5), mat(C.hull_frigate));
-    bow.rotation.z = -Math.PI / 2;
-    bow.position.set(2.95, 0.05, 0);
-    group.add(bow);
+    // Ponte e superestrutura (faces inclinadas ~7°)
+    add(group, taperBox(0.82, 0.38, 0.62, 0.9, 0.84), G1, 0.55, D + 0.19, 0);
+    add(group, taperBox(0.5, 0.13, 0.56, 0.86, 0.86, -0.02), G1, 0.7, D + 0.44, 0);
+    add(group, G.box(0.03, 0.05, 0.48), mat(HC.glass, { r: 0.1, m: 0.7 }), 0.93, D + 0.44, 0, 0, 0, -0.45);
+    add(group, taperBox(1.2, 0.3, 0.6, 0.95, 0.86), G1, -0.42, D + 0.15, 0);
+    add(group, taperBox(0.66, 0.33, 0.6, 1, 0.9), G1, -1.33, D + 0.165, 0);        // hangar
+    add(group, G.box(0.01, 0.25, 0.36), mat(HC.rnGreyDk, { r: 0.7 }), -1.665, D + 0.13, 0);
 
-    const deck = new THREE.Mesh(G.box(5.3, 0.06, 0.9), mat(C.deck, { r: 0.75 }));
-    deck.position.y = 0.46;
-    group.add(deck);
+    // Mastro de vante (pirâmide fechada) com o Type 997 Artisan girando
+    add(group, taperBox(0.28, 0.62, 0.28, 0.4, 0.4), G1, 0.38, D + 0.5 + 0.31, 0);
+    const artisan = new THREE.Group();
+    add(artisan, G.box(0.05, 0.12, 0.3), mat(HC.rnGreyDk, { r: 0.5, m: 0.4 }));
+    artisan.position.set(0.38, D + 1.2, 0);
+    group.add(spinner(group, artisan, 3.0));
+    add(group, G.cyl(0.008, 0.012, 0.3, 6), mat(HC.rnGreyDk), 0.38, D + 1.4, 0);
 
-    const super1 = new THREE.Mesh(G.box(1.5, 0.75, 0.72), mat(C.steel, { r: 0.4, m: 0.5 }));
-    super1.position.set(0.5, 0.9, 0);
-    group.add(super1);
+    // Chaminé inclinada para ré, com o topo preto
+    add(group, taperBox(0.36, 0.34, 0.3, 0.74, 0.72, -0.07), G1, -0.5, D + 0.3 + 0.17, 0);
+    add(group, G.box(0.22, 0.02, 0.2), mat(HC.black), -0.57, D + 0.645, 0);
+    // mastro de comunicações a ré
+    add(group, G.cyl(0.01, 0.014, 0.5, 6), mat(HC.rnGreyDk), -0.95, D + 0.55, 0);
+    add(group, G.box(0.02, 0.012, 0.22), mat(HC.rnGreyDk), -0.95, D + 0.7, 0);
+    // canhões de 30 mm a meia-nau
+    [0.24, -0.24].forEach(z => add(group, G.cyl(0.006, 0.008, 0.14, 6), mat(0x30353c), -0.1, D + 0.33, z, 0, 0, Math.PI / 2));
 
-    const bridge = new THREE.Mesh(G.box(0.9, 0.3, 0.65), mat(C.steel_dark, { r: 0.4 }));
-    bridge.position.set(0.5, 1.35, 0);
-    group.add(bridge);
+    helideck(group, -2.35, WL + 0.25, 0.28);
+    pennant(group, hull, 'F237', 0.86, 0.18, 0.12);
 
-    const aft = new THREE.Mesh(G.box(0.9, 0.5, 0.68), mat(C.steel, { r: 0.4, m: 0.45 }));
-    aft.position.set(-1.2, 0.73, 0);
-    group.add(aft);
-
-    const vls = new THREE.Mesh(G.box(0.5, 0.1, 0.55), mat(C.deck_dark, { r: 0.9 }));
-    vls.position.set(1.6, 0.51, 0);
-    group.add(vls);
-
-    const gunGrp = new THREE.Group();
-    gunGrp.add(new THREE.Mesh(G.cyl(0.13, 0.16, 0.18, 8), mat(C.steel_dark)));
-    const gBarrel = new THREE.Mesh(G.cyl(0.03, 0.045, 0.85, 6), mat(0x232a38));
-    gBarrel.rotation.z = Math.PI / 2;
-    gBarrel.position.x = 0.42;
-    gunGrp.add(gBarrel);
-    gunGrp.position.set(2.3, 0.58, 0);
-    group.add(gunGrp);
-
-    const mast = new THREE.Mesh(G.cyl(0.022, 0.03, 1.8, 6), mat(C.steel_dark));
-    mast.position.set(0.3, 2.0, 0);
-    group.add(mast);
-
-    const hpad = new THREE.Mesh(G.cyl(0.35, 0.35, 0.03, 12), mat(0x4a5568, { r: 0.9 }));
-    hpad.position.set(-2.3, 0.48, 0);
-    group.add(hpad);
-
-    group.scale.setScalar(0.88);
+    group.scale.setScalar(1.05);
     return group;
   }
 
@@ -789,21 +1165,25 @@
       d.rotX += (d.targetX - d.rotX) * k;
       e.ship.rotation.y = d.rotY;
       e.ship.rotation.x = d.rotX;
+      const spin = e.ship.userData.spin;
+      if (spin) for (const r of spin) r.rotation.y += r.userData.vel * dt;      // radares girando
       e.ship.position.y = Math.sin(t * e.bobSpeed) * e.bobAmp;
     };
   }
 
   /* ── Vista da frota (formação) ──────────────────────────────── */
   function setupFleetView(e) {
+    // escala relativa real (comprimentos: QE 284 m · Type 45 152 m · Type 23 133 m · Astute 97 m)
     const formation = [
-      { type: 'carrier',   pos: [0, 0, 0],      rot: 0 },
-      { type: 'destroyer', pos: [-7, 0, -3],    rot: 0.15 },
-      { type: 'destroyer', pos: [7, 0, -3],     rot: -0.15 },
-      { type: 'submarine', pos: [-5, -0.5, 4],  rot: 0.1 },
-      { type: 'frigate',   pos: [5, 0, 4],      rot: -0.1 },
+      { type: 'carrier',   pos: [0, 0, 0],       rot: 0,     k: 1 },
+      { type: 'destroyer', pos: [-6, 0, -3],     rot: 0.15,  k: 0.57 },
+      { type: 'destroyer', pos: [6, 0, -3],      rot: -0.15, k: 0.57 },
+      { type: 'submarine', pos: [-4.5, 0, 3.6],  rot: 0.1,   k: 0.4 },
+      { type: 'frigate',   pos: [4.5, 0, 3.6],   rot: -0.1,  k: 0.51 },
     ];
-    const ships = formation.map(({ type, pos, rot }) => {
+    const ships = formation.map(({ type, pos, rot, k }) => {
       const s = buildShip(type);
+      s.scale.multiplyScalar(k);
       s.position.set(...pos);
       s.rotation.y = rot;
       s.userData.baseY = pos[1];
@@ -817,6 +1197,7 @@
       ships.forEach((s, i) => {
         s.position.y = s.userData.baseY + Math.sin(t * 0.7 + i * 1.2) * 0.04;
         s.rotation.y += 0.12 * dt;
+        if (s.userData.spin) for (const r of s.userData.spin) r.rotation.y += r.userData.vel * dt;
       });
     };
   }

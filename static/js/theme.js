@@ -48,7 +48,7 @@
 
     const grow = veil.animate(
       { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
-      { duration: 520, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' });
+      { duration: 520, easing: 'cubic-bezier(0.77, 0, 0.175, 1)', fill: 'forwards' });
     grow.onfinish = () => {
       apply(mode);
       const fade = veil.animate({ opacity: [1, 0] }, { duration: 380, easing: 'ease-out', fill: 'forwards' });
@@ -80,7 +80,7 @@
       vt.ready.then(() => {
         root.animate(
           { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
-          { duration: 900, easing: 'cubic-bezier(.4,0,.2,1)', pseudoElement: '::view-transition-new(root)' });
+          { duration: 760, easing: 'cubic-bezier(0.77, 0, 0.175, 1)', pseudoElement: '::view-transition-new(root)' });   // ease-in-out forte: o círculo atravessa a tela
       }).catch(() => { /* transição pulada: o tema já foi aplicado */ });
       vt.finished.then(finish, finish);
     } else {
